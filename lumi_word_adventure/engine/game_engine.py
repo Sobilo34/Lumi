@@ -7,6 +7,7 @@ import json
 import pygame
 
 from config import DEBUG_HITBOXES, SCREEN_SPECS_PATH, SPLASH_DURATION_MS, VOICE_FALLBACK_SCREEN_ID
+from engine.asset_manager import AssetManager
 from engine.game_state import GameState
 from ui.screens import build_screen_from_spec
 
@@ -16,9 +17,10 @@ class GameEngine:
         self.screen = screen
         self.clock = pygame.time.Clock()
         self.running = True
+        self.asset_manager = AssetManager()
         self.state = GameState(splash_started_at=pygame.time.get_ticks())
         self.specs = self._load_specs()
-        self.screens = {spec["id"]: build_screen_from_spec(spec) for spec in self.specs}
+        self.screens = {spec["id"]: build_screen_from_spec(spec, self.asset_manager) for spec in self.specs}
         self.current_screen = self.screens[self.state.current_screen_id]
 
     def _load_specs(self) -> list[dict]:
@@ -39,12 +41,12 @@ class GameEngine:
         if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
             self.running = False
             return
-        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-            hitbox = self.current_screen.handle_click(event.pos)
-            if hitbox and hitbox.target:
-                self.set_screen(hitbox.target)
+        action = self.current_screen.handle_event(event)
+        if action:
+            self.set_screen(action)
 
     def update(self) -> None:
+        self.current_screen.update()
         if self.state.current_screen_id == "01_splash_loading":
             elapsed = pygame.time.get_ticks() - self.state.splash_started_at
             if elapsed >= SPLASH_DURATION_MS:

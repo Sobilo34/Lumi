@@ -1,0 +1,9 @@
+myvenv/
+reference_interfaces/
+**/__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+build/
+dist/
+LUMI_PROJECT_MCP.md
