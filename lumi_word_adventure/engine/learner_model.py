@@ -30,6 +30,7 @@ class LearnerModel:
         "badges",
         "attempts",
         "correct_answers",
+        "accuracy",
     )
 
     def __init__(
@@ -61,6 +62,7 @@ class LearnerModel:
         profile = load_default_profile()
         profile.setdefault("attempts", 0)
         profile.setdefault("correct_answers", 0)
+        profile.setdefault("accuracy", 0.0)
         return profile
 
     def _load_or_create_profile(self) -> tuple[dict[str, Any], bool]:
@@ -79,6 +81,8 @@ class LearnerModel:
             legacy_profile["total_stars"] = legacy_profile.pop("stars")
         if "letters_mastered" in legacy_profile and "mastered_letters" not in legacy_profile:
             legacy_profile["mastered_letters"] = legacy_profile.pop("letters_mastered")
+        if "accuracy" not in legacy_profile:
+            legacy_profile["accuracy"] = 0.0
 
         defaults = cls._default_profile()
         normalized: dict[str, Any] = {}
@@ -107,6 +111,14 @@ class LearnerModel:
         self.total_stars = max(0, self.total_stars + max(0, amount))
         self.save_profile()
         return self.total_stars
+
+    def update_accuracy(self) -> float:
+        attempts = int(self.attempts)
+        correct_answers = int(self.correct_answers)
+        accuracy = 0.0 if attempts <= 0 else round((max(0, correct_answers) / attempts) * 100, 2)
+        self.accuracy = accuracy
+        self.save_profile()
+        return accuracy
 
     def update_correct_streak(self) -> int:
         self.correct_streak = self.correct_streak + 1

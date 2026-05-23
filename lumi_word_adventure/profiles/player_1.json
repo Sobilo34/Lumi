@@ -17,5 +17,6 @@
   "completed_worlds": [],
   "badges": [],
   "attempts": 1,
-  "correct_answers": 0
+  "correct_answers": 0,
+  "accuracy": 0.0
 }

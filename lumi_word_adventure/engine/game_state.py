@@ -24,6 +24,7 @@ class GameState:
     preserve_word_garden_task: bool = False
     current_word_mode: str = ""
     word_garden_support: str = ""
+    word_garden_option_count: int = 4
     last_word_selected: str = ""
     last_word_feedback_message: str = ""
     bd_practice_target: str = ""

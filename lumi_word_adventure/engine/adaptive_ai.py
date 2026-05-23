@@ -240,6 +240,8 @@ def _word_focus_recommendation(profile: dict[str, Any], question_bank: Any) -> d
                     "focus": focus_word,
                     "reason": "cat_dog_confusion",
                     "support": "simplified_word_garden",
+                    "option_count": 2,
+                    "option_pool": ["cat", "dog"],
                     "question": chosen,
                 }
             return {
@@ -266,6 +268,8 @@ def _word_focus_recommendation(profile: dict[str, Any], question_bank: Any) -> d
         "focus": _lower_text(chosen.get("word")) if chosen else "",
         "reason": reason,
         "support": support,
+        "option_count": 2 if support else 4,
+        "option_pool": ["cat", "dog"] if support else [],
         "question": chosen,
     }
 
@@ -325,6 +329,8 @@ def recommend_practice(profile: Any) -> dict[str, Any]:
             "focus": repeated_word,
             "reason": "cat_dog_confusion" if repeated_word in {"cat", "dog"} else "repeated_weak_word",
             "support": "simplified_word_garden" if repeated_word in {"cat", "dog"} else "",
+            "option_count": 2 if repeated_word in {"cat", "dog"} else 4,
+            "option_pool": ["cat", "dog"] if repeated_word in {"cat", "dog"} else [],
             "question": None,
         }
 

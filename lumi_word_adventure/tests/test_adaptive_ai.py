@@ -75,7 +75,9 @@ def test_weak_word_triggers_practice_recommendation() -> None:
 
     assert recommendation["activity"] == "word_garden_game"
     assert recommendation["support"] == "simplified_word_garden"
+    assert recommendation["option_count"] == 2
     assert question["activity"] == "word_garden_game"
+    assert question["option_count"] == 2
     assert question["question"]["word"] == "cat"
 
 

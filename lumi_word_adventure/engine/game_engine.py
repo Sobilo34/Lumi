@@ -83,6 +83,7 @@ class GameEngine:
         self.state.current_hint_level = 0
         self.state.current_word_mode = str(next_question.get("reason") or recommendation.get("reason") or "")
         self.state.word_garden_support = str(next_question.get("support") or recommendation.get("support") or "")
+        self.state.word_garden_option_count = int(next_question.get("option_count") or recommendation.get("option_count") or 4)
         self.state.last_word_selected = ""
         self.state.last_word_feedback_message = ""
 
@@ -257,6 +258,9 @@ class GameEngine:
                 if selected_word == target_word:
                     stars_earned = calculate_stars(True, self.state.current_hint_level)
                     self.learner.update_correct_streak()
+                    self.learner.attempts = int(self.learner.attempts) + 1
+                    self.learner.correct_answers = int(self.learner.correct_answers) + 1
+                    self.learner.update_accuracy()
                     update_score(self.learner, stars_earned)
                     self.learner.mark_word_mastered(target_word)
                     check_badge_unlocks(self.learner)
@@ -266,6 +270,8 @@ class GameEngine:
                     return
 
                 self.learner.update_wrong_streak()
+                self.learner.attempts = int(self.learner.attempts) + 1
+                self.learner.update_accuracy()
                 self.learner.record_weak_word(target_word)
                 mistake_type = diagnose_word_mistake(target_word, selected_word, self.word_questions)
                 self.state.last_mistake_type = mistake_type
@@ -283,7 +289,12 @@ class GameEngine:
                 return
         if self.state.current_screen_id == "word_correct_feedback":
             if action == "next_voice_challenge":
-                self.set_screen("voice_challenge")
+                if self.state.letter_demo_mode:
+                    self.set_screen("world_map")
+                else:
+                    self.state.preserve_word_garden_task = False
+                    self._configure_word_garden_task()
+                    self.set_screen("word_garden_game")
                 return
             if action == "home":
                 self.set_screen("world_map")
