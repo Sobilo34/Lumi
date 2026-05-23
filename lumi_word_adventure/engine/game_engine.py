@@ -109,6 +109,10 @@ class GameEngine:
 
     def update(self) -> None:
         self.current_screen.update()
+        if self.state.current_screen_id == "splash_loading":
+            elapsed = pygame.time.get_ticks() - self.state.splash_started_at
+            if elapsed >= SPLASH_DURATION_MS:
+                self.set_screen("welcome")
 
     def draw(self) -> None:
         self.current_screen.draw(self.screen, debug_hitboxes=DEBUG_HITBOXES)
