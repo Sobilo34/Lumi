@@ -51,3 +51,11 @@ class BaseScreen:
 
 def create_screen(image_filename: str, asset_manager: AssetManager | None = None) -> BaseScreen:
     return BaseScreen(image_filename=image_filename, hitboxes=[], asset_manager=asset_manager)
+
+
+def create_screen_with_hitboxes(
+    image_filename: str,
+    hitboxes: list[Hitbox],
+    asset_manager: AssetManager | None = None,
+) -> BaseScreen:
+    return BaseScreen(image_filename=image_filename, hitboxes=hitboxes, asset_manager=asset_manager)
