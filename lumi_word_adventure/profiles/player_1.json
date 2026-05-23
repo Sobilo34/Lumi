@@ -17,5 +17,7 @@
   "mastered_letters": [],
   "mastered_words": [],
   "completed_worlds": [],
-  "badges": []
+  "badges": [],
+  "attempts": 0,
+  "correct_answers": 0
 }
