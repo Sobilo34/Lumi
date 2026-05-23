@@ -1,10 +1,11 @@
 {
   "child_name": "Player 1",
-  "stars": 0,
+  "total_stars": 0,
+  "lumi_energy": 100,
+  "current_world": "main_menu",
   "difficulty": 1,
   "correct_streak": 0,
   "wrong_streak": 0,
-  "letters_mastered": [],
   "weak_letters": {},
   "weak_words": {},
   "sentence_errors": {},
@@ -13,6 +14,8 @@
     "level_2": 0,
     "level_3": 0
   },
-  "attempts": 0,
-  "correct_answers": 0
+  "mastered_letters": [],
+  "mastered_words": [],
+  "completed_worlds": [],
+  "badges": []
 }

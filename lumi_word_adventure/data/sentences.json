@@ -3,6 +3,40 @@
     "id": "sentence_1",
     "sentence": "I see a cat",
     "words": ["I", "see", "a", "cat"],
-    "difficulty": 1
+    "difficulty": 1,
+    "prompt": "Build the sentence: I see a cat",
+    "image_keyword": "cat"
+  },
+  {
+    "id": "sentence_2",
+    "sentence": "I see a dog",
+    "words": ["I", "see", "a", "dog"],
+    "difficulty": 1,
+    "prompt": "Build the sentence: I see a dog",
+    "image_keyword": "dog"
+  },
+  {
+    "id": "sentence_3",
+    "sentence": "I like apple",
+    "words": ["I", "like", "apple"],
+    "difficulty": 1,
+    "prompt": "Build the sentence: I like apple",
+    "image_keyword": "apple"
+  },
+  {
+    "id": "sentence_4",
+    "sentence": "The sun is hot",
+    "words": ["The", "sun", "is", "hot"],
+    "difficulty": 1,
+    "prompt": "Build the sentence: The sun is hot",
+    "image_keyword": "sun"
+  },
+  {
+    "id": "sentence_5",
+    "sentence": "The dog runs",
+    "words": ["The", "dog", "runs"],
+    "difficulty": 1,
+    "prompt": "Build the sentence: The dog runs",
+    "image_keyword": "dog"
   }
 ]

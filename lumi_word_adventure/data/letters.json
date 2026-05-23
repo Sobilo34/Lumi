@@ -1,11 +1,30 @@
 [
   {
+    "id": "letter_A",
+    "letter": "A",
+    "sound": "/a/",
+    "example_word": "apple",
+    "difficulty": 1,
+    "confusable_with": ["E"],
+    "prompt": "Find the letter A"
+  },
+  {
     "id": "letter_B",
     "letter": "B",
     "sound": "/b/",
     "example_word": "ball",
     "difficulty": 1,
-    "confusable_with": ["D", "P"]
+    "confusable_with": ["D", "P"],
+    "prompt": "Find the letter B"
+  },
+  {
+    "id": "letter_C",
+    "letter": "C",
+    "sound": "/k/",
+    "example_word": "cat",
+    "difficulty": 1,
+    "confusable_with": ["G"],
+    "prompt": "Find the letter C"
   },
   {
     "id": "letter_D",
@@ -13,6 +32,43 @@
     "sound": "/d/",
     "example_word": "dog",
     "difficulty": 1,
-    "confusable_with": ["B"]
+    "confusable_with": ["B"],
+    "prompt": "Find the letter D"
+  },
+  {
+    "id": "letter_E",
+    "letter": "E",
+    "sound": "/e/",
+    "example_word": "egg",
+    "difficulty": 1,
+    "confusable_with": ["A"],
+    "prompt": "Find the letter E"
+  },
+  {
+    "id": "letter_F",
+    "letter": "F",
+    "sound": "/f/",
+    "example_word": "fish",
+    "difficulty": 1,
+    "confusable_with": ["P"],
+    "prompt": "Find the letter F"
+  },
+  {
+    "id": "letter_I",
+    "letter": "I",
+    "sound": "/i/",
+    "example_word": "ink",
+    "difficulty": 1,
+    "confusable_with": ["L"],
+    "prompt": "Find the letter I"
+  },
+  {
+    "id": "letter_P",
+    "letter": "P",
+    "sound": "/p/",
+    "example_word": "pig",
+    "difficulty": 1,
+    "confusable_with": ["B", "D"],
+    "prompt": "Find the letter P"
   }
 ]

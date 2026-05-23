@@ -5,7 +5,39 @@
     "category": "animal",
     "difficulty": 1,
     "starting_letter": "C",
-    "spoken_prompt": "Touch the cat"
+    "prompt": "Touch the cat",
+    "speech_prompt": "Say cat",
+    "confusable_with": ["cap", "car"]
+  },
+  {
+    "id": "word_dog",
+    "word": "dog",
+    "category": "animal",
+    "difficulty": 1,
+    "starting_letter": "D",
+    "prompt": "Touch the dog",
+    "speech_prompt": "Say dog",
+    "confusable_with": ["dig", "duck"]
+  },
+  {
+    "id": "word_sun",
+    "word": "sun",
+    "category": "nature",
+    "difficulty": 1,
+    "starting_letter": "S",
+    "prompt": "Touch the sun",
+    "speech_prompt": "Say sun",
+    "confusable_with": ["son"]
+  },
+  {
+    "id": "word_ball",
+    "word": "ball",
+    "category": "toy",
+    "difficulty": 1,
+    "starting_letter": "B",
+    "prompt": "Touch the ball",
+    "speech_prompt": "Say ball",
+    "confusable_with": ["bell"]
   },
   {
     "id": "word_apple",
@@ -13,6 +45,28 @@
     "category": "food",
     "difficulty": 1,
     "starting_letter": "A",
-    "spoken_prompt": "Say apple"
+    "prompt": "Touch the apple",
+    "speech_prompt": "Say apple",
+    "confusable_with": ["apron"]
+  },
+  {
+    "id": "word_boat",
+    "word": "boat",
+    "category": "transport",
+    "difficulty": 1,
+    "starting_letter": "B",
+    "prompt": "Touch the boat",
+    "speech_prompt": "Say boat",
+    "confusable_with": ["goat"]
+  },
+  {
+    "id": "word_flower",
+    "word": "flower",
+    "category": "nature",
+    "difficulty": 1,
+    "starting_letter": "F",
+    "prompt": "Touch the flower",
+    "speech_prompt": "Say flower",
+    "confusable_with": ["flour"]
   }
 ]
