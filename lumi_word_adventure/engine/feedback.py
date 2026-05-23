@@ -30,7 +30,7 @@ def get_feedback(
         return _feedback_payload("close", "Almost! I heard something close. Try again.")
 
     if mistake_type == "bd_confusion":
-        return _feedback_payload("incorrect", "Good try! B has a belly.")
+        return _feedback_payload("incorrect", "Good try! B has a belly. D has a drum.")
 
     if mistake_type == "word_confusion":
         if target and selected:
@@ -101,6 +101,8 @@ def get_lumi_speech(screen_id: str, current_task: str | None = None) -> str:
         return "Pick a world to start your adventure."
     if screen == "letter_island_game":
         return f"Find the right letter, {task}." if task else "Find the right letter."
+    if screen == "bd_practice":
+        return "B has a belly. D has a drum."
     if screen == "word_garden_game":
         return f"Touch the word you hear, {task}." if task else "Touch the word you hear."
     if screen == "sentence_castle_game":

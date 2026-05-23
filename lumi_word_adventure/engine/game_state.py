@@ -20,4 +20,8 @@ class GameState:
     current_task_prompt: str = ""
     current_task_target: str = ""
     current_hint_level: int = 0
+    letter_demo_mode: bool = True
+    bd_practice_target: str = ""
+    bd_practice_step: int = 0
+    bd_confusion_attempts: int = 0
     history: list[str] = field(default_factory=list)

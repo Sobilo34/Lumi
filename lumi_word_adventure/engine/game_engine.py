@@ -5,12 +5,11 @@ import pygame
 
 from config import DEBUG_HITBOXES, SPLASH_DURATION_MS, VOICE_ENABLED_DEFAULT, VOICE_FALLBACK_SCREEN_ID
 from engine.asset_manager import AssetManager
-from engine.learner_model import LearnerModel
+from engine.feedback import get_feedback, get_hint, get_lumi_speech
 from engine.game_state import GameState
+from engine.learner_model import LearnerModel
 from engine.screen_registry import ScreenRegistry
 from engine.scoring import calculate_stars, check_badge_unlocks, update_score
-from engine.feedback import get_feedback, get_lumi_speech
-from engine.feedback import get_feedback, get_hint, get_lumi_speech
 from reports.report_generator import generate_report
 from ui.screens import create_screen_with_hitboxes
 from voice.text_to_speech import TextToSpeech
@@ -44,8 +43,6 @@ class GameEngine:
             self.state.current_screen_id = screen_id
             self.current_screen = self.screens[screen_id]
             self.state.history.append(screen_id)
-            if screen_id == "letter_island_game":
-                self._configure_letter_island_task()
             self._speak_for_screen(screen_id)
 
     def _configure_letter_island_task(self) -> None:
@@ -53,6 +50,37 @@ class GameEngine:
         self.state.current_task_target = "B"
         self.state.current_hint_level = 0
         self.state.last_mistake_type = ""
+        self.state.bd_confusion_attempts = 0
+        self.state.bd_practice_target = ""
+        self.state.bd_practice_step = 0
+
+    def _configure_bd_practice(self, target_letter: str = "B") -> None:
+        self.state.bd_practice_target = target_letter
+        self.state.bd_practice_step = 0 if target_letter == "B" else 1
+        self.state.current_task_target = target_letter
+        self.state.current_task_prompt = f"Find the letter {target_letter}."
+        self.state.current_hint_level = 0
+
+    def _advance_bd_practice(self) -> None:
+        if self.state.bd_practice_target == "B":
+            self.state.bd_practice_target = "D"
+            self.state.bd_practice_step = 1
+            self.state.current_task_target = "D"
+            self.state.current_task_prompt = "Now find the letter D."
+            self.voice.speak("Great job! Now find D.")
+            return
+
+        self.learner.mark_letter_mastered("D")
+        unlocked_badges = check_badge_unlocks(self.learner)
+        self.state.bd_practice_target = ""
+        self.state.bd_practice_step = 2
+        self.state.current_task_target = "B"
+        self.state.current_task_prompt = "Find the letter B."
+        self.voice.speak("Great job! You know B and D!")
+        if "B and D Master" in unlocked_badges:
+            self.set_screen("badge_unlock")
+        else:
+            self.set_screen("letter_correct_feedback")
 
     def set_screen(self, screen_id: str) -> None:
         self.change_screen(screen_id)
@@ -108,6 +136,52 @@ class GameEngine:
         if action == "play_again":
             self.set_screen("world_map")
             return
+        if self.state.current_screen_id == "letter_correct_feedback" and action == "next_activity":
+            if self.state.letter_demo_mode:
+                self.set_screen("world_map")
+            else:
+                self._configure_letter_island_task()
+                self.set_screen("letter_island_game")
+            return
+        if self.state.current_screen_id == "letter_mistake_hint":
+            if action == "try_again":
+                self.set_screen("letter_island_game")
+                return
+            if action == "repeat_prompt":
+                self.voice.speak(self.state.current_task_prompt or "Find the letter B.")
+                return
+            if action == "next_hint_or_bd_practice":
+                if self.state.bd_confusion_attempts >= 2:
+                    self._configure_bd_practice("B")
+                    self.set_screen("bd_practice")
+                else:
+                    self.state.current_hint_level += 1
+                    self.learner.record_hint_usage(self.state.current_hint_level)
+                    stronger_hint = get_hint("letter", self.state.current_hint_level, self.state.current_task_target or "B")
+                    self.voice.speak(stronger_hint)
+                return
+        if self.state.current_screen_id == "bd_practice":
+            if action == "repeat_bd_prompt":
+                target_letter = self.state.bd_practice_target or "B"
+                self.voice.speak(f"B has a belly. D has a drum. Find {target_letter}.")
+                return
+            if action == "bd_hint":
+                self.voice.speak("B has a belly. D has a drum.")
+                return
+            if action in {"answer_B", "answer_D"}:
+                target_letter = self.state.bd_practice_target or "B"
+                selected_letter = "B" if action == "answer_B" else "D"
+                if selected_letter == target_letter:
+                    self.learner.update_correct_streak()
+                    update_score(self.learner, calculate_stars(True, self.state.current_hint_level))
+                    self.learner.mark_letter_mastered(selected_letter)
+                    self._advance_bd_practice()
+                else:
+                    self.learner.update_wrong_streak()
+                    self.state.last_mistake_type = "bd_confusion"
+                    self.learner.record_weak_letter(target_letter)
+                    self.voice.speak(get_feedback(False, mistake_type="bd_confusion")["message"])
+                return
         if action == "view_report" or action == "open_report":
             self.set_screen("teacher_report")
             return
@@ -150,6 +224,9 @@ class GameEngine:
             self.set_screen("word_garden_game")
             return
 
+        if action in {"repeat_bd_prompt", "bd_hint", "answer_B", "answer_D", "next_hint_or_bd_practice", "try_again"}:
+            return
+
     def _handle_letter_island_action(self, action: str) -> None:
         target_letter = self.state.current_task_target or "B"
 
@@ -161,8 +238,8 @@ class GameEngine:
             self.state.current_hint_level += 1
             self.learner.record_hint_usage(self.state.current_hint_level)
             hint_message = get_hint("letter", self.state.current_hint_level, target_letter)
-            self.set_screen("letter_mistake_hint")
             self.voice.speak(hint_message)
+            self.set_screen("letter_mistake_hint")
             return
 
         if action == "voice_or_speak_mode":
@@ -186,6 +263,7 @@ class GameEngine:
             self.learner.mark_letter_mastered(target_letter)
             check_badge_unlocks(self.learner)
             self.state.current_hint_level = 0
+            self.state.bd_confusion_attempts = 0
             self.voice.speak("Great job! This is B.")
             self.set_screen("letter_correct_feedback")
             return
@@ -194,6 +272,7 @@ class GameEngine:
         self.learner.record_weak_letter(target_letter)
         if selected_letter == "D":
             self.state.last_mistake_type = "visual_letter_confusion"
+            self.state.bd_confusion_attempts += 1
         else:
             self.state.last_mistake_type = "letter_confusion"
         feedback = get_feedback(
@@ -202,8 +281,12 @@ class GameEngine:
             target=target_letter,
             selected=selected_letter,
         )
-        self.set_screen("letter_mistake_hint")
         self.voice.speak(feedback["message"])
+        if self.state.bd_confusion_attempts >= 2:
+            self._configure_bd_practice("B")
+            self.set_screen("bd_practice")
+            return
+        self.set_screen("letter_mistake_hint")
 
     def _speak_for_screen(self, screen_id: str) -> None:
         if not self.state.voice_enabled:
@@ -223,6 +306,11 @@ class GameEngine:
 
         if screen_id == "letter_island_game":
             self.voice.speak(self.state.current_task_prompt or get_lumi_speech(screen_id, self.state.current_task_target))
+            return
+
+        if screen_id == "bd_practice":
+            target_letter = self.state.bd_practice_target or "B"
+            self.voice.speak(f"B has a belly. D has a drum. Find {target_letter}.")
             return
 
         if screen_id in {"voice_challenge", "listening_state", "offline_continue"}:
