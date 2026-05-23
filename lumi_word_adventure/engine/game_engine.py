@@ -8,7 +8,9 @@ from engine.asset_manager import AssetManager
 from engine.learner_model import LearnerModel
 from engine.game_state import GameState
 from engine.screen_registry import ScreenRegistry
+from engine.scoring import calculate_stars, check_badge_unlocks, update_score
 from engine.feedback import get_feedback, get_lumi_speech
+from engine.feedback import get_feedback, get_hint, get_lumi_speech
 from reports.report_generator import generate_report
 from ui.screens import create_screen_with_hitboxes
 from voice.text_to_speech import TextToSpeech
@@ -25,6 +27,7 @@ class GameEngine:
         self.learner = LearnerModel()
         self.state = GameState(splash_started_at=pygame.time.get_ticks())
         self.voice.set_enabled(self.state.voice_enabled)
+        self._configure_letter_island_task()
         self.screens = {
             screen_id: create_screen_with_hitboxes(
                 self.registry.get_image_filename(screen_id),
@@ -41,7 +44,15 @@ class GameEngine:
             self.state.current_screen_id = screen_id
             self.current_screen = self.screens[screen_id]
             self.state.history.append(screen_id)
+            if screen_id == "letter_island_game":
+                self._configure_letter_island_task()
             self._speak_for_screen(screen_id)
+
+    def _configure_letter_island_task(self) -> None:
+        self.state.current_task_prompt = "Find the letter B."
+        self.state.current_task_target = "B"
+        self.state.current_hint_level = 0
+        self.state.last_mistake_type = ""
 
     def set_screen(self, screen_id: str) -> None:
         self.change_screen(screen_id)
@@ -103,6 +114,17 @@ class GameEngine:
         if action == "continue_offline":
             self.set_screen("main_menu")
             return
+        if self.state.current_screen_id == "letter_island_game" and action in {
+            "select_letter_b",
+            "select_letter_d",
+            "select_letter_p",
+            "select_letter_a",
+            "repeat_prompt",
+            "show_hint",
+            "voice_or_speak_mode",
+        }:
+            self._handle_letter_island_action(action)
+            return
         if action == "repeat_instruction_audio" or action == "repeat_instruction":
             return
         if action == "replay_welcome_audio" or action == "replay_main_menu_audio" or action == "replay_instruction_audio":
@@ -119,17 +141,91 @@ class GameEngine:
             if action == "show_hint":
                 self.voice.speak(get_feedback("hint")["message"])
             elif action == "repeat_prompt":
-                self.voice.speak(get_lumi_speech(self.state.current_screen_id))
+                self.voice.speak(self.state.current_task_prompt or get_lumi_speech(self.state.current_screen_id))
+            return
+        if self.state.current_screen_id == "letter_island_game":
+            self._handle_letter_island_action(action)
             return
         if action == "next_activity":
             self.set_screen("word_garden_game")
             return
 
+    def _handle_letter_island_action(self, action: str) -> None:
+        target_letter = self.state.current_task_target or "B"
+
+        if action == "repeat_prompt":
+            self.voice.speak(self.state.current_task_prompt or "Find the letter B.")
+            return
+
+        if action == "show_hint":
+            self.state.current_hint_level += 1
+            self.learner.record_hint_usage(self.state.current_hint_level)
+            hint_message = get_hint("letter", self.state.current_hint_level, target_letter)
+            self.set_screen("letter_mistake_hint")
+            self.voice.speak(hint_message)
+            return
+
+        if action == "voice_or_speak_mode":
+            self.voice.speak("Voice coming soon.")
+            return
+
+        card_actions = {
+            "select_letter_b": "B",
+            "select_letter_d": "D",
+            "select_letter_p": "P",
+            "select_letter_a": "A",
+        }
+        selected_letter = card_actions.get(action)
+        if selected_letter is None:
+            return
+
+        if selected_letter == target_letter:
+            stars_earned = calculate_stars(True, self.state.current_hint_level)
+            self.learner.update_correct_streak()
+            update_score(self.learner, stars_earned)
+            self.learner.mark_letter_mastered(target_letter)
+            check_badge_unlocks(self.learner)
+            self.state.current_hint_level = 0
+            self.voice.speak("Great job! This is B.")
+            self.set_screen("letter_correct_feedback")
+            return
+
+        self.learner.update_wrong_streak()
+        self.learner.record_weak_letter(target_letter)
+        if selected_letter == "D":
+            self.state.last_mistake_type = "visual_letter_confusion"
+        else:
+            self.state.last_mistake_type = "letter_confusion"
+        feedback = get_feedback(
+            False,
+            mistake_type=self.state.last_mistake_type,
+            target=target_letter,
+            selected=selected_letter,
+        )
+        self.set_screen("letter_mistake_hint")
+        self.voice.speak(feedback["message"])
+
     def _speak_for_screen(self, screen_id: str) -> None:
         if not self.state.voice_enabled:
             return
 
-        if screen_id in {"welcome", "how_to_play", "world_map", "voice_challenge", "listening_state", "offline_continue"}:
+        if screen_id == "welcome":
+            self.voice.speak(get_lumi_speech(screen_id))
+            return
+
+        if screen_id == "how_to_play":
+            self.voice.speak(get_lumi_speech(screen_id))
+            return
+
+        if screen_id == "world_map":
+            self.voice.speak(get_lumi_speech(screen_id))
+            return
+
+        if screen_id == "letter_island_game":
+            self.voice.speak(self.state.current_task_prompt or get_lumi_speech(screen_id, self.state.current_task_target))
+            return
+
+        if screen_id in {"voice_challenge", "listening_state", "offline_continue"}:
             self.voice.speak(get_lumi_speech(screen_id))
             return
 
