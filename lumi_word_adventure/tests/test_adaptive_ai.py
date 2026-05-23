@@ -96,7 +96,7 @@ def test_diagnosis_helpers_return_expected_labels() -> None:
     letters = load_letters()
 
     assert diagnose_letter_mistake("B", "D") == "bd_confusion"
-    assert diagnose_word_mistake("cat", "dog", load_vocabulary()) == "cat_dog_confusion"
+    assert diagnose_word_mistake("cat", "dog", load_vocabulary()) == "same_category_vocabulary_confusion"
     assert diagnose_sentence_mistake(["I", "see", "a", "cat"], ["see", "I", "a", "cat"]) == "word_order"
     assert choose_hint({"weak_letters": {"B": 2}, "hint_usage": {}}, "letter", "bd_confusion") == "B has a belly. D has a drum."
     assert choose_next_question({"weak_letters": {"B": 2}}, letters, "letter")["activity"] == "bd_practice"

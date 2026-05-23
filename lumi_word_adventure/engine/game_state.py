@@ -21,6 +21,11 @@ class GameState:
     current_task_target: str = ""
     current_hint_level: int = 0
     letter_demo_mode: bool = True
+    preserve_word_garden_task: bool = False
+    current_word_mode: str = ""
+    word_garden_support: str = ""
+    last_word_selected: str = ""
+    last_word_feedback_message: str = ""
     bd_practice_target: str = ""
     bd_practice_step: int = 0
     bd_confusion_attempts: int = 0

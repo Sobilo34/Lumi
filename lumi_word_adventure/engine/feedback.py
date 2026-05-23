@@ -32,9 +32,14 @@ def get_feedback(
     if mistake_type == "bd_confusion":
         return _feedback_payload("incorrect", "Good try! B has a belly. D has a drum.")
 
+    if mistake_type == "same_category_vocabulary_confusion":
+        if selected:
+            return _feedback_payload("incorrect", f"This is {selected}. A cat says meow. Find the cat.")
+        return _feedback_payload("incorrect", "This is dog. A cat says meow. Find the cat.")
+
     if mistake_type == "word_confusion":
         if target and selected:
-            return _feedback_payload("incorrect", f"This is {target}. A {selected} says meow.")
+            return _feedback_payload("incorrect", f"This is {selected}. Look for the cat.")
         if target:
             return _feedback_payload("incorrect", f"This is {target}. Let’s look again.")
         return _feedback_payload("incorrect", "Good try! Let’s look again.")
@@ -105,6 +110,8 @@ def get_lumi_speech(screen_id: str, current_task: str | None = None) -> str:
         return "B has a belly. D has a drum."
     if screen == "word_garden_game":
         return f"Touch the word you hear, {task}." if task else "Touch the word you hear."
+    if screen == "word_correct_feedback":
+        return f"Wonderful! {task.capitalize()}." if task else "Wonderful!"
     if screen == "sentence_castle_game":
         return f"Put the sentence together, {task}." if task else "Put the sentence together."
     if screen == "voice_challenge":

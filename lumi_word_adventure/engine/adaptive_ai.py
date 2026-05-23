@@ -111,7 +111,7 @@ def diagnose_word_mistake(target: str, selected: str, vocabulary_data: Any) -> s
     if target_word == selected_word:
         return "correct"
     if {target_word, selected_word} == {"cat", "dog"}:
-        return "cat_dog_confusion"
+        return "same_category_vocabulary_confusion"
 
     vocabulary = _iter_questions(vocabulary_data)
     confusable_map: dict[str, set[str]] = {}
@@ -377,7 +377,7 @@ def choose_hint(profile: Any, activity_type: str, mistake_type: str) -> str:
 
     if activity == "word":
         focus_word = has_repeated_weak_word(profile_dict)
-        if mistake == "cat_dog_confusion" or focus_word in {"cat", "dog"}:
+        if mistake in {"cat_dog_confusion", "same_category_vocabulary_confusion"} or focus_word in {"cat", "dog"}:
             return "Cat says meow. Dog says woof."
         if focus_word:
             return f"Look for the word {focus_word}."

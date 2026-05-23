@@ -5,11 +5,13 @@ import pygame
 
 from config import DEBUG_HITBOXES, SPLASH_DURATION_MS, VOICE_ENABLED_DEFAULT, VOICE_FALLBACK_SCREEN_ID
 from engine.asset_manager import AssetManager
+from engine.adaptive_ai import choose_hint, choose_next_question, diagnose_word_mistake, recommend_practice
 from engine.feedback import get_feedback, get_hint, get_lumi_speech
 from engine.game_state import GameState
 from engine.learner_model import LearnerModel
 from engine.screen_registry import ScreenRegistry
 from engine.scoring import calculate_stars, check_badge_unlocks, update_score
+from data_loader import load_vocabulary
 from reports.report_generator import generate_report
 from ui.screens import create_screen_with_hitboxes
 from voice.text_to_speech import TextToSpeech
@@ -25,6 +27,7 @@ class GameEngine:
         self.voice = TextToSpeech(enabled=VOICE_ENABLED_DEFAULT)
         self.learner = LearnerModel()
         self.state = GameState(splash_started_at=pygame.time.get_ticks())
+        self.word_questions = load_vocabulary()
         self.voice.set_enabled(self.state.voice_enabled)
         self._configure_letter_island_task()
         self.screens = {
@@ -40,6 +43,11 @@ class GameEngine:
 
     def change_screen(self, screen_id: str) -> None:
         if screen_id in self.screens:
+            if screen_id == "word_garden_game":
+                if self.state.preserve_word_garden_task:
+                    self.state.preserve_word_garden_task = False
+                else:
+                    self._configure_word_garden_task()
             self.state.current_screen_id = screen_id
             self.current_screen = self.screens[screen_id]
             self.state.history.append(screen_id)
@@ -60,6 +68,53 @@ class GameEngine:
         self.state.current_task_target = target_letter
         self.state.current_task_prompt = f"Find the letter {target_letter}."
         self.state.current_hint_level = 0
+
+    def _configure_word_garden_task(self) -> None:
+        recommendation = recommend_practice(self.learner)
+        next_question = choose_next_question(self.learner, self.word_questions, "word")
+        question = next_question.get("question") or {}
+        target_word = str(question.get("word") or "cat").strip().lower() or "cat"
+        prompt = str(question.get("prompt") or f"Touch the {target_word}").strip()
+        if not prompt.endswith((".", "!", "?")):
+            prompt = f"{prompt}."
+
+        self.state.current_task_target = target_word
+        self.state.current_task_prompt = prompt
+        self.state.current_hint_level = 0
+        self.state.current_word_mode = str(next_question.get("reason") or recommendation.get("reason") or "")
+        self.state.word_garden_support = str(next_question.get("support") or recommendation.get("support") or "")
+        self.state.last_word_selected = ""
+        self.state.last_word_feedback_message = ""
+
+    def _word_garden_hint_message(self) -> str:
+        target_word = self.state.current_task_target or "cat"
+        level = self.state.current_hint_level
+
+        if target_word == "cat":
+            if level <= 1:
+                if self.state.last_mistake_type:
+                    return choose_hint(self.learner, "word", self.state.last_mistake_type)
+                return "Look for the cat."
+            return "Cat says meow. Find the cat."
+
+        if level <= 1:
+            return f"Look for the {target_word}."
+        return f"{target_word.capitalize()} is the word you want."
+
+    def _word_garden_correct_message(self) -> str:
+        target_word = self.state.current_task_target or "cat"
+        return f"Wonderful! {target_word.capitalize()}."
+
+    def _word_garden_mistake_message(self, selected_word: str) -> str:
+        target_word = self.state.current_task_target or "cat"
+        if self.state.last_mistake_type == "same_category_vocabulary_confusion" or {
+            target_word,
+            selected_word,
+        } == {"cat", "dog"}:
+            return "This is dog. A cat says meow. Find the cat."
+        if target_word == "cat":
+            return f"This is {selected_word}. A cat says meow. Find the cat."
+        return f"This is {selected_word}. Look for {target_word}."
 
     def _advance_bd_practice(self) -> None:
         if self.state.bd_practice_target == "B":
@@ -112,8 +167,26 @@ class GameEngine:
         if action in self.screens:
             self.set_screen(action)
             return
-        if action == "back" or action == "home":
+        if action == "back":
             self.set_screen("main_menu")
+            return
+        if action == "home":
+            if self.state.current_screen_id in {
+                "world_map",
+                "letter_island_game",
+                "letter_correct_feedback",
+                "letter_mistake_hint",
+                "word_garden_game",
+                "word_correct_feedback",
+                "word_mistake_hint",
+                "bd_practice",
+                "sentence_castle_game",
+                "sentence_mistake_hint",
+                "sentence_correct_feedback",
+            }:
+                self.set_screen("world_map")
+            else:
+                self.set_screen("main_menu")
             return
         if action == "go_to_profile_selection":
             self.set_screen("profile_selection")
@@ -159,6 +232,77 @@ class GameEngine:
                     self.learner.record_hint_usage(self.state.current_hint_level)
                     stronger_hint = get_hint("letter", self.state.current_hint_level, self.state.current_task_target or "B")
                     self.voice.speak(stronger_hint)
+                return
+        if self.state.current_screen_id == "word_garden_game":
+            if action == "repeat_prompt":
+                self.voice.speak(self.state.current_task_prompt or "Touch the cat.")
+                return
+            if action == "show_hint":
+                self.state.current_hint_level += 1
+                self.state.last_word_feedback_message = self._word_garden_hint_message()
+                self.set_screen("word_mistake_hint")
+                return
+            if action == "voice_mode":
+                self.set_screen("voice_challenge")
+                return
+            if action in {"answer_cat_correct", "answer_dog_wrong", "answer_sun_wrong", "answer_ball_wrong"}:
+                selected_word = {
+                    "answer_cat_correct": "cat",
+                    "answer_dog_wrong": "dog",
+                    "answer_sun_wrong": "sun",
+                    "answer_ball_wrong": "ball",
+                }[action]
+                target_word = self.state.current_task_target or "cat"
+                self.state.last_word_selected = selected_word
+                if selected_word == target_word:
+                    stars_earned = calculate_stars(True, self.state.current_hint_level)
+                    self.learner.update_correct_streak()
+                    update_score(self.learner, stars_earned)
+                    self.learner.mark_word_mastered(target_word)
+                    check_badge_unlocks(self.learner)
+                    self.state.current_hint_level = 0
+                    self.state.last_word_feedback_message = self._word_garden_correct_message()
+                    self.set_screen("word_correct_feedback")
+                    return
+
+                self.learner.update_wrong_streak()
+                self.learner.record_weak_word(target_word)
+                mistake_type = diagnose_word_mistake(target_word, selected_word, self.word_questions)
+                self.state.last_mistake_type = mistake_type
+                self.state.last_word_feedback_message = get_feedback(
+                    False,
+                    mistake_type=mistake_type,
+                    target=target_word,
+                    selected=selected_word,
+                )["message"]
+                self.state.current_hint_level = 1
+                self.set_screen("word_mistake_hint")
+                return
+            if action == "play_cat_sound":
+                self.voice.speak("Cat says meow.")
+                return
+        if self.state.current_screen_id == "word_correct_feedback":
+            if action == "next_voice_challenge":
+                self.set_screen("voice_challenge")
+                return
+            if action == "home":
+                self.set_screen("world_map")
+                return
+        if self.state.current_screen_id == "word_mistake_hint":
+            if action == "try_again":
+                self.state.preserve_word_garden_task = True
+                self.set_screen("word_garden_game")
+                return
+            if action == "repeat_prompt":
+                self.voice.speak(self.state.current_task_prompt or "Touch the cat.")
+                return
+            if action == "show_next_hint":
+                self.state.current_hint_level += 1
+                self.state.last_word_feedback_message = self._word_garden_hint_message()
+                self.voice.speak(self.state.last_word_feedback_message)
+                return
+            if action == "play_cat_sound":
+                self.voice.speak("Cat says meow.")
                 return
         if self.state.current_screen_id == "bd_practice":
             if action == "repeat_bd_prompt":
@@ -308,6 +452,18 @@ class GameEngine:
             self.voice.speak(self.state.current_task_prompt or get_lumi_speech(screen_id, self.state.current_task_target))
             return
 
+        if screen_id == "word_garden_game":
+            self.voice.speak(self.state.current_task_prompt or "Touch the cat.")
+            return
+
+        if screen_id == "word_correct_feedback":
+            self.voice.speak(self.state.last_word_feedback_message or self._word_garden_correct_message())
+            return
+
+        if screen_id == "word_mistake_hint":
+            self.voice.speak(self.state.last_word_feedback_message or self._word_garden_hint_message())
+            return
+
         if screen_id == "bd_practice":
             target_letter = self.state.bd_practice_target or "B"
             self.voice.speak(f"B has a belly. D has a drum. Find {target_letter}.")
@@ -317,15 +473,15 @@ class GameEngine:
             self.voice.speak(get_lumi_speech(screen_id))
             return
 
-        if screen_id in {"letter_island_game", "word_garden_game", "sentence_castle_game"}:
+        if screen_id in {"letter_island_game", "sentence_castle_game"}:
             self.voice.speak(get_lumi_speech(screen_id))
             return
 
-        if screen_id in {"letter_correct_feedback", "word_correct_feedback", "sentence_correct_feedback", "voice_correct_feedback"}:
+        if screen_id in {"letter_correct_feedback", "sentence_correct_feedback", "voice_correct_feedback"}:
             self.voice.speak(get_feedback(True)["message"])
             return
 
-        if screen_id in {"letter_mistake_hint", "word_mistake_hint", "sentence_mistake_hint"}:
+        if screen_id in {"letter_mistake_hint", "sentence_mistake_hint"}:
             self.voice.speak(get_feedback("hint")["message"])
             return
 
