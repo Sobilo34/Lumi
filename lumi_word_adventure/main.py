@@ -23,6 +23,7 @@ def main() -> None:
             pygame.display.flip()
             clock.tick(FPS)
     finally:
+        engine.stop()
         pygame.quit()
 
 

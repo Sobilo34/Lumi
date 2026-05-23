@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from config import DEFAULT_DIFFICULTY
+from config import DEFAULT_DIFFICULTY, VOICE_ENABLED_DEFAULT
 
 
 @dataclass
@@ -15,4 +15,5 @@ class GameState:
     splash_started_at: int = 0
     stars: int = 0
     difficulty: int = DEFAULT_DIFFICULTY
+    voice_enabled: bool = VOICE_ENABLED_DEFAULT
     history: list[str] = field(default_factory=list)

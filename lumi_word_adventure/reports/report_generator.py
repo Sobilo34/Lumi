@@ -8,7 +8,7 @@ import json
 def generate_report(profile: dict, output_path: str | Path | None = None) -> dict:
     report = {
         "child_name": profile.get("child_name", "Player 1"),
-        "stars": profile.get("stars", 0),
+        "stars": profile.get("total_stars", profile.get("stars", 0)),
         "difficulty": profile.get("difficulty", 1),
         "attempts": profile.get("attempts", 0),
         "correct_answers": profile.get("correct_answers", 0),
