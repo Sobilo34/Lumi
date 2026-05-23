@@ -1,8 +1,6 @@
 """Image-backed screen rendering."""
 from __future__ import annotations
 
-from pathlib import Path
-
 import pygame
 
 from config import BABY_PINK, DEBUG_HITBOXES, REFERENCE_INTERFACES_DIR, SCREEN_HEIGHT, SCREEN_WIDTH
@@ -13,18 +11,18 @@ from ui.hitboxes import Hitbox
 class BaseScreen:
     def __init__(
         self,
-        image_path: Path | None = None,
+        image_filename: str | None = None,
         hitboxes: list[Hitbox] | None = None,
         asset_manager: AssetManager | None = None,
     ) -> None:
-        self.image_path = Path(image_path) if image_path is not None else None
+        self.image_filename = image_filename
         self.hitboxes = hitboxes or []
         self.asset_manager = asset_manager or AssetManager()
         self.image = self._load_background()
 
     def _load_background(self) -> pygame.Surface:
-        if self.image_path is not None and self.image_path.exists():
-            return self.asset_manager.load_image(self.image_path.name)
+        if self.image_filename is not None:
+            return self.asset_manager.load_image(self.image_filename)
         surface = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
         surface.fill(pygame.Color(BABY_PINK))
         return surface
@@ -51,24 +49,5 @@ class BaseScreen:
         return None
 
 
-def build_screen_from_spec(spec: dict, asset_manager: AssetManager | None = None) -> BaseScreen:
-    image_path = REFERENCE_INTERFACES_DIR / spec["background_image"]
-    hitboxes = [
-        Hitbox.from_normalized(
-            entry.get("name", entry.get("action", "hitbox")),
-            (SCREEN_WIDTH, SCREEN_HEIGHT),
-            entry["x_pct"],
-            entry["y_pct"],
-            entry["w_pct"],
-            entry["h_pct"],
-            action=entry.get("action", ""),
-            target=entry.get("target", ""),
-        )
-        for entry in spec.get("hitboxes_normalized_for_1280x720", [])
-    ]
-    return BaseScreen(image_path=image_path, hitboxes=hitboxes, asset_manager=asset_manager)
-
-
-def create_temporary_splash_test_screen(asset_manager: AssetManager | None = None) -> BaseScreen:
-    splash_image = REFERENCE_INTERFACES_DIR / "01_splash_loading.png"
-    return BaseScreen(image_path=splash_image, hitboxes=[], asset_manager=asset_manager)
+def create_screen(image_filename: str, asset_manager: AssetManager | None = None) -> BaseScreen:
+    return BaseScreen(image_filename=image_filename, hitboxes=[], asset_manager=asset_manager)

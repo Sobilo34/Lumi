@@ -8,7 +8,7 @@ from config import DEFAULT_DIFFICULTY
 
 @dataclass
 class GameState:
-    current_screen_id: str = "01_splash_loading"
+    current_screen_id: str = "splash_loading"
     selected_profile: str = "player_1"
     running: bool = True
     last_action: str = ""
