@@ -1,0 +1,18 @@
+[
+  {
+    "id": "letter_B",
+    "letter": "B",
+    "sound": "/b/",
+    "example_word": "ball",
+    "difficulty": 1,
+    "confusable_with": ["D", "P"]
+  },
+  {
+    "id": "letter_D",
+    "letter": "D",
+    "sound": "/d/",
+    "example_word": "dog",
+    "difficulty": 1,
+    "confusable_with": ["B"]
+  }
+]

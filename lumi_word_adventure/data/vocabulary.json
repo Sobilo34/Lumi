@@ -1,0 +1,18 @@
+[
+  {
+    "id": "word_cat",
+    "word": "cat",
+    "category": "animal",
+    "difficulty": 1,
+    "starting_letter": "C",
+    "spoken_prompt": "Touch the cat"
+  },
+  {
+    "id": "word_apple",
+    "word": "apple",
+    "category": "food",
+    "difficulty": 1,
+    "starting_letter": "A",
+    "spoken_prompt": "Say apple"
+  }
+]

@@ -1,0 +1,9 @@
+pygame
+Pillow
+pyttsx3
+vosk
+SpeechRecognition
+pyaudio
+rapidfuzz
+pytest
+matplotlib

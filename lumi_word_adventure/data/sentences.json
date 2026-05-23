@@ -1,0 +1,8 @@
+[
+  {
+    "id": "sentence_1",
+    "sentence": "I see a cat",
+    "words": ["I", "see", "a", "cat"],
+    "difficulty": 1
+  }
+]

@@ -1,0 +1,1309 @@
+{
+  "project": "Lumi's Word Adventure",
+  "mcp_version": "1.0",
+  "visual_contract": "Use the provided reference image files as exact scene backgrounds. Do not redesign. Scale every reference image to 1280x720 and overlay transparent hitboxes and optional effects only.",
+  "screens": [
+    {
+      "id": "01_splash_loading",
+      "title": "Splash / Loading Screen",
+      "background_image": "reference_interfaces/01_splash_loading.png",
+      "source_size_px": {
+        "width": 1672,
+        "height": 941
+      },
+      "target_size_px": {
+        "width": 1280,
+        "height": 720
+      },
+      "purpose": "Initial loading/splash screen. Auto-transition to welcome after 1.5-2s.",
+      "hitboxes_normalized_for_1280x720": []
+    },
+    {
+      "id": "02_welcome_start",
+      "title": "Welcome Screen",
+      "background_image": "reference_interfaces/02_welcome_start.png",
+      "source_size_px": {
+        "width": 1672,
+        "height": 941
+      },
+      "target_size_px": {
+        "width": 1280,
+        "height": 720
+      },
+      "purpose": "Welcome/start state. Start begins profile selection or main menu.",
+      "hitboxes_normalized_for_1280x720": [
+        {
+          "name": "Start button",
+          "x_pct": 0.38,
+          "y_pct": 0.78,
+          "w_pct": 0.24,
+          "h_pct": 0.13,
+          "target": "03_profile_selection",
+          "action": "go_to_profile_selection"
+        },
+        {
+          "name": "speaker icon",
+          "x_pct": 0.02,
+          "y_pct": 0.04,
+          "w_pct": 0.06,
+          "h_pct": 0.1,
+          "target": "",
+          "action": "repeat_welcome_audio"
+        }
+      ]
+    },
+    {
+      "id": "03_profile_selection",
+      "title": "Child Profile Selection",
+      "background_image": "reference_interfaces/03_profile_selection.png",
+      "source_size_px": {
+        "width": 1672,
+        "height": 941
+      },
+      "target_size_px": {
+        "width": 1280,
+        "height": 720
+      },
+      "purpose": "Select child profile.",
+      "hitboxes_normalized_for_1280x720": [
+        {
+          "name": "Back",
+          "x_pct": 0.01,
+          "y_pct": 0.02,
+          "w_pct": 0.07,
+          "h_pct": 0.1,
+          "target": "02_welcome_start",
+          "action": "back"
+        },
+        {
+          "name": "Settings",
+          "x_pct": 0.91,
+          "y_pct": 0.03,
+          "w_pct": 0.07,
+          "h_pct": 0.1,
+          "target": "25_settings",
+          "action": "open_settings"
+        },
+        {
+          "name": "Player 1",
+          "x_pct": 0.22,
+          "y_pct": 0.28,
+          "w_pct": 0.18,
+          "h_pct": 0.45,
+          "target": "04_main_menu",
+          "action": "select_player_1"
+        },
+        {
+          "name": "Player 2",
+          "x_pct": 0.43,
+          "y_pct": 0.28,
+          "w_pct": 0.18,
+          "h_pct": 0.45,
+          "target": "04_main_menu",
+          "action": "select_player_2"
+        },
+        {
+          "name": "New Player",
+          "x_pct": 0.65,
+          "y_pct": 0.28,
+          "w_pct": 0.18,
+          "h_pct": 0.45,
+          "target": "04_main_menu",
+          "action": "create_new_player"
+        }
+      ]
+    },
+    {
+      "id": "04_main_menu",
+      "title": "Main Menu",
+      "background_image": "reference_interfaces/04_main_menu.png",
+      "source_size_px": {
+        "width": 1672,
+        "height": 941
+      },
+      "target_size_px": {
+        "width": 1280,
+        "height": 720
+      },
+      "purpose": "Main navigation menu.",
+      "hitboxes_normalized_for_1280x720": [
+        {
+          "name": "Play",
+          "x_pct": 0.57,
+          "y_pct": 0.19,
+          "w_pct": 0.33,
+          "h_pct": 0.17,
+          "target": "05_instruction_how_to_play",
+          "action": "start_play"
+        },
+        {
+          "name": "Practice",
+          "x_pct": 0.57,
+          "y_pct": 0.4,
+          "w_pct": 0.33,
+          "h_pct": 0.16,
+          "target": "23_practice_weak_skills",
+          "action": "open_practice"
+        },
+        {
+          "name": "Report",
+          "x_pct": 0.57,
+          "y_pct": 0.59,
+          "w_pct": 0.33,
+          "h_pct": 0.15,
+          "target": "24_teacher_report",
+          "action": "open_report"
+        },
+        {
+          "name": "Settings",
+          "x_pct": 0.57,
+          "y_pct": 0.76,
+          "w_pct": 0.33,
+          "h_pct": 0.15,
+          "target": "25_settings",
+          "action": "open_settings"
+        },
+        {
+          "name": "speaker",
+          "x_pct": 0.02,
+          "y_pct": 0.04,
+          "w_pct": 0.07,
+          "h_pct": 0.1,
+          "target": "",
+          "action": "toggle_or_repeat_audio"
+        },
+        {
+          "name": "star/profile",
+          "x_pct": 0.88,
+          "y_pct": 0.03,
+          "w_pct": 0.07,
+          "h_pct": 0.1,
+          "target": "",
+          "action": "show_stars_or_profile"
+        }
+      ]
+    },
+    {
+      "id": "05_instruction_how_to_play",
+      "title": "Instruction / How to Play",
+      "background_image": "reference_interfaces/05_instruction_how_to_play.png",
+      "source_size_px": {
+        "width": 1672,
+        "height": 941
+      },
+      "target_size_px": {
+        "width": 1280,
+        "height": 720
+      },
+      "purpose": "Explain Listen, Tap, Speak, Earn Stars using icons.",
+      "hitboxes_normalized_for_1280x720": [
+        {
+          "name": "Let's Go",
+          "x_pct": 0.34,
+          "y_pct": 0.82,
+          "w_pct": 0.31,
+          "h_pct": 0.13,
+          "target": "06_world_map",
+          "action": "go_to_world_map"
+        },
+        {
+          "name": "repeat audio",
+          "x_pct": 0.7,
+          "y_pct": 0.82,
+          "w_pct": 0.08,
+          "h_pct": 0.13,
+          "target": "",
+          "action": "repeat_instruction"
+        }
+      ]
+    },
+    {
+      "id": "06_world_map",
+      "title": "World Map",
+      "background_image": "reference_interfaces/06_world_map.png",
+      "source_size_px": {
+        "width": 1672,
+        "height": 941
+      },
+      "target_size_px": {
+        "width": 1280,
+        "height": 720
+      },
+      "purpose": "Choose world: Letter Island, Word Garden, Sentence Castle.",
+      "hitboxes_normalized_for_1280x720": [
+        {
+          "name": "Home",
+          "x_pct": 0.01,
+          "y_pct": 0.02,
+          "w_pct": 0.06,
+          "h_pct": 0.1,
+          "target": "04_main_menu",
+          "action": "home"
+        },
+        {
+          "name": "My Words",
+          "x_pct": 0.87,
+          "y_pct": 0.12,
+          "w_pct": 0.08,
+          "h_pct": 0.13,
+          "target": "23_practice_weak_skills",
+          "action": "open_my_words"
+        },
+        {
+          "name": "Letter Island",
+          "x_pct": 0.12,
+          "y_pct": 0.4,
+          "w_pct": 0.22,
+          "h_pct": 0.33,
+          "target": "07_letter_island_gameplay",
+          "action": "open_letter_island"
+        },
+        {
+          "name": "Word Garden",
+          "x_pct": 0.39,
+          "y_pct": 0.38,
+          "w_pct": 0.22,
+          "h_pct": 0.35,
+          "target": "11_word_garden_gameplay",
+          "action": "open_word_garden"
+        },
+        {
+          "name": "Sentence Castle",
+          "x_pct": 0.68,
+          "y_pct": 0.38,
+          "w_pct": 0.24,
+          "h_pct": 0.36,
+          "target": "17_sentence_castle_gameplay",
+          "action": "open_sentence_castle"
+        }
+      ]
+    },
+    {
+      "id": "07_letter_island_gameplay",
+      "title": "Letter Island Gameplay",
+      "background_image": "reference_interfaces/07_letter_island_gameplay.png",
+      "source_size_px": {
+        "width": 1672,
+        "height": 941
+      },
+      "target_size_px": {
+        "width": 1280,
+        "height": 720
+      },
+      "purpose": "Find B among B, D, P, A.",
+      "hitboxes_normalized_for_1280x720": [
+        {
+          "name": "Home",
+          "x_pct": 0.01,
+          "y_pct": 0.02,
+          "w_pct": 0.06,
+          "h_pct": 0.1,
+          "target": "06_world_map",
+          "action": "home"
+        },
+        {
+          "name": "Settings",
+          "x_pct": 0.92,
+          "y_pct": 0.02,
+          "w_pct": 0.06,
+          "h_pct": 0.1,
+          "target": "25_settings",
+          "action": "settings"
+        },
+        {
+          "name": "Card B",
+          "x_pct": 0.29,
+          "y_pct": 0.41,
+          "w_pct": 0.13,
+          "h_pct": 0.25,
+          "target": "08_letter_correct_feedback",
+          "action": "answer_correct_B"
+        },
+        {
+          "name": "Card D",
+          "x_pct": 0.43,
+          "y_pct": 0.41,
+          "w_pct": 0.13,
+          "h_pct": 0.25,
+          "target": "09_letter_mistake_hint",
+          "action": "answer_wrong_D"
+        },
+        {
+          "name": "Card P",
+          "x_pct": 0.57,
+          "y_pct": 0.41,
+          "w_pct": 0.13,
+          "h_pct": 0.25,
+          "target": "09_letter_mistake_hint",
+          "action": "answer_wrong_P"
+        },
+        {
+          "name": "Card A",
+          "x_pct": 0.71,
+          "y_pct": 0.41,
+          "w_pct": 0.13,
+          "h_pct": 0.25,
+          "target": "09_letter_mistake_hint",
+          "action": "answer_wrong_A"
+        },
+        {
+          "name": "Repeat",
+          "x_pct": 0.31,
+          "y_pct": 0.77,
+          "w_pct": 0.1,
+          "h_pct": 0.18,
+          "target": "",
+          "action": "repeat_prompt"
+        },
+        {
+          "name": "Hint",
+          "x_pct": 0.45,
+          "y_pct": 0.77,
+          "w_pct": 0.11,
+          "h_pct": 0.18,
+          "target": "09_letter_mistake_hint",
+          "action": "show_hint"
+        },
+        {
+          "name": "Speak",
+          "x_pct": 0.6,
+          "y_pct": 0.77,
+          "w_pct": 0.1,
+          "h_pct": 0.18,
+          "target": "14_voice_say_apple",
+          "action": "voice_or_speak_mode"
+        }
+      ]
+    },
+    {
+      "id": "08_letter_correct_feedback",
+      "title": "Letter Island Correct Feedback",
+      "background_image": "reference_interfaces/08_letter_correct_feedback.png",
+      "source_size_px": {
+        "width": 1672,
+        "height": 941
+      },
+      "target_size_px": {
+        "width": 1280,
+        "height": 720
+      },
+      "purpose": "Correct letter feedback. Navigate next.",
+      "hitboxes_normalized_for_1280x720": [
+        {
+          "name": "Next",
+          "x_pct": 0.36,
+          "y_pct": 0.79,
+          "w_pct": 0.29,
+          "h_pct": 0.15,
+          "target": "11_word_garden_gameplay",
+          "action": "next_activity"
+        }
+      ]
+    },
+    {
+      "id": "09_letter_mistake_hint",
+      "title": "Letter Island Mistake + Hint",
+      "background_image": "reference_interfaces/09_letter_mistake_hint.png",
+      "source_size_px": {
+        "width": 1672,
+        "height": 941
+      },
+      "target_size_px": {
+        "width": 1280,
+        "height": 720
+      },
+      "purpose": "Wrong letter with friendly B/D hint.",
+      "hitboxes_normalized_for_1280x720": [
+        {
+          "name": "Try Again",
+          "x_pct": 0.26,
+          "y_pct": 0.8,
+          "w_pct": 0.17,
+          "h_pct": 0.12,
+          "target": "07_letter_island_gameplay",
+          "action": "try_again"
+        },
+        {
+          "name": "Repeat",
+          "x_pct": 0.45,
+          "y_pct": 0.8,
+          "w_pct": 0.17,
+          "h_pct": 0.12,
+          "target": "",
+          "action": "repeat_prompt"
+        },
+        {
+          "name": "Hint",
+          "x_pct": 0.64,
+          "y_pct": 0.8,
+          "w_pct": 0.17,
+          "h_pct": 0.12,
+          "target": "10_letter_bd_practice",
+          "action": "next_hint_or_bd_practice"
+        }
+      ]
+    },
+    {
+      "id": "10_letter_bd_practice",
+      "title": "B/D Adaptive Practice",
+      "background_image": "reference_interfaces/10_letter_bd_practice.png",
+      "source_size_px": {
+        "width": 1672,
+        "height": 941
+      },
+      "target_size_px": {
+        "width": 1280,
+        "height": 720
+      },
+      "purpose": "Adaptive practice for B vs D confusion.",
+      "hitboxes_normalized_for_1280x720": [
+        {
+          "name": "Home",
+          "x_pct": 0.01,
+          "y_pct": 0.02,
+          "w_pct": 0.06,
+          "h_pct": 0.1,
+          "target": "06_world_map",
+          "action": "home"
+        },
+        {
+          "name": "Repeat",
+          "x_pct": 0.82,
+          "y_pct": 0.05,
+          "w_pct": 0.07,
+          "h_pct": 0.12,
+          "target": "",
+          "action": "repeat_bd_prompt"
+        },
+        {
+          "name": "Hint",
+          "x_pct": 0.91,
+          "y_pct": 0.05,
+          "w_pct": 0.07,
+          "h_pct": 0.12,
+          "target": "",
+          "action": "bd_hint"
+        },
+        {
+          "name": "Answer B",
+          "x_pct": 0.26,
+          "y_pct": 0.78,
+          "w_pct": 0.24,
+          "h_pct": 0.13,
+          "target": "08_letter_correct_feedback",
+          "action": "answer_B"
+        },
+        {
+          "name": "Answer D",
+          "x_pct": 0.53,
+          "y_pct": 0.78,
+          "w_pct": 0.24,
+          "h_pct": 0.13,
+          "target": "09_letter_mistake_hint",
+          "action": "answer_D"
+        }
+      ]
+    },
+    {
+      "id": "11_word_garden_gameplay",
+      "title": "Word Garden Gameplay",
+      "background_image": "reference_interfaces/11_word_garden_gameplay.png",
+      "source_size_px": {
+        "width": 1672,
+        "height": 941
+      },
+      "target_size_px": {
+        "width": 1280,
+        "height": 720
+      },
+      "purpose": "Touch the cat among cat, dog, sun, ball.",
+      "hitboxes_normalized_for_1280x720": [
+        {
+          "name": "Home",
+          "x_pct": 0.01,
+          "y_pct": 0.02,
+          "w_pct": 0.06,
+          "h_pct": 0.1,
+          "target": "06_world_map",
+          "action": "home"
+        },
+        {
+          "name": "Card cat",
+          "x_pct": 0.24,
+          "y_pct": 0.39,
+          "w_pct": 0.14,
+          "h_pct": 0.27,
+          "target": "12_word_correct_feedback",
+          "action": "answer_cat_correct"
+        },
+        {
+          "name": "Card dog",
+          "x_pct": 0.4,
+          "y_pct": 0.39,
+          "w_pct": 0.14,
+          "h_pct": 0.27,
+          "target": "13_word_mistake_hint",
+          "action": "answer_dog_wrong"
+        },
+        {
+          "name": "Card sun",
+          "x_pct": 0.56,
+          "y_pct": 0.39,
+          "w_pct": 0.14,
+          "h_pct": 0.27,
+          "target": "13_word_mistake_hint",
+          "action": "answer_sun_wrong"
+        },
+        {
+          "name": "Card ball",
+          "x_pct": 0.72,
+          "y_pct": 0.39,
+          "w_pct": 0.14,
+          "h_pct": 0.27,
+          "target": "13_word_mistake_hint",
+          "action": "answer_ball_wrong"
+        },
+        {
+          "name": "Repeat",
+          "x_pct": 0.31,
+          "y_pct": 0.77,
+          "w_pct": 0.1,
+          "h_pct": 0.18,
+          "target": "",
+          "action": "repeat_prompt"
+        },
+        {
+          "name": "Hint",
+          "x_pct": 0.45,
+          "y_pct": 0.77,
+          "w_pct": 0.11,
+          "h_pct": 0.18,
+          "target": "13_word_mistake_hint",
+          "action": "show_hint"
+        },
+        {
+          "name": "Speak",
+          "x_pct": 0.6,
+          "y_pct": 0.77,
+          "w_pct": 0.1,
+          "h_pct": 0.18,
+          "target": "14_voice_say_apple",
+          "action": "voice_mode"
+        }
+      ]
+    },
+    {
+      "id": "12_word_correct_feedback",
+      "title": "Word Garden Correct Feedback",
+      "background_image": "reference_interfaces/12_word_correct_feedback.png",
+      "source_size_px": {
+        "width": 1672,
+        "height": 941
+      },
+      "target_size_px": {
+        "width": 1280,
+        "height": 720
+      },
+      "purpose": "Correct cat feedback with flower/star.",
+      "hitboxes_normalized_for_1280x720": [
+        {
+          "name": "Next",
+          "x_pct": 0.37,
+          "y_pct": 0.82,
+          "w_pct": 0.27,
+          "h_pct": 0.13,
+          "target": "14_voice_say_apple",
+          "action": "next_voice_challenge"
+        },
+        {
+          "name": "Home",
+          "x_pct": 0.91,
+          "y_pct": 0.03,
+          "w_pct": 0.07,
+          "h_pct": 0.1,
+          "target": "06_world_map",
+          "action": "home"
+        }
+      ]
+    },
+    {
+      "id": "13_word_mistake_hint",
+      "title": "Word Garden Mistake + Semantic Hint",
+      "background_image": "reference_interfaces/13_word_mistake_hint.png",
+      "source_size_px": {
+        "width": 1672,
+        "height": 941
+      },
+      "target_size_px": {
+        "width": 1280,
+        "height": 720
+      },
+      "purpose": "Wrong semantic answer with cat hint.",
+      "hitboxes_normalized_for_1280x720": [
+        {
+          "name": "Try Again",
+          "x_pct": 0.25,
+          "y_pct": 0.78,
+          "w_pct": 0.2,
+          "h_pct": 0.14,
+          "target": "11_word_garden_gameplay",
+          "action": "try_again"
+        },
+        {
+          "name": "Repeat",
+          "x_pct": 0.48,
+          "y_pct": 0.78,
+          "w_pct": 0.2,
+          "h_pct": 0.14,
+          "target": "",
+          "action": "repeat_prompt"
+        },
+        {
+          "name": "Hint",
+          "x_pct": 0.7,
+          "y_pct": 0.78,
+          "w_pct": 0.16,
+          "h_pct": 0.14,
+          "target": "",
+          "action": "show_next_hint"
+        },
+        {
+          "name": "speaker on cat card",
+          "x_pct": 0.28,
+          "y_pct": 0.42,
+          "w_pct": 0.07,
+          "h_pct": 0.11,
+          "target": "",
+          "action": "play_cat_sound"
+        }
+      ]
+    },
+    {
+      "id": "14_voice_say_apple",
+      "title": "Voice Pronunciation Challenge",
+      "background_image": "reference_interfaces/14_voice_say_apple.png",
+      "source_size_px": {
+        "width": 1672,
+        "height": 941
+      },
+      "target_size_px": {
+        "width": 1280,
+        "height": 720
+      },
+      "purpose": "Voice challenge: say apple.",
+      "hitboxes_normalized_for_1280x720": [
+        {
+          "name": "Repeat",
+          "x_pct": 0.29,
+          "y_pct": 0.79,
+          "w_pct": 0.09,
+          "h_pct": 0.17,
+          "target": "",
+          "action": "repeat_word"
+        },
+        {
+          "name": "Microphone",
+          "x_pct": 0.43,
+          "y_pct": 0.77,
+          "w_pct": 0.16,
+          "h_pct": 0.18,
+          "target": "15_voice_listening",
+          "action": "start_listening"
+        },
+        {
+          "name": "Skip",
+          "x_pct": 0.61,
+          "y_pct": 0.79,
+          "w_pct": 0.09,
+          "h_pct": 0.17,
+          "target": "17_sentence_castle_gameplay",
+          "action": "skip_voice"
+        },
+        {
+          "name": "Help",
+          "x_pct": 0.72,
+          "y_pct": 0.79,
+          "w_pct": 0.09,
+          "h_pct": 0.17,
+          "target": "",
+          "action": "voice_help"
+        }
+      ]
+    },
+    {
+      "id": "15_voice_listening",
+      "title": "Voice Listening State",
+      "background_image": "reference_interfaces/15_voice_listening.png",
+      "source_size_px": {
+        "width": 1672,
+        "height": 941
+      },
+      "target_size_px": {
+        "width": 1280,
+        "height": 720
+      },
+      "purpose": "Microphone listening state.",
+      "hitboxes_normalized_for_1280x720": [
+        {
+          "name": "Stop",
+          "x_pct": 0.35,
+          "y_pct": 0.77,
+          "w_pct": 0.27,
+          "h_pct": 0.15,
+          "target": "16_voice_result_correct",
+          "action": "stop_and_process"
+        },
+        {
+          "name": "Repeat word",
+          "x_pct": 0.67,
+          "y_pct": 0.8,
+          "w_pct": 0.15,
+          "h_pct": 0.1,
+          "target": "",
+          "action": "repeat_word"
+        }
+      ]
+    },
+    {
+      "id": "16_voice_result_correct",
+      "title": "Voice Result Correct",
+      "background_image": "reference_interfaces/16_voice_result_correct.png",
+      "source_size_px": {
+        "width": 1672,
+        "height": 941
+      },
+      "target_size_px": {
+        "width": 1280,
+        "height": 720
+      },
+      "purpose": "Voice result correct: You said apple.",
+      "hitboxes_normalized_for_1280x720": [
+        {
+          "name": "Next",
+          "x_pct": 0.29,
+          "y_pct": 0.8,
+          "w_pct": 0.29,
+          "h_pct": 0.14,
+          "target": "17_sentence_castle_gameplay",
+          "action": "next_activity"
+        },
+        {
+          "name": "Say Again",
+          "x_pct": 0.63,
+          "y_pct": 0.8,
+          "w_pct": 0.2,
+          "h_pct": 0.12,
+          "target": "14_voice_say_apple",
+          "action": "say_again"
+        }
+      ]
+    },
+    {
+      "id": "17_sentence_castle_gameplay",
+      "title": "Sentence Castle Gameplay",
+      "background_image": "reference_interfaces/17_sentence_castle_gameplay.png",
+      "source_size_px": {
+        "width": 1672,
+        "height": 941
+      },
+      "target_size_px": {
+        "width": 1280,
+        "height": 720
+      },
+      "purpose": "Build sentence by dragging I, see, a, cat into slots.",
+      "hitboxes_normalized_for_1280x720": [
+        {
+          "name": "Word I",
+          "x_pct": 0.21,
+          "y_pct": 0.75,
+          "w_pct": 0.14,
+          "h_pct": 0.15,
+          "target": "",
+          "action": "drag_word_I"
+        },
+        {
+          "name": "Word see",
+          "x_pct": 0.38,
+          "y_pct": 0.75,
+          "w_pct": 0.16,
+          "h_pct": 0.15,
+          "target": "",
+          "action": "drag_word_see"
+        },
+        {
+          "name": "Word a",
+          "x_pct": 0.56,
+          "y_pct": 0.75,
+          "w_pct": 0.14,
+          "h_pct": 0.15,
+          "target": "",
+          "action": "drag_word_a"
+        },
+        {
+          "name": "Word cat",
+          "x_pct": 0.71,
+          "y_pct": 0.75,
+          "w_pct": 0.16,
+          "h_pct": 0.15,
+          "target": "",
+          "action": "drag_word_cat"
+        },
+        {
+          "name": "Hint",
+          "x_pct": 0.83,
+          "y_pct": 0.77,
+          "w_pct": 0.07,
+          "h_pct": 0.15,
+          "target": "19_sentence_mistake_hint",
+          "action": "show_hint"
+        },
+        {
+          "name": "Repeat",
+          "x_pct": 0.91,
+          "y_pct": 0.77,
+          "w_pct": 0.07,
+          "h_pct": 0.15,
+          "target": "",
+          "action": "repeat_sentence_prompt"
+        }
+      ]
+    },
+    {
+      "id": "18_sentence_dragging_state",
+      "title": "Sentence Dragging State",
+      "background_image": "reference_interfaces/18_sentence_dragging_state.png",
+      "source_size_px": {
+        "width": 1672,
+        "height": 941
+      },
+      "target_size_px": {
+        "width": 1280,
+        "height": 720
+      },
+      "purpose": "Sentence drag state with I and see placed; a being dragged.",
+      "hitboxes_normalized_for_1280x720": [
+        {
+          "name": "Drop slot 3",
+          "x_pct": 0.51,
+          "y_pct": 0.55,
+          "w_pct": 0.13,
+          "h_pct": 0.13,
+          "target": "",
+          "action": "drop_a"
+        },
+        {
+          "name": "Drop slot 4",
+          "x_pct": 0.64,
+          "y_pct": 0.55,
+          "w_pct": 0.13,
+          "h_pct": 0.13,
+          "target": "",
+          "action": "drop_cat"
+        },
+        {
+          "name": "Hint",
+          "x_pct": 0.84,
+          "y_pct": 0.78,
+          "w_pct": 0.07,
+          "h_pct": 0.15,
+          "target": "19_sentence_mistake_hint",
+          "action": "show_hint"
+        }
+      ]
+    },
+    {
+      "id": "19_sentence_mistake_hint",
+      "title": "Sentence Mistake + Guided Hint",
+      "background_image": "reference_interfaces/19_sentence_mistake_hint.png",
+      "source_size_px": {
+        "width": 1672,
+        "height": 941
+      },
+      "target_size_px": {
+        "width": 1280,
+        "height": 720
+      },
+      "purpose": "Wrong sentence order with guided hint Start with I.",
+      "hitboxes_normalized_for_1280x720": [
+        {
+          "name": "Try Again",
+          "x_pct": 0.28,
+          "y_pct": 0.78,
+          "w_pct": 0.18,
+          "h_pct": 0.13,
+          "target": "17_sentence_castle_gameplay",
+          "action": "try_again"
+        },
+        {
+          "name": "Hint",
+          "x_pct": 0.5,
+          "y_pct": 0.78,
+          "w_pct": 0.18,
+          "h_pct": 0.13,
+          "target": "",
+          "action": "show_next_hint"
+        },
+        {
+          "name": "Repeat",
+          "x_pct": 0.7,
+          "y_pct": 0.78,
+          "w_pct": 0.18,
+          "h_pct": 0.13,
+          "target": "",
+          "action": "repeat_prompt"
+        }
+      ]
+    },
+    {
+      "id": "20_sentence_correct_feedback",
+      "title": "Sentence Correct Feedback",
+      "background_image": "reference_interfaces/20_sentence_correct_feedback.png",
+      "source_size_px": {
+        "width": 1672,
+        "height": 941
+      },
+      "target_size_px": {
+        "width": 1280,
+        "height": 720
+      },
+      "purpose": "Sentence correct feedback with castle door opening.",
+      "hitboxes_normalized_for_1280x720": [
+        {
+          "name": "Next",
+          "x_pct": 0.38,
+          "y_pct": 0.8,
+          "w_pct": 0.24,
+          "h_pct": 0.14,
+          "target": "21_badge_unlock",
+          "action": "next_badge"
+        }
+      ]
+    },
+    {
+      "id": "21_badge_unlock",
+      "title": "Badge Unlock",
+      "background_image": "reference_interfaces/21_badge_unlock.png",
+      "source_size_px": {
+        "width": 1672,
+        "height": 941
+      },
+      "target_size_px": {
+        "width": 1280,
+        "height": 720
+      },
+      "purpose": "Badge unlock screen.",
+      "hitboxes_normalized_for_1280x720": [
+        {
+          "name": "Continue",
+          "x_pct": 0.28,
+          "y_pct": 0.76,
+          "w_pct": 0.22,
+          "h_pct": 0.13,
+          "target": "22_progress_level_complete",
+          "action": "continue"
+        },
+        {
+          "name": "View Badges",
+          "x_pct": 0.55,
+          "y_pct": 0.76,
+          "w_pct": 0.24,
+          "h_pct": 0.13,
+          "target": "",
+          "action": "view_badges"
+        }
+      ]
+    },
+    {
+      "id": "22_progress_level_complete",
+      "title": "Progress / Level Complete",
+      "background_image": "reference_interfaces/22_progress_level_complete.png",
+      "source_size_px": {
+        "width": 1672,
+        "height": 941
+      },
+      "target_size_px": {
+        "width": 1280,
+        "height": 720
+      },
+      "purpose": "Progress path / level complete.",
+      "hitboxes_normalized_for_1280x720": [
+        {
+          "name": "Next World",
+          "x_pct": 0.27,
+          "y_pct": 0.79,
+          "w_pct": 0.28,
+          "h_pct": 0.13,
+          "target": "23_practice_weak_skills",
+          "action": "next_world"
+        },
+        {
+          "name": "Practice Again",
+          "x_pct": 0.58,
+          "y_pct": 0.79,
+          "w_pct": 0.28,
+          "h_pct": 0.13,
+          "target": "23_practice_weak_skills",
+          "action": "practice_again"
+        }
+      ]
+    },
+    {
+      "id": "23_practice_weak_skills",
+      "title": "Practice Weak Skills",
+      "background_image": "reference_interfaces/23_practice_weak_skills.png",
+      "source_size_px": {
+        "width": 1672,
+        "height": 941
+      },
+      "target_size_px": {
+        "width": 1280,
+        "height": 720
+      },
+      "purpose": "AI recommended practice screen.",
+      "hitboxes_normalized_for_1280x720": [
+        {
+          "name": "Practice Letter B/D",
+          "x_pct": 0.16,
+          "y_pct": 0.7,
+          "w_pct": 0.15,
+          "h_pct": 0.12,
+          "target": "10_letter_bd_practice",
+          "action": "practice_bd"
+        },
+        {
+          "name": "Practice word cat",
+          "x_pct": 0.42,
+          "y_pct": 0.7,
+          "w_pct": 0.15,
+          "h_pct": 0.12,
+          "target": "11_word_garden_gameplay",
+          "action": "practice_cat"
+        },
+        {
+          "name": "Practice sentence order",
+          "x_pct": 0.67,
+          "y_pct": 0.7,
+          "w_pct": 0.15,
+          "h_pct": 0.12,
+          "target": "17_sentence_castle_gameplay",
+          "action": "practice_sentence"
+        }
+      ]
+    },
+    {
+      "id": "24_teacher_report",
+      "title": "Teacher / Parent Report",
+      "background_image": "reference_interfaces/24_teacher_report.png",
+      "source_size_px": {
+        "width": 1672,
+        "height": 941
+      },
+      "target_size_px": {
+        "width": 1280,
+        "height": 720
+      },
+      "purpose": "Report showing stars, accuracy, strengths, weak skills, chart, recommendation.",
+      "hitboxes_normalized_for_1280x720": [
+        {
+          "name": "Back",
+          "x_pct": 0.02,
+          "y_pct": 0.03,
+          "w_pct": 0.06,
+          "h_pct": 0.09,
+          "target": "04_main_menu",
+          "action": "back"
+        },
+        {
+          "name": "Recommended Practice B/D",
+          "x_pct": 0.63,
+          "y_pct": 0.6,
+          "w_pct": 0.28,
+          "h_pct": 0.22,
+          "target": "10_letter_bd_practice",
+          "action": "practice_recommendation"
+        }
+      ]
+    },
+    {
+      "id": "25_settings",
+      "title": "Settings",
+      "background_image": "reference_interfaces/25_settings.png",
+      "source_size_px": {
+        "width": 1672,
+        "height": 941
+      },
+      "target_size_px": {
+        "width": 1280,
+        "height": 720
+      },
+      "purpose": "Settings with music, voice, mic test, difficulty, reset progress.",
+      "hitboxes_normalized_for_1280x720": [
+        {
+          "name": "Back",
+          "x_pct": 0.02,
+          "y_pct": 0.03,
+          "w_pct": 0.06,
+          "h_pct": 0.09,
+          "target": "04_main_menu",
+          "action": "back"
+        },
+        {
+          "name": "Home",
+          "x_pct": 0.91,
+          "y_pct": 0.03,
+          "w_pct": 0.07,
+          "h_pct": 0.09,
+          "target": "04_main_menu",
+          "action": "home"
+        },
+        {
+          "name": "Music toggle",
+          "x_pct": 0.72,
+          "y_pct": 0.2,
+          "w_pct": 0.12,
+          "h_pct": 0.08,
+          "target": "",
+          "action": "toggle_music"
+        },
+        {
+          "name": "Voice toggle",
+          "x_pct": 0.72,
+          "y_pct": 0.33,
+          "w_pct": 0.12,
+          "h_pct": 0.08,
+          "target": "",
+          "action": "toggle_voice"
+        },
+        {
+          "name": "Test mic",
+          "x_pct": 0.65,
+          "y_pct": 0.46,
+          "w_pct": 0.17,
+          "h_pct": 0.08,
+          "target": "26_microphone_check",
+          "action": "test_mic"
+        },
+        {
+          "name": "Difficulty dropdown",
+          "x_pct": 0.66,
+          "y_pct": 0.58,
+          "w_pct": 0.16,
+          "h_pct": 0.09,
+          "target": "",
+          "action": "change_difficulty"
+        },
+        {
+          "name": "Reset",
+          "x_pct": 0.69,
+          "y_pct": 0.72,
+          "w_pct": 0.14,
+          "h_pct": 0.08,
+          "target": "",
+          "action": "reset_progress"
+        }
+      ]
+    },
+    {
+      "id": "26_microphone_check",
+      "title": "Microphone Check",
+      "background_image": "reference_interfaces/26_microphone_check.png",
+      "source_size_px": {
+        "width": 1672,
+        "height": 941
+      },
+      "target_size_px": {
+        "width": 1280,
+        "height": 720
+      },
+      "purpose": "Microphone setup/check.",
+      "hitboxes_normalized_for_1280x720": [
+        {
+          "name": "Home",
+          "x_pct": 0.91,
+          "y_pct": 0.03,
+          "w_pct": 0.07,
+          "h_pct": 0.09,
+          "target": "04_main_menu",
+          "action": "home"
+        },
+        {
+          "name": "Test Mic",
+          "x_pct": 0.3,
+          "y_pct": 0.75,
+          "w_pct": 0.3,
+          "h_pct": 0.15,
+          "target": "15_voice_listening",
+          "action": "test_microphone"
+        },
+        {
+          "name": "Skip",
+          "x_pct": 0.64,
+          "y_pct": 0.78,
+          "w_pct": 0.13,
+          "h_pct": 0.1,
+          "target": "04_main_menu",
+          "action": "skip_mic"
+        }
+      ]
+    },
+    {
+      "id": "27_end_session_celebration",
+      "title": "End Session Celebration",
+      "background_image": "reference_interfaces/27_end_session_celebration.png",
+      "source_size_px": {
+        "width": 1672,
+        "height": 941
+      },
+      "target_size_px": {
+        "width": 1280,
+        "height": 720
+      },
+      "purpose": "End of session celebration.",
+      "hitboxes_normalized_for_1280x720": [
+        {
+          "name": "Play Again",
+          "x_pct": 0.25,
+          "y_pct": 0.73,
+          "w_pct": 0.23,
+          "h_pct": 0.13,
+          "target": "06_world_map",
+          "action": "play_again"
+        },
+        {
+          "name": "View Report",
+          "x_pct": 0.53,
+          "y_pct": 0.73,
+          "w_pct": 0.25,
+          "h_pct": 0.13,
+          "target": "24_teacher_report",
+          "action": "view_report"
+        }
+      ]
+    },
+    {
+      "id": "28_continue_offline",
+      "title": "Continue Offline",
+      "background_image": "reference_interfaces/28_continue_offline.png",
+      "source_size_px": {
+        "width": 1672,
+        "height": 941
+      },
+      "target_size_px": {
+        "width": 1280,
+        "height": 720
+      },
+      "purpose": "Offline fallback message.",
+      "hitboxes_normalized_for_1280x720": [
+        {
+          "name": "Continue Offline",
+          "x_pct": 0.36,
+          "y_pct": 0.65,
+          "w_pct": 0.29,
+          "h_pct": 0.13,
+          "target": "04_main_menu",
+          "action": "continue_offline"
+        }
+      ]
+    }
+  ]
+}
