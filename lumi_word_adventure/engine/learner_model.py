@@ -28,6 +28,7 @@ class LearnerModel:
         "mastered_words",
         "completed_worlds",
         "badges",
+        "debug_persistent",
         "attempts",
         "correct_answers",
         "accuracy",
@@ -63,6 +64,7 @@ class LearnerModel:
         profile.setdefault("attempts", 0)
         profile.setdefault("correct_answers", 0)
         profile.setdefault("accuracy", 0.0)
+        profile.setdefault("debug_persistent", False)
         return profile
 
     def _load_or_create_profile(self) -> tuple[dict[str, Any], bool]:

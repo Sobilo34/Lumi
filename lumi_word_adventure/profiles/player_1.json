@@ -16,6 +16,7 @@
   "mastered_words": [],
   "completed_worlds": [],
   "badges": [],
+  "debug_persistent": false,
   "attempts": 1,
   "correct_answers": 0,
   "accuracy": 0.0

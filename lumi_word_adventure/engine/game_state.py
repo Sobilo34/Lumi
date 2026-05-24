@@ -37,3 +37,9 @@ class GameState:
     bd_confusion_attempts: int = 0
     history: list[str] = field(default_factory=list)
     last_unlocked_badges: list[str] = field(default_factory=list)
+    practice_recommendation: dict | None = None
+    debug_persistent: bool = False
+    debug_smoke_duration_ms: int = 5000
+    last_export_path: str | None = None
+    last_export_time_ms: int | None = None
+    export_display_duration_ms: int = 5000

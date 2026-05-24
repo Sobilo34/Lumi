@@ -236,7 +236,17 @@ class ScreenRegistry:
                     HitboxDefinition("View Report", 0.9, 0.05, 0.16, 0.12, action="view_report"),
                 ),
             ),
-            ScreenDefinition("practice_weak_skills", "23_practice_weak_skills.png"),
+            ScreenDefinition(
+                "practice_weak_skills",
+                "23_practice_weak_skills.png",
+                (
+                    # tuned positions/sizes for closer alignment to reference PNG
+                    HitboxDefinition("Practice B", 0.195, 0.455, 0.22, 0.20, action="practice_bd_b"),
+                    HitboxDefinition("Practice D", 0.425, 0.455, 0.22, 0.20, action="practice_bd_d"),
+                    HitboxDefinition("Practice Word Cat", 0.655, 0.455, 0.22, 0.20, action="practice_word_cat"),
+                    HitboxDefinition("Practice Sentence", 0.36, 0.70, 0.48, 0.18, action="practice_sentence_order"),
+                ),
+            ),
             ScreenDefinition("teacher_report", "24_teacher_report.png"),
             ScreenDefinition(
                 "settings",
@@ -249,6 +259,12 @@ class ScreenRegistry:
                     HitboxDefinition("Test Mic", 0.63, 0.46, 0.19, 0.08, target="microphone_check"),
                     HitboxDefinition("Difficulty", 0.66, 0.58, 0.16, 0.09, action="change_difficulty"),
                     HitboxDefinition("Reset", 0.69, 0.72, 0.14, 0.08, action="reset_progress"),
+                    # Developer testing buttons (temporary, visible in settings)
+                    HitboxDefinition("Dev Export Hitboxes", 0.12, 0.77, 0.34, 0.06, action="export_hitboxes"),
+                    HitboxDefinition("Dev Smoke -", 0.52, 0.77, 0.12, 0.06, action="decrease_smoke"),
+                    HitboxDefinition("Dev Smoke +", 0.66, 0.77, 0.12, 0.06, action="increase_smoke"),
+                    HitboxDefinition("Dev Toggle Hitboxes", 0.12, 0.85, 0.34, 0.08, action="toggle_hitbox_persistent"),
+                    HitboxDefinition("Dev Run Hitbox Smoke", 0.52, 0.85, 0.44, 0.08, action="run_hitbox_smoke"),
                 ),
             ),
             ScreenDefinition(

@@ -4,6 +4,9 @@ from __future__ import annotations
 import pygame
 
 from config import DEBUG_HITBOXES, SPLASH_DURATION_MS, VOICE_ENABLED_DEFAULT, VOICE_FALLBACK_SCREEN_ID
+import csv
+import os
+from datetime import datetime
 from engine.asset_manager import AssetManager
 from engine.adaptive_ai import choose_hint, choose_next_question, diagnose_word_mistake, recommend_practice
 from engine.feedback import get_feedback, get_hint, get_lumi_speech
@@ -29,6 +32,10 @@ class GameEngine:
         self.voice = TextToSpeech(enabled=VOICE_ENABLED_DEFAULT)
         self.learner = LearnerModel()
         self.state = GameState(splash_started_at=pygame.time.get_ticks())
+        # runtime debug toggle for hitbox outlines (temporary): toggled with H key
+        self.debug_hitboxes = bool(VOICE_ENABLED_DEFAULT and False)
+        self._debug_enabled_since: int | None = None
+        self._debug_duration_ms = 20_000
         self.word_questions = load_vocabulary()
         self.voice.set_enabled(self.state.voice_enabled)
         self._log_voice_startup_status()
@@ -64,6 +71,15 @@ class GameEngine:
                     self.state.preserve_word_garden_task = False
                 else:
                     self._configure_word_garden_task()
+            if screen_id == "practice_weak_skills":
+                # get adaptive recommendation and present supportive practice options
+                try:
+                    rec = recommend_practice(self.learner)
+                except Exception:
+                    rec = {}
+                self.state.practice_recommendation = rec
+                # supportive speech
+                self.voice.speak("Here are some gentle practice ideas. Choose one you like.")
             if screen_id == "sentence_castle_game" and previous_screen_id not in {
                 "sentence_dragging",
                 "sentence_mistake_hint",
@@ -73,6 +89,102 @@ class GameEngine:
             self.current_screen = self.screens[screen_id]
             self.state.history.append(screen_id)
             self._speak_for_screen(screen_id)
+
+    def _toggle_debug_hitboxes(self) -> None:
+        """Toggle runtime hitbox debug overlay for temporary visual alignment aid."""
+        self.debug_hitboxes = not bool(self.debug_hitboxes)
+        if self.debug_hitboxes:
+            self._debug_enabled_since = pygame.time.get_ticks()
+            print("[DEBUG] Hitbox overlay ON")
+            if self.state.voice_enabled:
+                self.voice.speak("Hitbox debug on")
+        else:
+            self._debug_enabled_since = None
+            print("[DEBUG] Hitbox overlay OFF")
+            if self.state.voice_enabled:
+                self.voice.speak("Hitbox debug off")
+
+    def _toggle_debug_persistent(self) -> None:
+        """Toggle persistent debug overlay state stored in GameState (for dev sessions)."""
+        self.state.debug_persistent = not bool(self.state.debug_persistent)
+        if self.state.debug_persistent:
+            # ensure overlay shows
+            self.debug_hitboxes = True
+            self._debug_enabled_since = None
+            print("[DEBUG] Persistent hitbox overlay ENABLED")
+            if self.state.voice_enabled:
+                self.voice.speak("Persistent hitbox overlay enabled")
+        else:
+            self.debug_hitboxes = False
+            self._debug_enabled_since = None
+            print("[DEBUG] Persistent hitbox overlay DISABLED")
+            if self.state.voice_enabled:
+                self.voice.speak("Persistent hitbox overlay disabled")
+
+    def _export_hitboxes_to_csv(self) -> str:
+        """Export current hitbox definitions to a CSV under ./diagnostics/ and return file path."""
+        try:
+            out_dir = os.path.join(os.getcwd(), "diagnostics")
+            os.makedirs(out_dir, exist_ok=True)
+            ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"hitboxes_{ts}.csv"
+            path = os.path.join(out_dir, filename)
+            with open(path, "w", newline="", encoding="utf-8") as csvfile:
+                writer = csv.writer(csvfile)
+                writer.writerow([
+                    "screen_id",
+                    "image",
+                    "hitbox_name",
+                    "x_pct",
+                    "y_pct",
+                    "w_pct",
+                    "h_pct",
+                    "x_px",
+                    "y_px",
+                    "w_px",
+                    "h_px",
+                    "action",
+                    "target",
+                ])
+                width, height = (1280, 720)
+                for definition in self.registry._definitions:
+                    image = definition.image_filename
+                    sid = definition.screen_id
+                    for hb in definition.hitboxes:
+                        x_px = round(width * hb.x_pct)
+                        y_px = round(height * hb.y_pct)
+                        w_px = round(width * hb.w_pct)
+                        h_px = round(height * hb.h_pct)
+                        writer.writerow([
+                            sid,
+                            image,
+                            hb.name,
+                            hb.x_pct,
+                            hb.y_pct,
+                            hb.w_pct,
+                            hb.h_pct,
+                            x_px,
+                            y_px,
+                            w_px,
+                            h_px,
+                            hb.action,
+                            hb.target,
+                        ])
+            print(f"[DEBUG] Hitboxes exported to {path}")
+            if self.state.voice_enabled:
+                self.voice.speak(f"Exported hitboxes to diagnostics")
+            # record in state so UI can show dialog
+            try:
+                self.state.last_export_path = path
+                self.state.last_export_time_ms = pygame.time.get_ticks()
+            except Exception:
+                pass
+            return path
+        except Exception as exc:
+            print(f"[DEBUG] Failed to export hitboxes: {exc}")
+            if self.state.voice_enabled:
+                self.voice.speak("Failed to export hitboxes")
+            return ""
 
     def _configure_letter_island_task(self) -> None:
         self.state.current_task_prompt = "Find the letter B."
@@ -226,6 +338,17 @@ class GameEngine:
         self.state.last_unlocked_badges = unlocked
         self.set_screen("badge_unlock")
 
+    def _start_word_practice(self, word: str) -> None:
+        # configure a targeted word practice without overriding recommendation flow
+        self.state.preserve_word_garden_task = True
+        self.state.current_task_target = word
+        prompt = f"Touch the {word}."
+        if not prompt.endswith(('.', '!', '?')):
+            prompt = prompt + "."
+        self.state.current_task_prompt = prompt
+        self.state.current_hint_level = 0
+        self.set_screen("word_garden_game")
+
     def _process_voice_capture_result(self, spoken: str | None) -> None:
         target_word = "apple"
         spoken_text = (spoken or "").strip().lower()
@@ -333,6 +456,14 @@ class GameEngine:
             return
         if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
             self.running = False
+            return
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_h:
+            # temporary debug toggle
+            self._toggle_debug_hitboxes()
+            return
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_p:
+            # keyboard shortcut to toggle persistent debug overlay (dev)
+            self._toggle_debug_persistent()
             return
         if event.type == pygame.KEYDOWN and event.key == pygame.K_RIGHT:
             self.next_screen()
@@ -616,6 +747,55 @@ class GameEngine:
             if action == "practice_again":
                 self.set_screen("practice_weak_skills")
                 return
+        if action == "practice_bd_b":
+            self._configure_bd_practice("B")
+            self.set_screen("bd_practice")
+            return
+        if action == "practice_bd_d":
+            self._configure_bd_practice("D")
+            self.set_screen("bd_practice")
+            return
+        if action == "practice_word_cat":
+            self._start_word_practice("cat")
+            return
+        if action == "practice_sentence_order":
+            self._configure_sentence_castle_task()
+            self.set_screen("sentence_castle_game")
+            return
+        if action == "toggle_hitbox_persistent":
+            self._toggle_debug_persistent()
+            return
+        if action == "export_hitboxes":
+            path = self._export_hitboxes_to_csv()
+            print(f"[DEBUG] export path: {path}")
+            return
+        if action == "increase_smoke":
+            # increase by 1000ms up to 60000ms
+            current = int(self.state.debug_smoke_duration_ms or 5000)
+            new = min(60000, current + 1000)
+            self.state.debug_smoke_duration_ms = new
+            if self.state.voice_enabled:
+                self.voice.speak(f"Smoke duration {int(new/1000)} seconds")
+            print(f"[DEBUG] Smoke duration now {new}ms")
+            return
+        if action == "decrease_smoke":
+            current = int(self.state.debug_smoke_duration_ms or 5000)
+            new = max(1000, current - 1000)
+            self.state.debug_smoke_duration_ms = new
+            if self.state.voice_enabled:
+                self.voice.speak(f"Smoke duration {int(new/1000)} seconds")
+            print(f"[DEBUG] Smoke duration now {new}ms")
+            return
+        if action == "run_hitbox_smoke":
+            # run a short hitbox smoke test using configured duration
+            self.debug_hitboxes = True
+            self._debug_enabled_since = pygame.time.get_ticks()
+            # use configured duration
+            self._debug_duration_ms = int(self.state.debug_smoke_duration_ms or 5000)
+            print(f"[DEBUG] Running hitbox smoke test ({int(self._debug_duration_ms/1000)}s)")
+            if self.state.voice_enabled:
+                self.voice.speak("Running hitbox smoke test")
+            return
         if action == "show_profile" or action == "repeat_prompt" or action == "show_hint" or action == "voice_or_speak_mode":
             if action == "show_hint":
                 self.voice.speak(get_feedback("hint")["message"])
@@ -802,11 +982,77 @@ class GameEngine:
             elapsed = pygame.time.get_ticks() - self.state.splash_started_at
             if elapsed >= SPLASH_DURATION_MS:
                 self.set_screen("welcome")
+        # auto-disable debug overlay after duration expires
+        if self.debug_hitboxes and self._debug_enabled_since is not None and not self.state.debug_persistent:
+            now = pygame.time.get_ticks()
+            if now - self._debug_enabled_since > self._debug_duration_ms:
+                self.debug_hitboxes = False
+                self._debug_enabled_since = None
+                print("[DEBUG] Hitbox overlay auto-disabled")
 
     def stop(self) -> None:
         self.voice.stop()
 
     def draw(self) -> None:
-        self.current_screen.draw(self.screen, debug_hitboxes=DEBUG_HITBOXES)
+        # runtime override: allow temporary toggle during debugging
+        debug_mode = bool(DEBUG_HITBOXES or self.debug_hitboxes)
+        self.current_screen.draw(self.screen, debug_hitboxes=debug_mode)
         if self.state.current_screen_id == VOICE_FALLBACK_SCREEN_ID:
             pygame.display.set_caption("Lumi's Word Adventure - Offline Mode")
+        if debug_mode:
+            # draw a small translucent overlay with label and timer
+            try:
+                font = pygame.font.SysFont(None, 20)
+                overlay_surf = pygame.Surface((260, 28), pygame.SRCALPHA)
+                overlay_surf.fill((0, 0, 0, 120))
+                txt = "HITBOXES: ON"
+                if self._debug_enabled_since is not None:
+                    remaining = max(0, int((self._debug_duration_ms - (pygame.time.get_ticks() - self._debug_enabled_since)) / 1000))
+                    txt = f"HITBOXES: ON ({remaining}s)"
+                label = font.render(txt, True, (255, 255, 255))
+                overlay_surf.blit(label, (8, 6))
+                self.screen.blit(overlay_surf, (10, 10))
+            except Exception:
+                # fonts may not be available in test environments; fail silently
+                pass
+        # Show settings debug label when on settings screen
+        if self.state.current_screen_id == "settings":
+            try:
+                font = pygame.font.SysFont(None, 20)
+                hb_status = "ON" if (self.debug_hitboxes or self.state.debug_persistent or DEBUG_HITBOXES) else "OFF"
+                dur_s = int((self.state.debug_smoke_duration_ms or 0) / 1000)
+                label_text = f"Hitboxes: {hb_status}    Smoke duration: {dur_s}s"
+                label = font.render(label_text, True, (255, 255, 255))
+                # position near developer buttons
+                x = int(1280 * 0.12)
+                y = int(720 * 0.7)
+                bg = pygame.Surface((label.get_width() + 12, label.get_height() + 8), pygame.SRCALPHA)
+                bg.fill((0, 0, 0, 120))
+                bg.blit(label, (6, 4))
+                self.screen.blit(bg, (x, y))
+            except Exception:
+                pass
+        # show export notification dialog for a few seconds
+        try:
+            if self.state.last_export_path and self.state.last_export_time_ms:
+                now = pygame.time.get_ticks()
+                if now - int(self.state.last_export_time_ms) <= int(self.state.export_display_duration_ms or 5000):
+                    try:
+                        font = pygame.font.SysFont(None, 18)
+                        msg = f"Exported hitboxes: {self.state.last_export_path}"
+                        label = font.render(msg, True, (255, 255, 255))
+                        bg = pygame.Surface((label.get_width() + 12, label.get_height() + 8), pygame.SRCALPHA)
+                        bg.fill((0, 0, 0, 180))
+                        bg.blit(label, (6, 4))
+                        # center near bottom
+                        px = (self.screen.get_width() - bg.get_width()) // 2
+                        py = int(self.screen.get_height() * 0.88)
+                        self.screen.blit(bg, (px, py))
+                    except Exception:
+                        pass
+                else:
+                    # clear old path after display duration
+                    self.state.last_export_path = None
+                    self.state.last_export_time_ms = None
+        except Exception:
+            pass
