@@ -15,6 +15,8 @@ from data_loader import load_vocabulary
 from reports.report_generator import generate_report
 from ui.screens import create_screen_with_hitboxes
 from voice.text_to_speech import TextToSpeech
+import voice.speech_to_text as speech_to_text
+from voice.voice_checker import check_spoken_answer
 
 
 class GameEngine:
@@ -29,6 +31,7 @@ class GameEngine:
         self.state = GameState(splash_started_at=pygame.time.get_ticks())
         self.word_questions = load_vocabulary()
         self.voice.set_enabled(self.state.voice_enabled)
+        self._log_voice_startup_status()
         self._configure_letter_island_task()
         self.screens = {
             screen_id: create_screen_with_hitboxes(
@@ -40,6 +43,18 @@ class GameEngine:
         }
         self.state.current_screen_id = self.registry.screen_ids[0]
         self.current_screen = self.screens[self.state.current_screen_id]
+
+    def _log_voice_startup_status(self) -> None:
+        status_message = speech_to_text.get_status_message()
+        backend = "not_ready"
+        if "Vosk offline" in status_message:
+            backend = "vosk_offline"
+        elif "SpeechRecognition" in status_message:
+            backend = "speech_recognition"
+        print(
+            f"[Lumi Voice] tts_enabled={self.state.voice_enabled} "
+            f"stt_available={speech_to_text.is_available()} backend={backend} status='{status_message}'"
+        )
 
     def change_screen(self, screen_id: str) -> None:
         if screen_id in self.screens:
@@ -315,6 +330,21 @@ class GameEngine:
             if action == "play_cat_sound":
                 self.voice.speak("Cat says meow.")
                 return
+        if self.state.current_screen_id == "voice_challenge":
+            if action == "repeat_word":
+                self.voice.speak(self.state.current_task_prompt or "Say the word.")
+                return
+            if action == "start_listening":
+                # Check availability first and fail gracefully
+                if not speech_to_text.is_available():
+                    msg = speech_to_text.get_status_message()
+                    self.voice.speak(msg)
+                    # send player to offline continue screen
+                    self.set_screen("offline_continue")
+                    return
+                # show listening UI; user can press Stop which triggers processing
+                self.set_screen("listening_state")
+                return
         if self.state.current_screen_id == "bd_practice":
             if action == "repeat_bd_prompt":
                 target_letter = self.state.bd_practice_target or "B"
@@ -336,6 +366,52 @@ class GameEngine:
                     self.state.last_mistake_type = "bd_confusion"
                     self.learner.record_weak_letter(target_letter)
                     self.voice.speak(get_feedback(False, mistake_type="bd_confusion")["message"])
+                return
+        if self.state.current_screen_id == "listening_state":
+            if action == "stop_and_process":
+                # Perform the listen -> check -> update flow
+                spoken = speech_to_text.listen_once(timeout=5)
+                target_word = (self.state.current_task_target or "").strip().lower()
+                result = check_spoken_answer(spoken, target_word)
+                # store last spoken for debugging / feedback
+                self.state.last_spoken_text = spoken or ""
+                if result == "correct":
+                    stars_earned = calculate_stars(True, self.state.current_hint_level)
+                    self.learner.update_correct_streak()
+                    self.learner.attempts = int(self.learner.attempts) + 1
+                    self.learner.correct_answers = int(self.learner.correct_answers) + 1
+                    self.learner.update_accuracy()
+                    update_score(self.learner, stars_earned)
+                    self.learner.mark_word_mastered(target_word)
+                    check_badge_unlocks(self.learner)
+                    self.state.current_hint_level = 0
+                    self.state.last_word_feedback_message = self._word_garden_correct_message()
+                    self.set_screen("voice_correct_feedback")
+                    return
+                if result == "close":
+                    self.learner.update_wrong_streak()
+                    self.learner.attempts = int(self.learner.attempts) + 1
+                    self.learner.update_accuracy()
+                    self.learner.record_weak_word(target_word)
+                    self.state.last_mistake_type = "pronunciation_close"
+                    self.state.last_word_feedback_message = get_feedback(
+                        False, mistake_type="pronunciation_close", target=target_word, selected=spoken or ""
+                    )["message"]
+                    self.state.current_hint_level = 1
+                    self.set_screen("word_mistake_hint")
+                    return
+                # incorrect
+                self.learner.update_wrong_streak()
+                self.learner.attempts = int(self.learner.attempts) + 1
+                self.learner.update_accuracy()
+                self.learner.record_weak_word(target_word)
+                mistake_type = diagnose_word_mistake(target_word, spoken or "", self.word_questions) if spoken else "no_speech"
+                self.state.last_mistake_type = mistake_type
+                self.state.last_word_feedback_message = get_feedback(
+                    False, mistake_type=mistake_type, target=target_word, selected=spoken or ""
+                )["message"]
+                self.state.current_hint_level = 1
+                self.set_screen("word_mistake_hint")
                 return
         if action == "view_report" or action == "open_report":
             self.set_screen("teacher_report")

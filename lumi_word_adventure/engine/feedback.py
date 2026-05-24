@@ -26,11 +26,11 @@ def get_feedback(
     if feedback_key in {"hint", "show_hint"}:
         return _feedback_payload("hint", "Let’s look together. You can do it!")
 
-    if feedback_key == "close" or mistake_type == "voice_close":
+    if feedback_key == "close" or mistake_type in {"voice_close", "pronunciation_close"}:
         return _feedback_payload("close", "Almost! I heard something close. Try again.")
 
     if mistake_type == "bd_confusion":
-        return _feedback_payload("incorrect", "Good try! B has a belly. D has a drum.")
+        return _feedback_payload("incorrect", "Good try! B has a belly.")
 
     if mistake_type == "same_category_vocabulary_confusion":
         if selected:
@@ -39,7 +39,7 @@ def get_feedback(
 
     if mistake_type == "word_confusion":
         if target and selected:
-            return _feedback_payload("incorrect", f"This is {selected}. Look for the cat.")
+            return _feedback_payload("incorrect", f"This is {target}. A {selected} says meow.")
         if target:
             return _feedback_payload("incorrect", f"This is {target}. Let’s look again.")
         return _feedback_payload("incorrect", "Good try! Let’s look again.")

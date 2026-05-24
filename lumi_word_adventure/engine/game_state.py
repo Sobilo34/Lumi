@@ -27,6 +27,7 @@ class GameState:
     word_garden_option_count: int = 4
     last_word_selected: str = ""
     last_word_feedback_message: str = ""
+    last_spoken_text: str = ""
     bd_practice_target: str = ""
     bd_practice_step: int = 0
     bd_confusion_attempts: int = 0
