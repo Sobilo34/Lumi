@@ -28,6 +28,10 @@ class GameState:
     last_word_selected: str = ""
     last_word_feedback_message: str = ""
     last_spoken_text: str = ""
+    sentence_slots: list[str] = field(default_factory=lambda: ["", "", "", ""])
+    sentence_locked_indices: list[int] = field(default_factory=list)
+    sentence_target_words: list[str] = field(default_factory=lambda: ["I", "see", "a", "cat"])
+    sentence_feedback_message: str = ""
     bd_practice_target: str = ""
     bd_practice_step: int = 0
     bd_confusion_attempts: int = 0

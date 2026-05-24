@@ -58,11 +58,17 @@ class GameEngine:
 
     def change_screen(self, screen_id: str) -> None:
         if screen_id in self.screens:
+            previous_screen_id = self.state.current_screen_id
             if screen_id == "word_garden_game":
                 if self.state.preserve_word_garden_task:
                     self.state.preserve_word_garden_task = False
                 else:
                     self._configure_word_garden_task()
+            if screen_id == "sentence_castle_game" and previous_screen_id not in {
+                "sentence_dragging",
+                "sentence_mistake_hint",
+            }:
+                self._configure_sentence_castle_task()
             self.state.current_screen_id = screen_id
             self.current_screen = self.screens[screen_id]
             self.state.history.append(screen_id)
@@ -106,6 +112,112 @@ class GameEngine:
         self.state.current_task_target = "apple"
         self.state.current_task_prompt = "Say apple."
         self.state.current_hint_level = 0
+
+    def _configure_sentence_castle_task(self) -> None:
+        self.state.current_task_target = "I see a cat"
+        self.state.current_task_prompt = "Build the sentence."
+        self.state.current_hint_level = 0
+        self.state.sentence_target_words = ["I", "see", "a", "cat"]
+        self.state.sentence_slots = ["", "", "", ""]
+        self.state.sentence_locked_indices = []
+        self.state.sentence_feedback_message = ""
+
+    def _is_sentence_complete(self) -> bool:
+        return all(bool(slot) for slot in self.state.sentence_slots)
+
+    def _place_sentence_word(self, word: str) -> None:
+        # click-to-place fallback: put the tapped word into the next free slot
+        for idx in range(len(self.state.sentence_slots)):
+            if self.state.sentence_slots[idx]:
+                continue
+            self.state.sentence_slots[idx] = word
+            if self.state.current_screen_id == "sentence_castle_game":
+                self.set_screen("sentence_dragging")
+            if self._is_sentence_complete():
+                self._evaluate_sentence_slots()
+            return
+
+    def _evaluate_sentence_slots(self) -> None:
+        expected = ["I", "see", "a", "cat"]
+        if self.state.sentence_slots == expected:
+            stars_earned = calculate_stars(True, self.state.current_hint_level)
+            self.learner.update_correct_streak()
+            self.learner.attempts = int(self.learner.attempts) + 1
+            self.learner.correct_answers = int(self.learner.correct_answers) + 1
+            self.learner.update_accuracy()
+            update_score(self.learner, stars_earned)
+            self.state.sentence_feedback_message = "You built it!"
+            self.voice.speak("You built it!")
+            self.set_screen("sentence_correct_feedback")
+            return
+
+        self.learner.update_wrong_streak()
+        self.learner.attempts = int(self.learner.attempts) + 1
+        self.learner.update_accuracy()
+        self.learner.record_sentence_error("word_order")
+        self.state.last_mistake_type = "word_order"
+        self.state.sentence_feedback_message = "Good try. Start with I."
+        self.voice.speak("Good try. Start with I.")
+        self.set_screen("sentence_mistake_hint")
+
+    def _handle_sentence_hint(self) -> None:
+        self.state.current_hint_level += 1
+        hint_level = self.state.current_hint_level
+        if hint_level == 1:
+            self.voice.speak("Start with I.")
+            return
+        if hint_level == 2:
+            if not self.state.sentence_slots[0]:
+                self.state.sentence_slots[0] = "I"
+            if 0 not in self.state.sentence_locked_indices:
+                self.state.sentence_locked_indices.append(0)
+            self.voice.speak("I is first. I placed it for you.")
+            self.set_screen("sentence_dragging")
+            if self._is_sentence_complete():
+                self._evaluate_sentence_slots()
+            return
+
+        # Level 3 guided full sentence
+        self.state.sentence_slots = ["I", "see", "a", "cat"]
+        self.voice.speak("Guided sentence: I see a cat.")
+        self._evaluate_sentence_slots()
+
+    def _handle_sentence_action(self, action: str) -> bool:
+        word_map = {
+            "drag_word_I": "I",
+            "drag_word_see": "see",
+            "drag_word_a": "a",
+            "drag_word_cat": "cat",
+        }
+
+        if action in word_map:
+            self._place_sentence_word(word_map[action])
+            return True
+
+        if action == "repeat_sentence_prompt" or action == "repeat_prompt":
+            self.voice.speak("Build the sentence.")
+            return True
+
+        if action == "show_hint" or action == "show_next_hint":
+            self._handle_sentence_hint()
+            return True
+
+        if action == "try_again":
+            if any(self.state.sentence_slots):
+                self.set_screen("sentence_dragging")
+            else:
+                self.set_screen("sentence_castle_game")
+            return True
+
+        if action == "next_badge":
+            self.set_screen("badge_unlock")
+            return True
+
+        if action in {"drop_a", "drop_cat"}:
+            # click-to-place fallback keeps drag illusion; slot taps are optional
+            return True
+
+        return False
 
     def _process_voice_capture_result(self, spoken: str | None) -> None:
         target_word = "apple"
@@ -413,6 +525,14 @@ class GameEngine:
                     self.learner.record_weak_letter(target_letter)
                     self.voice.speak(get_feedback(False, mistake_type="bd_confusion")["message"])
                 return
+        if self.state.current_screen_id in {
+            "sentence_castle_game",
+            "sentence_dragging",
+            "sentence_mistake_hint",
+            "sentence_correct_feedback",
+        }:
+            if self._handle_sentence_action(action):
+                return
         if self.state.current_screen_id == "listening_state":
             if action == "repeat_word":
                 self.voice.speak("Say apple.")
@@ -560,6 +680,22 @@ class GameEngine:
             self.voice.speak(self.state.current_task_prompt or "Touch the cat.")
             return
 
+        if screen_id == "sentence_castle_game":
+            self.voice.speak("Build the sentence.")
+            return
+
+        if screen_id == "sentence_dragging":
+            self.voice.speak("Keep building the sentence.")
+            return
+
+        if screen_id == "sentence_mistake_hint":
+            self.voice.speak(self.state.sentence_feedback_message or "Good try. Start with I.")
+            return
+
+        if screen_id == "sentence_correct_feedback":
+            self.voice.speak(self.state.sentence_feedback_message or "You built it!")
+            return
+
         if screen_id == "voice_challenge":
             self.voice.speak("Say apple.")
             return
@@ -589,7 +725,7 @@ class GameEngine:
             self.voice.speak(get_lumi_speech(screen_id))
             return
 
-        if screen_id in {"letter_island_game", "sentence_castle_game"}:
+        if screen_id in {"letter_island_game"}:
             self.voice.speak(get_lumi_speech(screen_id))
             return
 
@@ -597,7 +733,7 @@ class GameEngine:
             self.voice.speak(get_feedback(True)["message"])
             return
 
-        if screen_id in {"letter_mistake_hint", "sentence_mistake_hint"}:
+        if screen_id in {"letter_mistake_hint"}:
             self.voice.speak(get_feedback("hint")["message"])
             return
 
