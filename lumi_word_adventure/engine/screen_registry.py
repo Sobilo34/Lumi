@@ -152,9 +152,32 @@ class ScreenRegistry:
                     HitboxDefinition("speaker on cat card", 0.28, 0.42, 0.07, 0.11, action="play_cat_sound"),
                 ),
             ),
-            ScreenDefinition("voice_challenge", "14_voice_say_apple.png"),
-            ScreenDefinition("listening_state", "15_voice_listening.png"),
-            ScreenDefinition("voice_correct_feedback", "16_voice_result_correct.png"),
+            ScreenDefinition(
+                "voice_challenge",
+                "14_voice_say_apple.png",
+                (
+                    HitboxDefinition("Repeat", 0.29, 0.79, 0.09, 0.17, action="repeat_word"),
+                    HitboxDefinition("Microphone", 0.43, 0.77, 0.16, 0.18, action="start_listening"),
+                    HitboxDefinition("Skip", 0.61, 0.79, 0.09, 0.17, action="skip_voice"),
+                    HitboxDefinition("Help", 0.72, 0.79, 0.09, 0.17, action="voice_help"),
+                ),
+            ),
+            ScreenDefinition(
+                "listening_state",
+                "15_voice_listening.png",
+                (
+                    HitboxDefinition("Stop", 0.35, 0.77, 0.27, 0.15, action="stop_listening"),
+                    HitboxDefinition("Repeat word", 0.67, 0.8, 0.15, 0.1, action="repeat_word"),
+                ),
+            ),
+            ScreenDefinition(
+                "voice_correct_feedback",
+                "16_voice_result_correct.png",
+                (
+                    HitboxDefinition("Next", 0.29, 0.8, 0.29, 0.14, action="next_activity"),
+                    HitboxDefinition("Say Again", 0.63, 0.8, 0.2, 0.12, action="say_again"),
+                ),
+            ),
             ScreenDefinition("sentence_castle_game", "17_sentence_castle_gameplay.png"),
             ScreenDefinition("sentence_dragging", "18_sentence_dragging_state.png"),
             ScreenDefinition("sentence_mistake_hint", "19_sentence_mistake_hint.png"),

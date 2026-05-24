@@ -1,22 +1,29 @@
 {
   "child_name": "Player 1",
-  "total_stars": 0,
+  "total_stars": 8,
   "lumi_energy": 100,
   "current_world": "main_menu",
   "difficulty": 1,
-  "correct_streak": 0,
-  "wrong_streak": 2,
+  "correct_streak": 2,
+  "wrong_streak": 0,
   "weak_letters": {
-    "A": 1
+    "A": 1,
+    "B": 3
   },
   "weak_words": {},
   "sentence_errors": {},
-  "hint_usage": {},
-  "mastered_letters": [],
-  "mastered_words": [],
+  "hint_usage": {
+    "level_1": 1
+  },
+  "mastered_letters": [
+    "B"
+  ],
+  "mastered_words": [
+    "cat"
+  ],
   "completed_worlds": [],
   "badges": [],
-  "attempts": 1,
-  "correct_answers": 0,
-  "accuracy": 0.0
+  "attempts": 2,
+  "correct_answers": 1,
+  "accuracy": 50.0
 }

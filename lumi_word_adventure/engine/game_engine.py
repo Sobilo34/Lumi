@@ -102,6 +102,49 @@ class GameEngine:
         self.state.last_word_selected = ""
         self.state.last_word_feedback_message = ""
 
+    def _configure_voice_challenge_task(self) -> None:
+        self.state.current_task_target = "apple"
+        self.state.current_task_prompt = "Say apple."
+        self.state.current_hint_level = 0
+
+    def _process_voice_capture_result(self, spoken: str | None) -> None:
+        target_word = "apple"
+        spoken_text = (spoken or "").strip().lower()
+        self.state.last_spoken_text = spoken_text
+        result = check_spoken_answer(spoken_text, target_word)
+
+        if result == "correct":
+            stars_earned = calculate_stars(True, self.state.current_hint_level)
+            self.learner.update_correct_streak()
+            self.learner.attempts = int(self.learner.attempts) + 1
+            self.learner.correct_answers = int(self.learner.correct_answers) + 1
+            self.learner.update_accuracy()
+            update_score(self.learner, stars_earned)
+            self.learner.mark_word_mastered(target_word)
+            completed_worlds = list(self.learner.completed_worlds)
+            if "voice_challenge" not in completed_worlds:
+                completed_worlds.append("voice_challenge")
+                self.learner.completed_worlds = completed_worlds
+                self.learner.save_profile()
+            check_badge_unlocks(self.learner)
+            self.state.current_hint_level = 0
+            self.state.last_word_feedback_message = "You said apple!"
+            self.set_screen("voice_correct_feedback")
+            return
+
+        self.learner.update_wrong_streak()
+        self.learner.attempts = int(self.learner.attempts) + 1
+        self.learner.update_accuracy()
+
+        if result == "close":
+            self.voice.speak("Almost! I heard something close. Try again.")
+            self.set_screen("voice_challenge")
+            return
+
+        self.learner.record_weak_word(target_word)
+        self.voice.speak("Good try! Open your mouth wide: a-pple. Say apple.")
+        self.set_screen("voice_challenge")
+
     def _word_garden_hint_message(self) -> str:
         target_word = self.state.current_task_target or "cat"
         level = self.state.current_hint_level
@@ -304,12 +347,8 @@ class GameEngine:
                 return
         if self.state.current_screen_id == "word_correct_feedback":
             if action == "next_voice_challenge":
-                if self.state.letter_demo_mode:
-                    self.set_screen("world_map")
-                else:
-                    self.state.preserve_word_garden_task = False
-                    self._configure_word_garden_task()
-                    self.set_screen("word_garden_game")
+                self._configure_voice_challenge_task()
+                self.set_screen("voice_challenge")
                 return
             if action == "home":
                 self.set_screen("world_map")
@@ -332,18 +371,25 @@ class GameEngine:
                 return
         if self.state.current_screen_id == "voice_challenge":
             if action == "repeat_word":
-                self.voice.speak(self.state.current_task_prompt or "Say the word.")
+                self.voice.speak("Say apple.")
+                return
+            if action == "voice_help":
+                self.voice.speak("Listen: ah-puhl. Say apple.")
+                return
+            if action == "skip_voice":
+                self.state.preserve_word_garden_task = True
+                self.set_screen("word_garden_game")
                 return
             if action == "start_listening":
-                # Check availability first and fail gracefully
+                self._configure_voice_challenge_task()
                 if not speech_to_text.is_available():
                     msg = speech_to_text.get_status_message()
                     self.voice.speak(msg)
-                    # send player to offline continue screen
-                    self.set_screen("offline_continue")
+                    self.set_screen("voice_challenge")
                     return
-                # show listening UI; user can press Stop which triggers processing
                 self.set_screen("listening_state")
+                spoken = speech_to_text.listen_once(timeout=5)
+                self._process_voice_capture_result(spoken)
                 return
         if self.state.current_screen_id == "bd_practice":
             if action == "repeat_bd_prompt":
@@ -368,50 +414,21 @@ class GameEngine:
                     self.voice.speak(get_feedback(False, mistake_type="bd_confusion")["message"])
                 return
         if self.state.current_screen_id == "listening_state":
-            if action == "stop_and_process":
-                # Perform the listen -> check -> update flow
-                spoken = speech_to_text.listen_once(timeout=5)
-                target_word = (self.state.current_task_target or "").strip().lower()
-                result = check_spoken_answer(spoken, target_word)
-                # store last spoken for debugging / feedback
-                self.state.last_spoken_text = spoken or ""
-                if result == "correct":
-                    stars_earned = calculate_stars(True, self.state.current_hint_level)
-                    self.learner.update_correct_streak()
-                    self.learner.attempts = int(self.learner.attempts) + 1
-                    self.learner.correct_answers = int(self.learner.correct_answers) + 1
-                    self.learner.update_accuracy()
-                    update_score(self.learner, stars_earned)
-                    self.learner.mark_word_mastered(target_word)
-                    check_badge_unlocks(self.learner)
-                    self.state.current_hint_level = 0
-                    self.state.last_word_feedback_message = self._word_garden_correct_message()
-                    self.set_screen("voice_correct_feedback")
-                    return
-                if result == "close":
-                    self.learner.update_wrong_streak()
-                    self.learner.attempts = int(self.learner.attempts) + 1
-                    self.learner.update_accuracy()
-                    self.learner.record_weak_word(target_word)
-                    self.state.last_mistake_type = "pronunciation_close"
-                    self.state.last_word_feedback_message = get_feedback(
-                        False, mistake_type="pronunciation_close", target=target_word, selected=spoken or ""
-                    )["message"]
-                    self.state.current_hint_level = 1
-                    self.set_screen("word_mistake_hint")
-                    return
-                # incorrect
-                self.learner.update_wrong_streak()
-                self.learner.attempts = int(self.learner.attempts) + 1
-                self.learner.update_accuracy()
-                self.learner.record_weak_word(target_word)
-                mistake_type = diagnose_word_mistake(target_word, spoken or "", self.word_questions) if spoken else "no_speech"
-                self.state.last_mistake_type = mistake_type
-                self.state.last_word_feedback_message = get_feedback(
-                    False, mistake_type=mistake_type, target=target_word, selected=spoken or ""
-                )["message"]
-                self.state.current_hint_level = 1
-                self.set_screen("word_mistake_hint")
+            if action == "repeat_word":
+                self.voice.speak("Say apple.")
+                return
+            if action in {"stop_listening", "stop_and_process"}:
+                self.voice.speak("Listening stopped. Say apple when you are ready.")
+                self.set_screen("voice_challenge")
+                return
+        if self.state.current_screen_id == "voice_correct_feedback":
+            if action == "say_again":
+                self._configure_voice_challenge_task()
+                self.set_screen("voice_challenge")
+                return
+            if action == "next_activity":
+                self.state.preserve_word_garden_task = True
+                self.set_screen("word_garden_game")
                 return
         if action == "view_report" or action == "open_report":
             self.set_screen("teacher_report")
@@ -543,6 +560,18 @@ class GameEngine:
             self.voice.speak(self.state.current_task_prompt or "Touch the cat.")
             return
 
+        if screen_id == "voice_challenge":
+            self.voice.speak("Say apple.")
+            return
+
+        if screen_id == "listening_state":
+            self.voice.speak("I am listening. Say apple.")
+            return
+
+        if screen_id == "voice_correct_feedback":
+            self.voice.speak(self.state.last_word_feedback_message or "You said apple!")
+            return
+
         if screen_id == "word_correct_feedback":
             self.voice.speak(self.state.last_word_feedback_message or self._word_garden_correct_message())
             return
@@ -556,7 +585,7 @@ class GameEngine:
             self.voice.speak(f"B has a belly. D has a drum. Find {target_letter}.")
             return
 
-        if screen_id in {"voice_challenge", "listening_state", "offline_continue"}:
+        if screen_id in {"offline_continue"}:
             self.voice.speak(get_lumi_speech(screen_id))
             return
 
