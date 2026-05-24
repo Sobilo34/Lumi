@@ -219,6 +219,13 @@ class GameEngine:
 
         return False
 
+    def _handle_badges(self, unlocked: list[str]) -> None:
+        """Record unlocked badges and switch to the badge unlock screen."""
+        if not unlocked:
+            return
+        self.state.last_unlocked_badges = unlocked
+        self.set_screen("badge_unlock")
+
     def _process_voice_capture_result(self, spoken: str | None) -> None:
         target_word = "apple"
         spoken_text = (spoken or "").strip().lower()
@@ -238,9 +245,12 @@ class GameEngine:
                 completed_worlds.append("voice_challenge")
                 self.learner.completed_worlds = completed_worlds
                 self.learner.save_profile()
-            check_badge_unlocks(self.learner)
+            unlocked = check_badge_unlocks(self.learner)
             self.state.current_hint_level = 0
             self.state.last_word_feedback_message = "You said apple!"
+            if unlocked:
+                self._handle_badges(unlocked)
+                return
             self.set_screen("voice_correct_feedback")
             return
 
@@ -433,9 +443,12 @@ class GameEngine:
                     self.learner.update_accuracy()
                     update_score(self.learner, stars_earned)
                     self.learner.mark_word_mastered(target_word)
-                    check_badge_unlocks(self.learner)
+                    unlocked = check_badge_unlocks(self.learner)
                     self.state.current_hint_level = 0
                     self.state.last_word_feedback_message = self._word_garden_correct_message()
+                    if unlocked:
+                        self._handle_badges(unlocked)
+                        return
                     self.set_screen("word_correct_feedback")
                     return
 
@@ -556,6 +569,17 @@ class GameEngine:
         if action == "continue_offline":
             self.set_screen("main_menu")
             return
+        if action == "continue_from_badge":
+            # return to the previous screen before the badge popup
+            if len(self.state.history) >= 2:
+                previous = self.state.history[-2]
+            else:
+                previous = "world_map"
+            self.set_screen(previous)
+            return
+        if action == "view_badges":
+            self.set_screen("progress_complete")
+            return
         if self.state.current_screen_id == "letter_island_game" and action in {
             "select_letter_b",
             "select_letter_d",
@@ -579,6 +603,19 @@ class GameEngine:
             if self.state.voice_enabled:
                 self.voice.speak("Voice is on.")
             return
+        if self.state.current_screen_id == "progress_complete":
+            if action == "next_world":
+                try:
+                    current = int(self.learner.current_world or 1)
+                except Exception:
+                    current = 1
+                self.learner.current_world = current + 1
+                self.learner.save_profile()
+                self.set_screen("world_map")
+                return
+            if action == "practice_again":
+                self.set_screen("practice_weak_skills")
+                return
         if action == "show_profile" or action == "repeat_prompt" or action == "show_hint" or action == "voice_or_speak_mode":
             if action == "show_hint":
                 self.voice.speak(get_feedback("hint")["message"])
@@ -629,11 +666,14 @@ class GameEngine:
             self.learner.update_correct_streak()
             update_score(self.learner, stars_earned)
             self.learner.mark_letter_mastered(target_letter)
-            check_badge_unlocks(self.learner)
+                unlocked = check_badge_unlocks(self.learner)
             self.state.current_hint_level = 0
             self.state.bd_confusion_attempts = 0
             self.voice.speak("Great job! This is B.")
-            self.set_screen("letter_correct_feedback")
+                if unlocked:
+                    self._handle_badges(unlocked)
+                    return
+                self.set_screen("letter_correct_feedback")
             return
 
         self.learner.update_wrong_streak()
@@ -738,7 +778,12 @@ class GameEngine:
             return
 
         if screen_id == "badge_unlock":
-            self.voice.speak(get_feedback("badge_unlock")["message"])
+            # announce the badge(s) unlocked, if available
+            msg = get_feedback("badge_unlock")["message"]
+            if getattr(self.state, "last_unlocked_badges", None):
+                names = ", ".join(self.state.last_unlocked_badges)
+                msg = f"You unlocked: {names}. " + msg
+            self.voice.speak(msg)
             return
 
         if screen_id == "progress_complete":

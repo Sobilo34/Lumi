@@ -36,3 +36,4 @@ class GameState:
     bd_practice_step: int = 0
     bd_confusion_attempts: int = 0
     history: list[str] = field(default_factory=list)
+    last_unlocked_badges: list[str] = field(default_factory=list)

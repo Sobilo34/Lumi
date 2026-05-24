@@ -219,8 +219,23 @@ class ScreenRegistry:
                     HitboxDefinition("Next", 0.38, 0.8, 0.24, 0.14, action="next_badge"),
                 ),
             ),
-            ScreenDefinition("badge_unlock", "21_badge_unlock.png"),
-            ScreenDefinition("progress_complete", "22_progress_level_complete.png"),
+            ScreenDefinition(
+                "badge_unlock",
+                "21_badge_unlock.png",
+                (
+                    HitboxDefinition("Continue", 0.5, 0.78, 0.3, 0.14, action="continue_from_badge"),
+                    HitboxDefinition("View Badges", 0.82, 0.08, 0.14, 0.12, action="view_badges"),
+                ),
+            ),
+            ScreenDefinition(
+                "progress_complete",
+                "22_progress_level_complete.png",
+                (
+                    HitboxDefinition("Next World", 0.36, 0.73, 0.25, 0.13, action="next_world"),
+                    HitboxDefinition("Practice Again", 0.63, 0.73, 0.25, 0.13, action="practice_again"),
+                    HitboxDefinition("View Report", 0.9, 0.05, 0.16, 0.12, action="view_report"),
+                ),
+            ),
             ScreenDefinition("practice_weak_skills", "23_practice_weak_skills.png"),
             ScreenDefinition("teacher_report", "24_teacher_report.png"),
             ScreenDefinition(
