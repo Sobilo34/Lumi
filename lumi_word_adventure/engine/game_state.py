@@ -43,3 +43,4 @@ class GameState:
     last_export_path: str | None = None
     last_export_time_ms: int | None = None
     export_display_duration_ms: int = 5000
+    teacher_report: dict | None = None

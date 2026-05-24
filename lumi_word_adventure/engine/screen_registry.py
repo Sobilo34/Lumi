@@ -247,7 +247,17 @@ class ScreenRegistry:
                     HitboxDefinition("Practice Sentence", 0.36, 0.70, 0.48, 0.18, action="practice_sentence_order"),
                 ),
             ),
-            ScreenDefinition("teacher_report", "24_teacher_report.png"),
+            ScreenDefinition(
+                "teacher_report",
+                "24_teacher_report.png",
+                (
+                    HitboxDefinition("Home", 0.02, 0.03, 0.07, 0.09, action="report_home"),
+                    HitboxDefinition("Back", 0.11, 0.03, 0.07, 0.09, action="report_home"),
+                    HitboxDefinition("Practice B/D", 0.63, 0.6, 0.28, 0.22, action="practice_recommendation"),
+                    HitboxDefinition("Practice B/D alias", 0.63, 0.6, 0.28, 0.22, action="report_practice_bd"),
+                    HitboxDefinition("Refresh", 0.87, 0.77, 0.11, 0.12, action="report_refresh"),
+                ),
+            ),
             ScreenDefinition(
                 "settings",
                 "25_settings.png",

@@ -15,7 +15,7 @@ from engine.learner_model import LearnerModel
 from engine.screen_registry import ScreenRegistry
 from engine.scoring import calculate_stars, check_badge_unlocks, update_score
 from data_loader import load_vocabulary
-from reports.report_generator import generate_report
+from reports.report_generator import generate_report, get_recommendation, get_strong_skill, get_weak_area
 from ui.screens import create_screen_with_hitboxes
 from voice.text_to_speech import TextToSpeech
 import voice.speech_to_text as speech_to_text
@@ -80,6 +80,8 @@ class GameEngine:
                 self.state.practice_recommendation = rec
                 # supportive speech
                 self.voice.speak("Here are some gentle practice ideas. Choose one you like.")
+            if screen_id == "teacher_report":
+                self._configure_teacher_report()
             if screen_id == "sentence_castle_game" and previous_screen_id not in {
                 "sentence_dragging",
                 "sentence_mistake_hint",
@@ -349,6 +351,14 @@ class GameEngine:
         self.state.current_hint_level = 0
         self.set_screen("word_garden_game")
 
+    def _configure_teacher_report(self) -> None:
+        profile = self.learner.get_profile()
+        report = generate_report(profile)
+        report["strongest_skill"] = get_strong_skill(profile)
+        report["weak_area"] = get_weak_area(profile)
+        report["recommended_next_activity"] = get_recommendation(profile)
+        self.state.teacher_report = report
+
     def _process_voice_capture_result(self, spoken: str | None) -> None:
         target_word = "apple"
         spoken_text = (spoken or "").strip().lower()
@@ -521,6 +531,21 @@ class GameEngine:
         if action == "play_again":
             self.set_screen("world_map")
             return
+        if action == "home" and self.state.current_screen_id == "teacher_report":
+            self.set_screen("main_menu")
+            return
+        if self.state.current_screen_id == "teacher_report":
+            if action in {"report_home"}:
+                self.set_screen("main_menu")
+                return
+            if action in {"report_practice_bd", "practice_bd_b", "practice_bd_d"}:
+                self._configure_bd_practice("B" if action == "practice_bd_b" else "D")
+                self.set_screen("bd_practice")
+                return
+            if action == "report_refresh":
+                self._configure_teacher_report()
+                self.set_screen("teacher_report")
+                return
         if self.state.current_screen_id == "letter_correct_feedback" and action == "next_activity":
             if self.state.letter_demo_mode:
                 self.set_screen("world_map")
@@ -693,6 +718,28 @@ class GameEngine:
             if action == "next_activity":
                 self.state.preserve_word_garden_task = True
                 self.set_screen("word_garden_game")
+                return
+        if self.state.current_screen_id == "teacher_report":
+            if action == "report_home":
+                self.set_screen("main_menu")
+                return
+            if action in {"practice_recommendation", "report_practice_bd", "practice_bd_b", "practice_bd_d"}:
+                report = self.state.teacher_report or self.learner.get_profile()
+                weak_letters = report.get("weak_letters", []) if isinstance(report, dict) else []
+                target = "B"
+                if isinstance(weak_letters, list):
+                    if "D" in weak_letters and "B" not in weak_letters:
+                        target = "D"
+                    elif "B" in weak_letters:
+                        target = "B"
+                if action == "practice_bd_d":
+                    target = "D"
+                self._configure_bd_practice(target)
+                self.set_screen("bd_practice")
+                return
+            if action == "report_refresh":
+                self._configure_teacher_report()
+                self.set_screen("teacher_report")
                 return
         if action == "view_report" or action == "open_report":
             self.set_screen("teacher_report")
@@ -971,10 +1018,11 @@ class GameEngine:
             return
 
         if screen_id == "teacher_report":
-            report = generate_report(self.learner.get_profile())
-            self.voice.speak(
-                f"{report['child_name']} has {report['stars']} stars and {report['correct_answers']} correct answers."
-            )
+            report = self.state.teacher_report or generate_report(self.learner.get_profile())
+            recommendation = report.get("recommended_next_activity", "Practice weak skills")
+            strongest = report.get("strongest_skill", "Practice in progress")
+            accuracy = report.get("accuracy", 0.0)
+            self.voice.speak(f"Report ready. Strongest: {strongest}. Accuracy: {accuracy} percent. Next: {recommendation}.")
 
     def update(self) -> None:
         self.current_screen.update()
@@ -1014,6 +1062,53 @@ class GameEngine:
                 self.screen.blit(overlay_surf, (10, 10))
             except Exception:
                 # fonts may not be available in test environments; fail silently
+                pass
+
+        if self.state.current_screen_id == "teacher_report":
+            try:
+                if not self.state.teacher_report:
+                    self._configure_teacher_report()
+                report = self.state.teacher_report or {}
+                font_small = pygame.font.SysFont(None, 18)
+                font_med = pygame.font.SysFont(None, 20)
+
+                def make_label(text: str, font: pygame.font.Font) -> pygame.Surface:
+                    rendered = font.render(text, True, (32, 32, 32))
+                    box = pygame.Surface((rendered.get_width() + 12, rendered.get_height() + 8), pygame.SRCALPHA)
+                    box.fill((255, 255, 255, 210))
+                    box.blit(rendered, (6, 4))
+                    return box
+
+                # compact left summary column aligned to the report boxes
+                left_x = 82
+                top_y = 112
+                summary_blocks = [
+                    (("Stars earned", report.get("stars", 0)), font_med),
+                    (("Accuracy", f"{report.get('accuracy', 0.0)}%"), font_med),
+                    (("Strongest skill", report.get("strongest_skill", "Practice in progress")), font_small),
+                    (("Weak letters", ", ".join(report.get("weak_letters", []) or ["None"])), font_small),
+                    (("Weak words", ", ".join([w.capitalize() for w in (report.get("weak_words", []) or ["None"])])), font_small),
+                    (("Sentence issue", report.get("sentence_issue", "none").replace("_", " ")), font_small),
+                ]
+
+                y = top_y
+                for index, ((label, value), font_choice) in enumerate(summary_blocks):
+                    text = f"{label}: {value}"
+                    block = make_label(text, font_choice)
+                    self.screen.blit(block, (left_x, y))
+                    y += block.get_height() + (12 if index in {0, 1} else 8)
+
+                # recommendation box aligned to the right recommendation area
+                recommendation = report.get("recommended_next_activity", "Practice weak skills")
+                callout = make_label(f"Recommended: {recommendation}", font_med)
+                callout_x = 845
+                callout_y = 540
+                self.screen.blit(callout, (callout_x, callout_y))
+
+                # a smaller support note tucked under the recommendation
+                support_note = make_label("Tap the practice button to continue.", font_small)
+                self.screen.blit(support_note, (callout_x, callout_y + callout.get_height() + 8))
+            except Exception:
                 pass
         # Show settings debug label when on settings screen
         if self.state.current_screen_id == "settings":
