@@ -16,6 +16,7 @@ class GameState:
     splash_started_at: int = 0
     stars: int = 0
     difficulty: int = DEFAULT_DIFFICULTY
+    music_enabled: bool = True
     voice_enabled: bool = VOICE_ENABLED_DEFAULT
     current_task_prompt: str = ""
     current_task_target: str = ""
@@ -44,3 +45,5 @@ class GameState:
     last_export_time_ms: int | None = None
     export_display_duration_ms: int = 5000
     teacher_report: dict | None = None
+    microphone_test_mode: bool = False
+    microphone_status_message: str = ""
