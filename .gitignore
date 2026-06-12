@@ -6,4 +6,6 @@ reference_interfaces/
 .mypy_cache/
 build/
 dist/
-LUMI_PROJECT_MCP.md
+LUMI_PROJECT_MCP_CURSOR_FIXED.json
+CURSOR_PROMPT_PACK_LUMI_CONTINUATION.md
+lumi_word_adventure/engine/chat.json
