@@ -6,6 +6,7 @@ import pygame
 from config import (
     DEBUG_HITBOXES,
     DEFAULT_WINDOW_CAPTION,
+    END_SESSION_MESSAGE,
     MICROPHONE_CHECK_DEFAULT_PROMPT,
     OFFLINE_WINDOW_CAPTION,
     SETTINGS_DEV_ACTIONS,
@@ -135,6 +136,8 @@ class GameEngine:
                 self.voice.speak("Here are some gentle practice ideas. Choose one you like.")
             if screen_id == "teacher_report":
                 self._configure_teacher_report()
+            if screen_id == "end_session":
+                self._configure_end_session()
             if screen_id == "listening_state" and previous_screen_id == "microphone_check":
                 screen_id = self._run_microphone_check()
             if screen_id == "sentence_castle_game" and previous_screen_id not in {
@@ -462,6 +465,13 @@ class GameEngine:
     def _configure_teacher_report(self) -> None:
         self.state.teacher_report = generate_report(self.learner.get_profile())
 
+    def _configure_end_session(self) -> None:
+        report = generate_report(self.learner.get_profile())
+        self.state.teacher_report = report
+        saved_path = str(report.get("session_report_path", "") or "")
+        self.state.session_end_report_path = saved_path
+        print(f"[Lumi Session] End session report saved: {saved_path or 'not saved'}")
+
     def _open_recommended_practice(self, report: dict) -> None:
         screen_id = resolve_engine_screen_id(str(report.get("recommended_screen_id", "")))
         if screen_id == "bd_practice":
@@ -480,7 +490,15 @@ class GameEngine:
         if self.state.current_screen_id != "teacher_report":
             return False
         if action in {"back", "report_home", "home"}:
-            self.set_screen("main_menu")
+            if self.state.end_session_pending:
+                self.state.end_session_pending = False
+                self.set_screen("end_session")
+            else:
+                self.set_screen("main_menu")
+            return True
+        if action in {"finish_session", "end_session"}:
+            self.state.end_session_pending = False
+            self.set_screen("end_session")
             return True
         if action == "practice_recommendation":
             report = self.state.teacher_report or generate_report(self.learner.get_profile())
@@ -622,6 +640,8 @@ class GameEngine:
         if action in self.screens:
             self.set_screen(action)
             return
+        if self._handle_teacher_report_action(action):
+            return
         if action == "back":
             self.set_screen("main_menu")
             return
@@ -663,8 +683,6 @@ class GameEngine:
             return
         if action == "play_again":
             self.set_screen("world_map")
-            return
-        if self._handle_teacher_report_action(action):
             return
         if self.state.current_screen_id == "letter_correct_feedback" and action == "next_activity":
             if self.state.letter_demo_mode:
@@ -837,8 +855,6 @@ class GameEngine:
                 self.state.preserve_word_garden_task = True
                 self.set_screen("word_garden_game")
                 return
-        if self._handle_teacher_report_action(action):
-            return
         if self.state.current_screen_id == "microphone_check":
             if action in {"test_mic", "test_microphone"}:
                 self.set_screen("listening_state")
@@ -847,6 +863,7 @@ class GameEngine:
                 self.set_screen("settings")
                 return
         if action == "view_report" or action == "open_report":
+            self.state.end_session_pending = True
             self.set_screen("teacher_report")
             return
         if action == "continue_offline":
@@ -1164,6 +1181,10 @@ class GameEngine:
 
         if screen_id == "progress_complete":
             self.voice.speak(get_feedback("level_complete")["message"])
+            return
+
+        if screen_id == "end_session":
+            self.voice.speak(END_SESSION_MESSAGE)
             return
 
         if screen_id == "teacher_report":

@@ -51,3 +51,5 @@ class GameState:
     offline_status_message: str = ""
     settings_status_message: str = ""
     settings_status_shown_at_ms: int | None = None
+    end_session_pending: bool = False
+    session_end_report_path: str = ""
