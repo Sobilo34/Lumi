@@ -97,3 +97,29 @@ def test_resolve_engine_screen_id_maps_mcp_ids() -> None:
     assert resolve_engine_screen_id(SCREEN_WORD_GARDEN) == "word_garden_game"
     assert resolve_engine_screen_id(SCREEN_SENTENCE_CASTLE) == "sentence_castle_game"
     assert resolve_engine_screen_id(SCREEN_WORLD_MAP) == "world_map"
+
+
+def test_b4_demo_profile_report_fields(tmp_path: Path) -> None:
+    """B4 profile: mixed weak skills with B/D taking recommendation priority."""
+    profile = {
+        "child_name": "Player 1",
+        "total_stars": 6,
+        "attempts": 8,
+        "correct_answers": 6,
+        "mastered_letters": ["A", "B"],
+        "mastered_words": ["dog"],
+        "weak_letters": {"B": 2, "D": 1},
+        "weak_words": {"cat": 2},
+        "sentence_errors": {"word_order": 1},
+    }
+    report = generate_report(profile, output_path=tmp_path / "b4_report.json")
+
+    assert report["stars_earned"] == 6
+    assert report["attempts"] == 8
+    assert report["correct_answers"] == 6
+    assert report["accuracy_percent"] == 75
+    assert report["strong_skill"] == "Letter recognition"
+    assert report["needs_practice"] == "Letters B and D"
+    assert report["recommended_next_activity"] == "B/D Practice"
+    assert report["recommended_screen_id"] == SCREEN_BD_PRACTICE
+    assert tmp_path.joinpath("b4_report.json").exists()
