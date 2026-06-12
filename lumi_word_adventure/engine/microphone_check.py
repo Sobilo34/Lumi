@@ -27,11 +27,23 @@ def run_microphone_check(*, listen_timeout: int = 2) -> dict[str, str | bool | N
         }
 
     heard_text = None
+    listen_error = False
     try:
         heard_text = speech_to_text.listen_once(timeout=listen_timeout)
     except Exception as error:
+        listen_error = True
         print(f"[Lumi Mic] listen_once failed safely: {error}")
         heard_text = None
+
+    if listen_error:
+        status_message = speech_to_text.get_status_message()
+        print(f"[Lumi Mic] routing offline after listen error: {status_message}")
+        return {
+            "next_screen_id": VOICE_FALLBACK_SCREEN_ID,
+            "status_message": status_message,
+            "heard_text": None,
+            "available": False,
+        }
 
     if heard_text:
         status_message = f"Microphone is ready. I heard: {heard_text}."

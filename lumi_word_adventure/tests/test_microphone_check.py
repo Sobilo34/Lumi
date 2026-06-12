@@ -55,7 +55,7 @@ def test_run_microphone_check_available(monkeypatch: pytest.MonkeyPatch) -> None
     assert "ready" in str(result["status_message"]).lower()
 
 
-def test_run_microphone_check_listen_failure_is_safe(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_run_microphone_check_listen_failure_routes_offline(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr("engine.microphone_check.speech_to_text.is_available", lambda: True)
 
     def _boom(timeout: int = 2):
@@ -65,9 +65,8 @@ def test_run_microphone_check_listen_failure_is_safe(monkeypatch: pytest.MonkeyP
 
     result = run_microphone_check()
 
-    assert result["available"] is True
-    assert result["next_screen_id"] == "listening_state"
-    assert result["status_message"] == "Microphone is ready."
+    assert result["available"] is False
+    assert result["next_screen_id"] == "offline_continue"
 
 
 def test_microphone_check_test_mic_success_flow(engine: GameEngine, monkeypatch: pytest.MonkeyPatch) -> None:

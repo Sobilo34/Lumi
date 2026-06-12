@@ -3,7 +3,8 @@ Pillow
 pyttsx3
 vosk
 SpeechRecognition
-pyaudio
+pyaudio  # Linux: install portaudio19-dev before pip (sudo apt-get install portaudio19-dev)
 rapidfuzz
 pytest
 matplotlib
+sounddevice

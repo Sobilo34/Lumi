@@ -2,7 +2,7 @@
 
 Priority order:
 1) Vosk offline recognition (requires a local model and sounddevice)
-2) SpeechRecognition backend (if installed)
+2) SpeechRecognition backend (requires PyAudio + a microphone device)
 3) Safe no-op fallback with friendly status messaging
 """
 from __future__ import annotations
@@ -17,6 +17,7 @@ SD_AVAILABLE = False
 sd: Any = None
 SR_AVAILABLE = False
 sr = None
+PYAUDIO_AVAILABLE = False
 
 try:
     from vosk import Model, KaldiRecognizer  # type: ignore
@@ -53,22 +54,47 @@ try:
 except Exception:
     SR_AVAILABLE = False
 
+try:
+    import pyaudio  # type: ignore
+
+    _probe = pyaudio.PyAudio()
+    PYAUDIO_AVAILABLE = int(_probe.get_device_count()) > 0
+    _probe.terminate()
+except Exception:
+    PYAUDIO_AVAILABLE = False
+
+
+def _vosk_ready() -> bool:
+    return bool(VOSK_AVAILABLE and SD_AVAILABLE and VOSK_MODEL_PATH)
+
+
+def _speech_recognition_ready() -> bool:
+    if not SR_AVAILABLE or sr is None or not PYAUDIO_AVAILABLE:
+        return False
+    try:
+        names = sr.Microphone.list_microphone_names()
+        return bool(names)
+    except Exception:
+        return False
+
 
 def is_available() -> bool:
     try:
-        if VOSK_AVAILABLE and SD_AVAILABLE and VOSK_MODEL_PATH:
-            return True
-        return SR_AVAILABLE
+        return _vosk_ready() or _speech_recognition_ready()
     except Exception:
         return False
 
 
 def get_status_message() -> str:
     try:
-        if VOSK_AVAILABLE and SD_AVAILABLE and VOSK_MODEL_PATH:
+        if _vosk_ready():
             return "Voice ready (Vosk offline)."
-        if SR_AVAILABLE:
+        if _speech_recognition_ready():
             return "Voice ready (SpeechRecognition)."
+        if SR_AVAILABLE and not PYAUDIO_AVAILABLE:
+            return "Microphone driver is not ready. You can still tap answers."
+        if VOSK_AVAILABLE and not VOSK_MODEL_PATH:
+            return "Voice model is not installed. You can still tap answers."
         return "Voice is not ready. You can still tap answers."
     except Exception:
         return "Voice is not ready. You can still tap answers."
@@ -78,7 +104,7 @@ def listen_once(timeout: int = 5) -> Optional[str]:
     if not is_available():
         return None
 
-    if VOSK_AVAILABLE and SD_AVAILABLE and VOSK_MODEL_PATH:
+    if _vosk_ready():
         try:
             from vosk import Model, KaldiRecognizer  # type: ignore
 
@@ -98,7 +124,7 @@ def listen_once(timeout: int = 5) -> Optional[str]:
         except Exception:
             pass
 
-    if SR_AVAILABLE and sr is not None:
+    if _speech_recognition_ready() and sr is not None:
         try:
             recognizer = sr.Recognizer()
             with sr.Microphone() as source:

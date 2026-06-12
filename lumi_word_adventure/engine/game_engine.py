@@ -19,7 +19,13 @@ import csv
 import os
 from datetime import datetime
 from engine.asset_manager import AssetManager
-from engine.adaptive_ai import choose_hint, choose_next_question, diagnose_word_mistake, recommend_practice
+from engine.adaptive_ai import (
+    choose_hint,
+    choose_next_question,
+    diagnose_letter_mistake,
+    diagnose_word_mistake,
+    recommend_practice,
+)
 from engine.feedback import get_feedback, get_hint, get_lumi_speech
 from engine.game_state import GameState
 from engine.learner_model import LearnerModel
@@ -30,7 +36,7 @@ from engine.settings_manager import SettingsManager, difficulty_mode_to_level
 from engine.sound_manager import SoundManager
 from engine.voice_guard import is_stt_ready, safe_listen_once, stt_status_message
 from engine.scoring import calculate_stars, check_badge_unlocks, update_score
-from data_loader import load_vocabulary
+from data_loader import load_letters, load_vocabulary
 from reports.report_generator import generate_report, resolve_engine_screen_id
 from ui.microphone_overlay import draw_microphone_check_overlay
 from ui.offline_overlay import draw_offline_overlay
@@ -40,6 +46,20 @@ from ui.screens import create_screen_with_hitboxes
 from voice.text_to_speech import TextToSpeech
 import voice.speech_to_text as speech_to_text
 from voice.voice_checker import check_spoken_answer
+
+
+LETTER_ISLAND_VISIBLE = frozenset({"B", "D", "P", "A"})
+WORD_GARDEN_VISIBLE = frozenset({"cat", "dog", "sun", "ball"})
+WORD_CARD_ACTIONS = {
+    "select_word_cat": "cat",
+    "select_word_dog": "dog",
+    "select_word_sun": "sun",
+    "select_word_ball": "ball",
+    "answer_cat_correct": "cat",
+    "answer_dog_wrong": "dog",
+    "answer_sun_wrong": "sun",
+    "answer_ball_wrong": "ball",
+}
 
 
 class GameEngine:
@@ -57,6 +77,7 @@ class GameEngine:
         self._debug_enabled_since: int | None = None
         self._debug_duration_ms = 20_000
         self.word_questions = load_vocabulary()
+        self.letter_questions = load_letters()
         self._apply_loaded_settings(self.settings.load_settings())
         self._log_voice_startup_status()
         self._configure_letter_island_task()
@@ -299,9 +320,45 @@ class GameEngine:
                 self.voice.speak("Failed to export hitboxes")
             return ""
 
+    def _play_feedback_sfx(self, result: str, *, stars_earned: int = 0) -> None:
+        if result == "badge":
+            self.sound.play_sfx("badge")
+        elif result == "correct":
+            self.sound.play_sfx("star" if stars_earned >= 3 else "correct")
+        elif result == "wrong":
+            self.sound.play_sfx("wrong")
+
+    def _pick_visible_letter(self, preferred: str, fallback: str = "B") -> str:
+        cleaned = preferred.strip().upper()
+        if cleaned in LETTER_ISLAND_VISIBLE:
+            return cleaned
+        return fallback if fallback in LETTER_ISLAND_VISIBLE else "B"
+
+    def _pick_visible_word(self, preferred: str, fallback: str = "cat") -> str:
+        cleaned = preferred.strip().lower()
+        if cleaned in WORD_GARDEN_VISIBLE:
+            return cleaned
+        return fallback if fallback in WORD_GARDEN_VISIBLE else "cat"
+
     def _configure_letter_island_task(self) -> None:
-        self.state.current_task_prompt = "Find the letter B."
-        self.state.current_task_target = "B"
+        recommendation = choose_next_question(self.learner, self.letter_questions, "letter")
+        question = recommendation.get("question") or {}
+        focus = str(recommendation.get("focus") or question.get("letter") or "B")
+
+        if recommendation.get("activity") == "bd_practice":
+            weak_letters = self.learner.weak_letters if isinstance(self.learner.weak_letters, dict) else {}
+            d_count = int(weak_letters.get("D", 0) or 0)
+            b_count = int(weak_letters.get("B", 0) or 0)
+            letter = "D" if d_count >= b_count else "B"
+        else:
+            letter = self._pick_visible_letter(str(question.get("letter") or focus or "B"))
+
+        prompt = str(question.get("prompt") or f"Find the letter {letter}.").strip()
+        if not prompt.endswith((".", "!", "?")):
+            prompt = f"{prompt}."
+
+        self.state.current_task_prompt = prompt
+        self.state.current_task_target = letter
         self.state.current_hint_level = 0
         self.state.last_mistake_type = ""
         self.state.bd_confusion_attempts = 0
@@ -319,7 +376,8 @@ class GameEngine:
         recommendation = recommend_practice(self.learner)
         next_question = choose_next_question(self.learner, self.word_questions, "word")
         question = next_question.get("question") or {}
-        target_word = str(question.get("word") or "cat").strip().lower() or "cat"
+        preferred_word = str(question.get("word") or next_question.get("focus") or recommendation.get("focus") or "cat")
+        target_word = self._pick_visible_word(preferred_word)
         prompt = str(question.get("prompt") or f"Touch the {target_word}").strip()
         if not prompt.endswith((".", "!", "?")):
             prompt = f"{prompt}."
@@ -329,7 +387,8 @@ class GameEngine:
         self.state.current_hint_level = 0
         self.state.current_word_mode = str(next_question.get("reason") or recommendation.get("reason") or "")
         self.state.word_garden_support = str(next_question.get("support") or recommendation.get("support") or "")
-        self.state.word_garden_option_count = int(next_question.get("option_count") or recommendation.get("option_count") or 4)
+        option_count = int(next_question.get("option_count") or recommendation.get("option_count") or 4)
+        self.state.word_garden_option_count = 2 if option_count <= 2 else 4
         self.state.last_word_selected = ""
         self.state.last_word_feedback_message = ""
 
@@ -371,6 +430,7 @@ class GameEngine:
             self.learner.correct_answers = int(self.learner.correct_answers) + 1
             self.learner.update_accuracy()
             update_score(self.learner, stars_earned)
+            self._play_feedback_sfx("correct", stars_earned=stars_earned)
             self.state.sentence_feedback_message = "You built it!"
             self.voice.speak("You built it!")
             self.set_screen("sentence_correct_feedback")
@@ -382,6 +442,7 @@ class GameEngine:
         self.learner.record_sentence_error("word_order")
         self.state.last_mistake_type = "word_order"
         self.state.sentence_feedback_message = "Good try. Start with I."
+        self._play_feedback_sfx("wrong")
         self.voice.speak("Good try. Start with I.")
         self.set_screen("sentence_mistake_hint")
 
@@ -449,7 +510,45 @@ class GameEngine:
         if not unlocked:
             return
         self.state.last_unlocked_badges = unlocked
+        self._play_feedback_sfx("badge")
         self.set_screen("badge_unlock")
+
+    def _handle_word_garden_selection(self, selected_word: str) -> None:
+        target_word = self.state.current_task_target or "cat"
+        self.state.last_word_selected = selected_word
+        if selected_word == target_word:
+            stars_earned = calculate_stars(True, self.state.current_hint_level)
+            self.learner.update_correct_streak()
+            self.learner.attempts = int(self.learner.attempts) + 1
+            self.learner.correct_answers = int(self.learner.correct_answers) + 1
+            self.learner.update_accuracy()
+            update_score(self.learner, stars_earned)
+            self.learner.mark_word_mastered(target_word)
+            unlocked = check_badge_unlocks(self.learner)
+            self.state.current_hint_level = 0
+            self.state.last_word_feedback_message = self._word_garden_correct_message()
+            self._play_feedback_sfx("correct", stars_earned=stars_earned)
+            if unlocked:
+                self._handle_badges(unlocked)
+                return
+            self.set_screen("word_correct_feedback")
+            return
+
+        self.learner.update_wrong_streak()
+        self.learner.attempts = int(self.learner.attempts) + 1
+        self.learner.update_accuracy()
+        self.learner.record_weak_word(target_word)
+        mistake_type = diagnose_word_mistake(target_word, selected_word, self.word_questions)
+        self.state.last_mistake_type = mistake_type
+        self.state.last_word_feedback_message = get_feedback(
+            False,
+            mistake_type=mistake_type,
+            target=target_word,
+            selected=selected_word,
+        )["message"]
+        self.state.current_hint_level = 1
+        self._play_feedback_sfx("wrong")
+        self.set_screen("word_mistake_hint")
 
     def _start_word_practice(self, word: str) -> None:
         # configure a targeted word practice without overriding recommendation flow
@@ -532,6 +631,7 @@ class GameEngine:
             unlocked = check_badge_unlocks(self.learner)
             self.state.current_hint_level = 0
             self.state.last_word_feedback_message = "You said apple!"
+            self._play_feedback_sfx("correct", stars_earned=stars_earned)
             if unlocked:
                 self._handle_badges(unlocked)
                 return
@@ -541,6 +641,7 @@ class GameEngine:
         self.learner.update_wrong_streak()
         self.learner.attempts = int(self.learner.attempts) + 1
         self.learner.update_accuracy()
+        self._play_feedback_sfx("wrong")
 
         if result == "close":
             self.voice.speak("Almost! I heard something close. Try again.")
@@ -720,46 +821,8 @@ class GameEngine:
             if action == "voice_mode":
                 self._begin_voice_challenge()
                 return
-            if action in {"answer_cat_correct", "answer_dog_wrong", "answer_sun_wrong", "answer_ball_wrong"}:
-                selected_word = {
-                    "answer_cat_correct": "cat",
-                    "answer_dog_wrong": "dog",
-                    "answer_sun_wrong": "sun",
-                    "answer_ball_wrong": "ball",
-                }[action]
-                target_word = self.state.current_task_target or "cat"
-                self.state.last_word_selected = selected_word
-                if selected_word == target_word:
-                    stars_earned = calculate_stars(True, self.state.current_hint_level)
-                    self.learner.update_correct_streak()
-                    self.learner.attempts = int(self.learner.attempts) + 1
-                    self.learner.correct_answers = int(self.learner.correct_answers) + 1
-                    self.learner.update_accuracy()
-                    update_score(self.learner, stars_earned)
-                    self.learner.mark_word_mastered(target_word)
-                    unlocked = check_badge_unlocks(self.learner)
-                    self.state.current_hint_level = 0
-                    self.state.last_word_feedback_message = self._word_garden_correct_message()
-                    if unlocked:
-                        self._handle_badges(unlocked)
-                        return
-                    self.set_screen("word_correct_feedback")
-                    return
-
-                self.learner.update_wrong_streak()
-                self.learner.attempts = int(self.learner.attempts) + 1
-                self.learner.update_accuracy()
-                self.learner.record_weak_word(target_word)
-                mistake_type = diagnose_word_mistake(target_word, selected_word, self.word_questions)
-                self.state.last_mistake_type = mistake_type
-                self.state.last_word_feedback_message = get_feedback(
-                    False,
-                    mistake_type=mistake_type,
-                    target=target_word,
-                    selected=selected_word,
-                )["message"]
-                self.state.current_hint_level = 1
-                self.set_screen("word_mistake_hint")
+            if action in WORD_CARD_ACTIONS:
+                self._handle_word_garden_selection(WORD_CARD_ACTIONS[action])
                 return
             if action == "play_cat_sound":
                 self.voice.speak("Cat says meow.")
@@ -813,15 +876,22 @@ class GameEngine:
             if action in {"answer_B", "answer_D"}:
                 target_letter = self.state.bd_practice_target or "B"
                 selected_letter = "B" if action == "answer_B" else "D"
+                self.learner.attempts = int(self.learner.attempts) + 1
                 if selected_letter == target_letter:
+                    self.learner.correct_answers = int(self.learner.correct_answers) + 1
+                    self.learner.update_accuracy()
                     self.learner.update_correct_streak()
-                    update_score(self.learner, calculate_stars(True, self.state.current_hint_level))
+                    stars_earned = calculate_stars(True, self.state.current_hint_level)
+                    update_score(self.learner, stars_earned)
                     self.learner.mark_letter_mastered(selected_letter)
+                    self._play_feedback_sfx("correct", stars_earned=stars_earned)
                     self._advance_bd_practice()
                 else:
                     self.learner.update_wrong_streak()
+                    self.learner.update_accuracy()
                     self.state.last_mistake_type = "bd_confusion"
                     self.learner.record_weak_letter(target_letter)
+                    self._play_feedback_sfx("wrong")
                     self.voice.speak(get_feedback(False, mistake_type="bd_confusion")["message"])
                 return
         if self.state.current_screen_id in {
@@ -1047,32 +1117,38 @@ class GameEngine:
 
         if selected_letter == target_letter:
             stars_earned = calculate_stars(True, self.state.current_hint_level)
+            self.learner.attempts = int(self.learner.attempts) + 1
+            self.learner.correct_answers = int(self.learner.correct_answers) + 1
+            self.learner.update_accuracy()
             self.learner.update_correct_streak()
             update_score(self.learner, stars_earned)
             self.learner.mark_letter_mastered(target_letter)
             unlocked = check_badge_unlocks(self.learner)
             self.state.current_hint_level = 0
             self.state.bd_confusion_attempts = 0
-            self.voice.speak("Great job! This is B.")
+            correct_message = get_feedback(True)["message"]
+            self.voice.speak(f"{correct_message} This is {target_letter}.")
+            self._play_feedback_sfx("correct", stars_earned=stars_earned)
             if unlocked:
                 self._handle_badges(unlocked)
                 return
             self.set_screen("letter_correct_feedback")
             return
 
+        self.learner.attempts = int(self.learner.attempts) + 1
+        self.learner.update_accuracy()
         self.learner.update_wrong_streak()
+        self.state.last_mistake_type = diagnose_letter_mistake(target_letter, selected_letter)
         self.learner.record_weak_letter(target_letter)
-        if selected_letter == "D":
-            self.state.last_mistake_type = "visual_letter_confusion"
+        if self.state.last_mistake_type == "bd_confusion":
             self.state.bd_confusion_attempts += 1
-        else:
-            self.state.last_mistake_type = "letter_confusion"
         feedback = get_feedback(
             False,
             mistake_type=self.state.last_mistake_type,
             target=target_letter,
             selected=selected_letter,
         )
+        self._play_feedback_sfx("wrong")
         self.voice.speak(feedback["message"])
         if self.state.bd_confusion_attempts >= 2:
             self._configure_bd_practice("B")
