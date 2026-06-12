@@ -5,6 +5,7 @@ import pygame
 
 from config import (
     DEBUG_HITBOXES,
+    MICROPHONE_CHECK_DEFAULT_PROMPT,
     SETTINGS_DEV_ACTIONS,
     SETTINGS_STATUS_DISPLAY_MS,
     SPLASH_DURATION_MS,
@@ -19,12 +20,14 @@ from engine.adaptive_ai import choose_hint, choose_next_question, diagnose_word_
 from engine.feedback import get_feedback, get_hint, get_lumi_speech
 from engine.game_state import GameState
 from engine.learner_model import LearnerModel
+from engine.microphone_check import run_microphone_check as execute_microphone_check
 from engine.screen_registry import ScreenRegistry
 from engine.settings_manager import SettingsManager, difficulty_mode_to_level
 from engine.sound_manager import SoundManager
 from engine.scoring import calculate_stars, check_badge_unlocks, update_score
 from data_loader import load_vocabulary
 from reports.report_generator import generate_report, resolve_engine_screen_id
+from ui.microphone_overlay import draw_microphone_check_overlay
 from ui.report_overlay import draw_teacher_report_overlays
 from ui.settings_overlay import draw_settings_overlay
 from ui.screens import create_screen_with_hitboxes
@@ -110,6 +113,8 @@ class GameEngine:
                     self._configure_word_garden_task()
             if screen_id == "microphone_check":
                 self.state.microphone_status_message = ""
+                self.state.microphone_test_mode = False
+                self.state.microphone_return_screen = "settings"
             if screen_id == "practice_weak_skills":
                 # get adaptive recommendation and present supportive practice options
                 try:
@@ -165,31 +170,27 @@ class GameEngine:
                 self.voice.speak("Persistent hitbox overlay disabled")
 
     def _run_microphone_check(self) -> str:
-        """Run a short microphone readiness test from the microphone check screen.
-
-        Returns the screen id that should be shown after the test.
-        """
+        """Run a short microphone readiness test from the microphone check screen."""
         self.state.microphone_test_mode = True
-        if not speech_to_text.is_available():
-            self.state.microphone_status_message = "Voice is not ready. You can still play."
+        self.state.microphone_return_screen = "settings"
+        result = execute_microphone_check()
+        self.state.microphone_status_message = str(result.get("status_message", MICROPHONE_CHECK_DEFAULT_PROMPT))
+        next_screen = str(result.get("next_screen_id", VOICE_FALLBACK_SCREEN_ID))
+
+        if not result.get("available"):
+            self.state.microphone_test_mode = False
             if self.state.voice_enabled:
                 self.voice.speak(self.state.microphone_status_message)
-            self.state.microphone_test_mode = False
-            return "offline_continue"
+            return next_screen
 
-        heard_text = None
-        try:
-            heard_text = speech_to_text.listen_once(timeout=2)
-        except Exception:
-            heard_text = None
-
-        if heard_text:
-            self.state.microphone_status_message = f"Microphone is ready. I heard: {heard_text}."
-        else:
-            self.state.microphone_status_message = "Microphone is ready."
         if self.state.voice_enabled:
-            self.voice.speak(self.state.microphone_status_message or get_lumi_speech("offline_continue"))
-        return "listening_state"
+            self.voice.speak(self.state.microphone_status_message)
+        return next_screen
+
+    def _finish_microphone_test(self) -> None:
+        return_screen = self.state.microphone_return_screen or "settings"
+        self.state.microphone_test_mode = False
+        self.set_screen(return_screen)
 
     def _export_hitboxes_to_csv(self) -> str:
         """Export current hitbox definitions to a CSV under ./diagnostics/ and return file path."""
@@ -784,9 +785,15 @@ class GameEngine:
                 return
         if self.state.current_screen_id == "listening_state":
             if action == "repeat_word":
-                self.voice.speak("Say apple.")
+                if self.state.microphone_test_mode:
+                    self.voice.speak(self.state.microphone_status_message or "Microphone is ready.")
+                else:
+                    self.voice.speak("Say apple.")
                 return
             if action in {"stop_listening", "stop_and_process"}:
+                if self.state.microphone_test_mode:
+                    self._finish_microphone_test()
+                    return
                 self.voice.speak("Listening stopped. Say apple when you are ready.")
                 self.set_screen("voice_challenge")
                 return
@@ -802,8 +809,7 @@ class GameEngine:
         if self._handle_teacher_report_action(action):
             return
         if self.state.current_screen_id == "microphone_check":
-            if action in {"test_mic", "test_microphone", "listening_state"}:
-                # Targeting listening_state from the screen is the quick microphone test path.
+            if action in {"test_mic", "test_microphone"}:
                 self.set_screen("listening_state")
                 return
             if action == "skip_mic":
@@ -1072,13 +1078,12 @@ class GameEngine:
         if screen_id == "listening_state":
             if self.state.microphone_test_mode:
                 self.voice.speak(self.state.microphone_status_message or "Microphone is ready.")
-                self.state.microphone_test_mode = False
             else:
                 self.voice.speak("I am listening. Say apple.")
             return
 
         if screen_id == "microphone_check":
-            self.voice.speak(self.state.microphone_status_message or "Tap Test Mic to check your microphone.")
+            self.voice.speak(self.state.microphone_status_message or MICROPHONE_CHECK_DEFAULT_PROMPT)
             return
 
         if screen_id == "voice_correct_feedback":
@@ -1203,13 +1208,8 @@ class GameEngine:
                 pass
         if self.state.current_screen_id == "microphone_check":
             try:
-                font = pygame.font.SysFont(None, 20)
-                status_text = self.state.microphone_status_message or "Tap Test Mic to check your microphone."
-                label = font.render(status_text, True, (32, 32, 32))
-                bg = pygame.Surface((label.get_width() + 14, label.get_height() + 10), pygame.SRCALPHA)
-                bg.fill((255, 255, 255, 210))
-                bg.blit(label, (7, 5))
-                self.screen.blit(bg, (78, 560))
+                status_text = self.state.microphone_status_message or MICROPHONE_CHECK_DEFAULT_PROMPT
+                draw_microphone_check_overlay(self.screen, status_text)
             except Exception:
                 pass
         # show export notification dialog for a few seconds

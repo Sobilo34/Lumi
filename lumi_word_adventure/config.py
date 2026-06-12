@@ -61,3 +61,9 @@ SETTINGS_DEV_ACTIONS = frozenset(
         "run_hitbox_smoke",
     }
 )
+
+# Microphone check screen (26_microphone_check.png) overlay tuning at 1280x720.
+MICROPHONE_CHECK_OVERLAY_COLOR = (72, 58, 88)
+MICROPHONE_CHECK_OVERLAY_PANEL_RGBA = (255, 255, 255, 210)
+MICROPHONE_CHECK_OVERLAY_POSITION = (0.06, 0.78)
+MICROPHONE_CHECK_DEFAULT_PROMPT = "Tap Test Mic to check your microphone."

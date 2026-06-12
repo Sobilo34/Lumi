@@ -288,8 +288,8 @@ class ScreenRegistry:
                 "26_microphone_check.png",
                 (
                     HitboxDefinition("Home", 0.91, 0.03, 0.07, 0.09, target="main_menu"),
-                    HitboxDefinition("Test Mic", 0.3, 0.75, 0.3, 0.15, target="listening_state"),
-                    HitboxDefinition("Skip", 0.64, 0.78, 0.13, 0.1, target="settings"),
+                    HitboxDefinition("Test Mic", 0.3, 0.75, 0.3, 0.15, action="test_microphone", target="listening_state"),
+                    HitboxDefinition("Skip", 0.64, 0.78, 0.13, 0.1, action="skip_mic", target="settings"),
                 ),
             ),
             ScreenDefinition(
