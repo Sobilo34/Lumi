@@ -45,3 +45,19 @@ TEACHER_REPORT_OVERLAY_POSITIONS: dict[str, tuple[float, float]] = {
 }
 # Recommended-practice hitbox aligned to the callout card on the reference PNG.
 TEACHER_REPORT_PRACTICE_HITBOX = (0.60, 0.60, 0.28, 0.25)
+
+# Settings screen (25_settings.png) overlay tuning at 1280x720.
+SETTINGS_OVERLAY_COLOR = (72, 58, 88)
+SETTINGS_OVERLAY_PANEL_RGBA = (255, 255, 255, 205)
+SETTINGS_OVERLAY_POSITION = (0.12, 0.70)
+SETTINGS_STATUS_OVERLAY_POSITION = (0.12, 0.76)
+SETTINGS_STATUS_DISPLAY_MS = 3500
+SETTINGS_DEV_ACTIONS = frozenset(
+    {
+        "export_hitboxes",
+        "decrease_smoke",
+        "increase_smoke",
+        "toggle_hitbox_persistent",
+        "run_hitbox_smoke",
+    }
+)

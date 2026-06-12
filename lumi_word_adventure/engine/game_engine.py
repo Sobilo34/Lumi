@@ -3,7 +3,14 @@ from __future__ import annotations
 
 import pygame
 
-from config import DEBUG_HITBOXES, DEFAULT_DIFFICULTY, MAX_DIFFICULTY, MIN_DIFFICULTY, SPLASH_DURATION_MS, VOICE_ENABLED_DEFAULT, VOICE_FALLBACK_SCREEN_ID
+from config import (
+    DEBUG_HITBOXES,
+    SETTINGS_DEV_ACTIONS,
+    SETTINGS_STATUS_DISPLAY_MS,
+    SPLASH_DURATION_MS,
+    VOICE_ENABLED_DEFAULT,
+    VOICE_FALLBACK_SCREEN_ID,
+)
 import csv
 import os
 from datetime import datetime
@@ -13,10 +20,13 @@ from engine.feedback import get_feedback, get_hint, get_lumi_speech
 from engine.game_state import GameState
 from engine.learner_model import LearnerModel
 from engine.screen_registry import ScreenRegistry
+from engine.settings_manager import SettingsManager, difficulty_mode_to_level
+from engine.sound_manager import SoundManager
 from engine.scoring import calculate_stars, check_badge_unlocks, update_score
 from data_loader import load_vocabulary
 from reports.report_generator import generate_report, resolve_engine_screen_id
 from ui.report_overlay import draw_teacher_report_overlays
+from ui.settings_overlay import draw_settings_overlay
 from ui.screens import create_screen_with_hitboxes
 from voice.text_to_speech import TextToSpeech
 import voice.speech_to_text as speech_to_text
@@ -30,27 +40,53 @@ class GameEngine:
         self.running = True
         self.asset_manager = AssetManager()
         self.registry = ScreenRegistry()
+        self.settings = SettingsManager()
+        self.sound = SoundManager()
         self.voice = TextToSpeech(enabled=VOICE_ENABLED_DEFAULT)
         self.learner = LearnerModel()
         self.state = GameState(splash_started_at=pygame.time.get_ticks())
-        # runtime debug toggle for hitbox outlines (temporary): toggled with H key
-        self.debug_hitboxes = bool(VOICE_ENABLED_DEFAULT and False)
         self._debug_enabled_since: int | None = None
         self._debug_duration_ms = 20_000
         self.word_questions = load_vocabulary()
-        self.voice.set_enabled(self.state.voice_enabled)
+        self._apply_loaded_settings(self.settings.load_settings())
         self._log_voice_startup_status()
         self._configure_letter_island_task()
         self.screens = {
             screen_id: create_screen_with_hitboxes(
                 self.registry.get_image_filename(screen_id),
-                self.registry.get_hitboxes(screen_id),
+                self._hitboxes_for_screen(screen_id),
                 self.asset_manager,
             )
             for screen_id in self.registry.screen_ids
         }
         self.state.current_screen_id = self.registry.screen_ids[0]
         self.current_screen = self.screens[self.state.current_screen_id]
+
+    def _hitboxes_for_screen(self, screen_id: str):
+        hitboxes = self.registry.get_hitboxes(screen_id)
+        if screen_id != "settings":
+            return hitboxes
+        if DEBUG_HITBOXES or bool(self.settings.load_settings().get("debug_hitboxes")):
+            return hitboxes
+        return [hitbox for hitbox in hitboxes if hitbox.action not in SETTINGS_DEV_ACTIONS]
+
+    def _current_difficulty_mode(self) -> str:
+        return str(self.settings.load_settings().get("difficulty_mode", "Medium"))
+
+    def _apply_loaded_settings(self, settings: dict) -> None:
+        self.state.music_enabled = bool(settings.get("music_enabled", True))
+        self.state.voice_enabled = bool(settings.get("voice_enabled", VOICE_ENABLED_DEFAULT))
+        difficulty_level = difficulty_mode_to_level(str(settings.get("difficulty_mode", "Medium")))
+        self.state.difficulty = difficulty_level
+        self.learner.difficulty = difficulty_level
+        self.learner.save_profile()
+        self.voice.set_enabled(self.state.voice_enabled)
+        self.sound.set_enabled(self.state.music_enabled)
+        self.debug_hitboxes = bool(DEBUG_HITBOXES or settings.get("debug_hitboxes", False))
+
+    def _show_settings_status(self, message: str) -> None:
+        self.state.settings_status_message = message
+        self.state.settings_status_shown_at_ms = pygame.time.get_ticks()
 
     def _log_voice_startup_status(self) -> None:
         status_message = speech_to_text.get_status_message()
@@ -806,36 +842,45 @@ class GameEngine:
         if action == "replay_welcome_audio" or action == "replay_main_menu_audio" or action == "replay_instruction_audio":
             return
         if action == "toggle_music":
-            self.state.music_enabled = not bool(self.state.music_enabled)
+            music_enabled = self.settings.toggle_music()
+            self.state.music_enabled = music_enabled
+            self.sound.set_enabled(music_enabled)
+            print(f"Music enabled: {music_enabled}")
             if self.state.voice_enabled:
-                self.voice.speak("Music on" if self.state.music_enabled else "Music off")
+                self.voice.speak("Music on" if music_enabled else "Music off")
             return
-        if action == "change_difficulty":
-            next_difficulty = int(self.state.difficulty) + 1
-            if next_difficulty > MAX_DIFFICULTY:
-                next_difficulty = MIN_DIFFICULTY
-            self.state.difficulty = next_difficulty
-            self.learner.difficulty = next_difficulty
+        if action in {"change_difficulty", "cycle_difficulty"}:
+            difficulty_mode = self.settings.cycle_difficulty()
+            difficulty_level = difficulty_mode_to_level(difficulty_mode)
+            self.state.difficulty = difficulty_level
+            self.learner.difficulty = difficulty_level
             self.learner.save_profile()
+            print(f"Difficulty mode: {difficulty_mode}")
             if self.state.voice_enabled:
-                self.voice.speak(f"Difficulty {next_difficulty}")
+                self.voice.speak(f"Difficulty {difficulty_mode}")
             return
-        if action == "reset_progress":
+        if action in {"reset_progress", "reset_profile"}:
             self.learner.reset_profile()
-            self.state.difficulty = int(self.learner.difficulty or DEFAULT_DIFFICULTY)
+            settings = self.settings.load_settings()
+            difficulty_level = difficulty_mode_to_level(str(settings.get("difficulty_mode", "Medium")))
+            self.state.difficulty = difficulty_level
+            self.learner.difficulty = difficulty_level
+            self.learner.save_profile()
             self._configure_letter_island_task()
             self.state.practice_recommendation = None
             self.state.teacher_report = None
             self.state.microphone_status_message = ""
+            print("Profile reset successfully")
+            self._show_settings_status("Profile reset successfully")
             if self.state.voice_enabled:
                 self.voice.speak("Progress reset")
             return
-        if action == "toggle_music" or action == "change_difficulty" or action == "reset_progress":
-            return
         if action == "toggle_voice":
-            self.state.voice_enabled = not self.state.voice_enabled
-            self.voice.set_enabled(self.state.voice_enabled)
-            if self.state.voice_enabled:
+            voice_enabled = self.settings.toggle_voice()
+            self.state.voice_enabled = voice_enabled
+            self.voice.set_enabled(voice_enabled)
+            print(f"Voice enabled: {voice_enabled}")
+            if voice_enabled:
                 self.voice.speak("Voice is on.")
             return
         if self.state.current_screen_id == "progress_complete":
@@ -1104,6 +1149,7 @@ class GameEngine:
                 print("[DEBUG] Hitbox overlay auto-disabled")
 
     def stop(self) -> None:
+        self.sound.stop()
         self.voice.stop()
 
     def draw(self) -> None:
@@ -1136,23 +1182,23 @@ class GameEngine:
                 draw_teacher_report_overlays(self.screen, self.state.teacher_report or {})
             except Exception:
                 pass
-        # Show settings debug label when on settings screen
         if self.state.current_screen_id == "settings":
             try:
-                font = pygame.font.SysFont(None, 20)
-                hb_status = "ON" if (self.debug_hitboxes or self.state.debug_persistent or DEBUG_HITBOXES) else "OFF"
-                dur_s = int((self.state.debug_smoke_duration_ms or 0) / 1000)
-                music_status = "ON" if self.state.music_enabled else "OFF"
-                voice_status = "ON" if self.state.voice_enabled else "OFF"
-                label_text = f"Music: {music_status}   Voice: {voice_status}   Difficulty: {self.state.difficulty}   Hitboxes: {hb_status}   Smoke: {dur_s}s"
-                label = font.render(label_text, True, (255, 255, 255))
-                # position near developer buttons
-                x = int(1280 * 0.12)
-                y = int(720 * 0.7)
-                bg = pygame.Surface((label.get_width() + 12, label.get_height() + 8), pygame.SRCALPHA)
-                bg.fill((0, 0, 0, 120))
-                bg.blit(label, (6, 4))
-                self.screen.blit(bg, (x, y))
+                status_message = ""
+                if self.state.settings_status_message and self.state.settings_status_shown_at_ms is not None:
+                    elapsed = pygame.time.get_ticks() - int(self.state.settings_status_shown_at_ms)
+                    if elapsed <= SETTINGS_STATUS_DISPLAY_MS:
+                        status_message = self.state.settings_status_message
+                    else:
+                        self.state.settings_status_message = ""
+                        self.state.settings_status_shown_at_ms = None
+                draw_settings_overlay(
+                    self.screen,
+                    music_enabled=bool(self.state.music_enabled),
+                    voice_enabled=bool(self.state.voice_enabled),
+                    difficulty_mode=self._current_difficulty_mode(),
+                    status_message=status_message,
+                )
             except Exception:
                 pass
         if self.state.current_screen_id == "microphone_check":

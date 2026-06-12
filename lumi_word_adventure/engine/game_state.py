@@ -47,3 +47,5 @@ class GameState:
     teacher_report: dict | None = None
     microphone_test_mode: bool = False
     microphone_status_message: str = ""
+    settings_status_message: str = ""
+    settings_status_shown_at_ms: int | None = None
