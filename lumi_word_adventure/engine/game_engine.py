@@ -15,7 +15,7 @@ from engine.learner_model import LearnerModel
 from engine.screen_registry import ScreenRegistry
 from engine.scoring import calculate_stars, check_badge_unlocks, update_score
 from data_loader import load_vocabulary
-from reports.report_generator import generate_report, get_recommendation, get_strong_skill, get_weak_area
+from reports.report_generator import generate_report, resolve_engine_screen_id
 from ui.screens import create_screen_with_hitboxes
 from voice.text_to_speech import TextToSpeech
 import voice.speech_to_text as speech_to_text
@@ -383,12 +383,17 @@ class GameEngine:
         self.set_screen("word_garden_game")
 
     def _configure_teacher_report(self) -> None:
-        profile = self.learner.get_profile()
-        report = generate_report(profile)
-        report["strongest_skill"] = get_strong_skill(profile)
-        report["weak_area"] = get_weak_area(profile)
-        report["recommended_next_activity"] = get_recommendation(profile)
-        self.state.teacher_report = report
+        self.state.teacher_report = generate_report(self.learner.get_profile())
+
+    @staticmethod
+    def _format_report_items(values: object) -> str:
+        if isinstance(values, dict):
+            labels = [str(key).strip() for key in values if str(key).strip()]
+            return ", ".join(labels) if labels else "None"
+        if isinstance(values, list):
+            labels = [str(item).strip() for item in values if str(item).strip()]
+            return ", ".join(labels) if labels else "None"
+        return "None"
 
     def _process_voice_capture_result(self, spoken: str | None) -> None:
         target_word = "apple"
@@ -755,18 +760,18 @@ class GameEngine:
                 self.set_screen("main_menu")
                 return
             if action in {"practice_recommendation", "report_practice_bd", "practice_bd_b", "practice_bd_d"}:
-                report = self.state.teacher_report or self.learner.get_profile()
-                weak_letters = report.get("weak_letters", []) if isinstance(report, dict) else []
-                target = "B"
-                if isinstance(weak_letters, list):
-                    if "D" in weak_letters and "B" not in weak_letters:
+                report = self.state.teacher_report or generate_report(self.learner.get_profile())
+                screen_id = resolve_engine_screen_id(str(report.get("recommended_screen_id", "")))
+                if screen_id == "bd_practice":
+                    weak_letters = report.get("weak_letters", {})
+                    target = "B"
+                    if isinstance(weak_letters, dict):
+                        if weak_letters.get("D", 0) > weak_letters.get("B", 0):
+                            target = "D"
+                    if action == "practice_bd_d":
                         target = "D"
-                    elif "B" in weak_letters:
-                        target = "B"
-                if action == "practice_bd_d":
-                    target = "D"
-                self._configure_bd_practice(target)
-                self.set_screen("bd_practice")
+                    self._configure_bd_practice(target)
+                self.set_screen(screen_id)
                 return
             if action == "report_refresh":
                 self._configure_teacher_report()
@@ -1091,9 +1096,9 @@ class GameEngine:
 
         if screen_id == "teacher_report":
             report = self.state.teacher_report or generate_report(self.learner.get_profile())
-            recommendation = report.get("recommended_next_activity", "Practice weak skills")
-            strongest = report.get("strongest_skill", "Practice in progress")
-            accuracy = report.get("accuracy", 0.0)
+            recommendation = report.get("recommended_next_activity", "World Map")
+            strongest = report.get("strong_skill", "Practice in progress")
+            accuracy = report.get("accuracy_percent", 0)
             self.voice.speak(f"Report ready. Strongest: {strongest}. Accuracy: {accuracy} percent. Next: {recommendation}.")
 
     def update(self) -> None:
@@ -1154,13 +1159,21 @@ class GameEngine:
                 # compact left summary column aligned to the report boxes
                 left_x = 82
                 top_y = 112
+                weak_words = self._format_report_items(report.get("weak_words"))
+                if weak_words != "None":
+                    weak_words = ", ".join(word.capitalize() for word in weak_words.split(", "))
+                sentence_errors = self._format_report_items(report.get("sentence_errors"))
+                if sentence_errors != "None":
+                    sentence_errors = sentence_errors.replace("_", " ")
+
                 summary_blocks = [
-                    (("Stars earned", report.get("stars", 0)), font_med),
-                    (("Accuracy", f"{report.get('accuracy', 0.0)}%"), font_med),
-                    (("Strongest skill", report.get("strongest_skill", "Practice in progress")), font_small),
-                    (("Weak letters", ", ".join(report.get("weak_letters", []) or ["None"])), font_small),
-                    (("Weak words", ", ".join([w.capitalize() for w in (report.get("weak_words", []) or ["None"])])), font_small),
-                    (("Sentence issue", report.get("sentence_issue", "none").replace("_", " ")), font_small),
+                    (("Stars earned", report.get("stars_earned", 0)), font_med),
+                    (("Accuracy", f"{report.get('accuracy_percent', 0)}%"), font_med),
+                    (("Strong skill", report.get("strong_skill", "Practice in progress")), font_small),
+                    (("Needs practice", report.get("needs_practice", "None")), font_small),
+                    (("Weak letters", self._format_report_items(report.get("weak_letters"))), font_small),
+                    (("Weak words", weak_words), font_small),
+                    (("Sentence errors", sentence_errors), font_small),
                 ]
 
                 y = top_y
