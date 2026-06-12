@@ -5,7 +5,9 @@ import pygame
 
 from config import (
     DEBUG_HITBOXES,
+    DEFAULT_WINDOW_CAPTION,
     MICROPHONE_CHECK_DEFAULT_PROMPT,
+    OFFLINE_WINDOW_CAPTION,
     SETTINGS_DEV_ACTIONS,
     SETTINGS_STATUS_DISPLAY_MS,
     SPLASH_DURATION_MS,
@@ -21,13 +23,16 @@ from engine.feedback import get_feedback, get_hint, get_lumi_speech
 from engine.game_state import GameState
 from engine.learner_model import LearnerModel
 from engine.microphone_check import run_microphone_check as execute_microphone_check
+from engine.offline_fallback import offline_prompt_text, resolve_offline_message
 from engine.screen_registry import ScreenRegistry
 from engine.settings_manager import SettingsManager, difficulty_mode_to_level
 from engine.sound_manager import SoundManager
+from engine.voice_guard import is_stt_ready, safe_listen_once, stt_status_message
 from engine.scoring import calculate_stars, check_badge_unlocks, update_score
 from data_loader import load_vocabulary
 from reports.report_generator import generate_report, resolve_engine_screen_id
 from ui.microphone_overlay import draw_microphone_check_overlay
+from ui.offline_overlay import draw_offline_overlay
 from ui.report_overlay import draw_teacher_report_overlays
 from ui.settings_overlay import draw_settings_overlay
 from ui.screens import create_screen_with_hitboxes
@@ -115,6 +120,10 @@ class GameEngine:
                 self.state.microphone_status_message = ""
                 self.state.microphone_test_mode = False
                 self.state.microphone_return_screen = "settings"
+            if screen_id == VOICE_FALLBACK_SCREEN_ID:
+                pygame.display.set_caption(OFFLINE_WINDOW_CAPTION)
+            elif previous_screen_id == VOICE_FALLBACK_SCREEN_ID:
+                pygame.display.set_caption(DEFAULT_WINDOW_CAPTION)
             if screen_id == "practice_weak_skills":
                 # get adaptive recommendation and present supportive practice options
                 try:
@@ -169,6 +178,32 @@ class GameEngine:
             if self.state.voice_enabled:
                 self.voice.speak("Persistent hitbox overlay disabled")
 
+    def _show_offline_fallback(self, reason: str | None = None) -> None:
+        message = resolve_offline_message(reason)
+        self.state.offline_status_message = offline_prompt_text(message)
+        self.state.microphone_status_message = message
+        self.state.microphone_test_mode = False
+        print(f"[Lumi Offline] {self.state.offline_status_message}")
+        self.set_screen(VOICE_FALLBACK_SCREEN_ID)
+
+    def _begin_voice_challenge(self) -> None:
+        self._configure_voice_challenge_task()
+        if not is_stt_ready():
+            print(f"[Lumi Voice] {stt_status_message()}")
+            self._show_offline_fallback(stt_status_message())
+            return
+        self.set_screen("voice_challenge")
+
+    def _start_voice_listening(self) -> None:
+        self._configure_voice_challenge_task()
+        if not is_stt_ready():
+            print(f"[Lumi Voice] {stt_status_message()}")
+            self._show_offline_fallback(stt_status_message())
+            return
+        self.set_screen("listening_state")
+        spoken = safe_listen_once(timeout=5)
+        self._process_voice_capture_result(spoken)
+
     def _run_microphone_check(self) -> str:
         """Run a short microphone readiness test from the microphone check screen."""
         self.state.microphone_test_mode = True
@@ -179,8 +214,12 @@ class GameEngine:
 
         if not result.get("available"):
             self.state.microphone_test_mode = False
+            message = str(result.get("status_message", ""))
+            self.state.offline_status_message = offline_prompt_text(message)
+            self.state.microphone_status_message = message
+            print(f"[Lumi Offline] {self.state.offline_status_message}")
             if self.state.voice_enabled:
-                self.voice.speak(self.state.microphone_status_message)
+                self.voice.speak(message or get_lumi_speech(VOICE_FALLBACK_SCREEN_ID))
             return next_screen
 
         if self.state.voice_enabled:
@@ -661,7 +700,7 @@ class GameEngine:
                 self.set_screen("word_mistake_hint")
                 return
             if action == "voice_mode":
-                self.set_screen("voice_challenge")
+                self._begin_voice_challenge()
                 return
             if action in {"answer_cat_correct", "answer_dog_wrong", "answer_sun_wrong", "answer_ball_wrong"}:
                 selected_word = {
@@ -743,15 +782,7 @@ class GameEngine:
                 self.set_screen("word_garden_game")
                 return
             if action == "start_listening":
-                self._configure_voice_challenge_task()
-                if not speech_to_text.is_available():
-                    msg = speech_to_text.get_status_message()
-                    self.voice.speak(msg)
-                    self.set_screen("voice_challenge")
-                    return
-                self.set_screen("listening_state")
-                spoken = speech_to_text.listen_once(timeout=5)
-                self._process_voice_capture_result(spoken)
+                self._start_voice_listening()
                 return
         if self.state.current_screen_id == "bd_practice":
             if action == "repeat_bd_prompt":
@@ -819,6 +850,7 @@ class GameEngine:
             self.set_screen("teacher_report")
             return
         if action == "continue_offline":
+            self.state.offline_status_message = ""
             self.set_screen("main_menu")
             return
         if action == "continue_from_badge":
@@ -951,7 +983,7 @@ class GameEngine:
             if self.state.voice_enabled:
                 self.voice.speak("Running hitbox smoke test")
             return
-        if action == "show_profile" or action == "repeat_prompt" or action == "show_hint" or action == "voice_or_speak_mode":
+        if action == "show_profile" or action == "repeat_prompt" or action == "show_hint":
             if action == "show_hint":
                 self.voice.speak(get_feedback("hint")["message"])
             elif action == "repeat_prompt":
@@ -983,7 +1015,7 @@ class GameEngine:
             return
 
         if action == "voice_or_speak_mode":
-            self.voice.speak("Voice coming soon.")
+            self._begin_voice_challenge()
             return
 
         card_actions = {
@@ -1103,8 +1135,10 @@ class GameEngine:
             self.voice.speak(f"B has a belly. D has a drum. Find {target_letter}.")
             return
 
-        if screen_id in {"offline_continue"}:
-            self.voice.speak(self.state.microphone_status_message or get_lumi_speech(screen_id))
+        if screen_id in {VOICE_FALLBACK_SCREEN_ID}:
+            spoken = self.state.offline_status_message or get_lumi_speech(screen_id)
+            if self.state.voice_enabled:
+                self.voice.speak(spoken)
             return
 
         if screen_id in {"letter_island_game"}:
@@ -1162,7 +1196,13 @@ class GameEngine:
         debug_mode = bool(DEBUG_HITBOXES or self.debug_hitboxes)
         self.current_screen.draw(self.screen, debug_hitboxes=debug_mode)
         if self.state.current_screen_id == VOICE_FALLBACK_SCREEN_ID:
-            pygame.display.set_caption("Lumi's Word Adventure - Offline Mode")
+            try:
+                draw_offline_overlay(
+                    self.screen,
+                    self.state.offline_status_message or offline_prompt_text(""),
+                )
+            except Exception:
+                pass
         if debug_mode:
             # draw a small translucent overlay with label and timer
             try:

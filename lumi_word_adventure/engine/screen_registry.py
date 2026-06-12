@@ -304,7 +304,15 @@ class ScreenRegistry:
                 "offline_continue",
                 "28_continue_offline.png",
                 (
-                    HitboxDefinition("Continue Offline", 0.36, 0.65, 0.29, 0.13, target="main_menu"),
+                    HitboxDefinition(
+                        "Continue Offline",
+                        0.36,
+                        0.65,
+                        0.29,
+                        0.13,
+                        action="continue_offline",
+                        target="main_menu",
+                    ),
                 ),
             ),
         ]

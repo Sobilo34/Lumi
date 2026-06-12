@@ -26,6 +26,10 @@ class TextToSpeech:
     def enabled(self) -> bool:
         return self._enabled and self._available
 
+    @property
+    def is_available(self) -> bool:
+        return self._available
+
     def _initialize_engine(self) -> None:
         if pyttsx3 is None:
             self._available = False
@@ -36,9 +40,10 @@ class TextToSpeech:
             self._available = True
             self._worker = threading.Thread(target=self._run_worker, daemon=True)
             self._worker.start()
-        except Exception:
+        except Exception as error:
             self._engine = None
             self._available = False
+            print(f"[Lumi Voice] TTS init failed safely: {error}")
 
     def _run_worker(self) -> None:
         while True:
@@ -56,13 +61,19 @@ class TextToSpeech:
             try:
                 self._engine.say(text)
                 self._engine.runAndWait()
-            except Exception:
+            except Exception as error:
                 self._available = False
+                print(f"[Lumi Voice] TTS playback failed safely: {error}")
                 break
 
     def speak(self, text: str) -> bool:
         cleaned_text = str(text).strip()
-        if not cleaned_text or not self.enabled:
+        if not cleaned_text:
+            return False
+        if not self._enabled:
+            return False
+        if not self._available:
+            print(f"[Lumi Voice] TTS unavailable, skipped speech.")
             return False
         self._queue.put(cleaned_text)
         return True

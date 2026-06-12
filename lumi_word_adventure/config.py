@@ -27,6 +27,8 @@ DEFAULT_DIFFICULTY = 1
 MAX_STARS = 3
 VOICE_FALLBACK_SCREEN_ID = "offline_continue"
 VOICE_FALLBACK_MESSAGE = "Continue offline"
+OFFLINE_WINDOW_CAPTION = "Lumi's Word Adventure - Offline Mode"
+DEFAULT_WINDOW_CAPTION = "Lumi's Word Adventure"
 SPLASH_DURATION_MS = 1750
 
 # Teacher report (24_teacher_report.png) dynamic overlay tuning at 1280x720.
@@ -67,3 +69,8 @@ MICROPHONE_CHECK_OVERLAY_COLOR = (72, 58, 88)
 MICROPHONE_CHECK_OVERLAY_PANEL_RGBA = (255, 255, 255, 210)
 MICROPHONE_CHECK_OVERLAY_POSITION = (0.06, 0.78)
 MICROPHONE_CHECK_DEFAULT_PROMPT = "Tap Test Mic to check your microphone."
+
+# Offline continue screen (28_continue_offline.png) overlay tuning at 1280x720.
+OFFLINE_OVERLAY_COLOR = (72, 58, 88)
+OFFLINE_OVERLAY_PANEL_RGBA = (255, 255, 255, 210)
+OFFLINE_OVERLAY_POSITION = (0.36, 0.52)

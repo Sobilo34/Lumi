@@ -55,20 +55,29 @@ except Exception:
 
 
 def is_available() -> bool:
-    if VOSK_AVAILABLE and SD_AVAILABLE and VOSK_MODEL_PATH:
-        return True
-    return SR_AVAILABLE
+    try:
+        if VOSK_AVAILABLE and SD_AVAILABLE and VOSK_MODEL_PATH:
+            return True
+        return SR_AVAILABLE
+    except Exception:
+        return False
 
 
 def get_status_message() -> str:
-    if VOSK_AVAILABLE and SD_AVAILABLE and VOSK_MODEL_PATH:
-        return "Voice ready (Vosk offline)."
-    if SR_AVAILABLE:
-        return "Voice ready (SpeechRecognition)."
-    return "Voice is not ready. You can still tap answers."
+    try:
+        if VOSK_AVAILABLE and SD_AVAILABLE and VOSK_MODEL_PATH:
+            return "Voice ready (Vosk offline)."
+        if SR_AVAILABLE:
+            return "Voice ready (SpeechRecognition)."
+        return "Voice is not ready. You can still tap answers."
+    except Exception:
+        return "Voice is not ready. You can still tap answers."
 
 
 def listen_once(timeout: int = 5) -> Optional[str]:
+    if not is_available():
+        return None
+
     if VOSK_AVAILABLE and SD_AVAILABLE and VOSK_MODEL_PATH:
         try:
             from vosk import Model, KaldiRecognizer  # type: ignore
