@@ -2,73 +2,339 @@
   {
     "id": "letter_A",
     "letter": "A",
+    "alphabet_index": 0,
     "sound": "/a/",
     "example_word": "apple",
     "difficulty": 1,
-    "confusable_with": ["E"],
+    "confusable_with": [
+      "E",
+      "O"
+    ],
     "prompt": "Find the letter A"
   },
   {
     "id": "letter_B",
     "letter": "B",
+    "alphabet_index": 1,
     "sound": "/b/",
     "example_word": "ball",
     "difficulty": 1,
-    "confusable_with": ["D", "P"],
+    "confusable_with": [
+      "D",
+      "P"
+    ],
     "prompt": "Find the letter B"
   },
   {
     "id": "letter_C",
     "letter": "C",
-    "sound": "/k/",
+    "alphabet_index": 2,
+    "sound": "/c/",
     "example_word": "cat",
     "difficulty": 1,
-    "confusable_with": ["G"],
+    "confusable_with": [
+      "G",
+      "O"
+    ],
     "prompt": "Find the letter C"
   },
   {
     "id": "letter_D",
     "letter": "D",
+    "alphabet_index": 3,
     "sound": "/d/",
     "example_word": "dog",
     "difficulty": 1,
-    "confusable_with": ["B"],
+    "confusable_with": [
+      "B",
+      "P"
+    ],
     "prompt": "Find the letter D"
   },
   {
     "id": "letter_E",
     "letter": "E",
+    "alphabet_index": 4,
     "sound": "/e/",
     "example_word": "egg",
     "difficulty": 1,
-    "confusable_with": ["A"],
+    "confusable_with": [
+      "A",
+      "F"
+    ],
     "prompt": "Find the letter E"
   },
   {
     "id": "letter_F",
     "letter": "F",
+    "alphabet_index": 5,
     "sound": "/f/",
     "example_word": "fish",
     "difficulty": 1,
-    "confusable_with": ["P"],
+    "confusable_with": [
+      "E",
+      "T"
+    ],
     "prompt": "Find the letter F"
+  },
+  {
+    "id": "letter_G",
+    "letter": "G",
+    "alphabet_index": 6,
+    "sound": "/g/",
+    "example_word": "goat",
+    "difficulty": 1,
+    "confusable_with": [
+      "C",
+      "Q"
+    ],
+    "prompt": "Find the letter G"
+  },
+  {
+    "id": "letter_H",
+    "letter": "H",
+    "alphabet_index": 7,
+    "sound": "/h/",
+    "example_word": "hat",
+    "difficulty": 1,
+    "confusable_with": [
+      "N",
+      "M"
+    ],
+    "prompt": "Find the letter H"
   },
   {
     "id": "letter_I",
     "letter": "I",
+    "alphabet_index": 8,
     "sound": "/i/",
     "example_word": "ink",
     "difficulty": 1,
-    "confusable_with": ["L"],
+    "confusable_with": [
+      "L",
+      "J"
+    ],
     "prompt": "Find the letter I"
+  },
+  {
+    "id": "letter_J",
+    "letter": "J",
+    "alphabet_index": 9,
+    "sound": "/j/",
+    "example_word": "jam",
+    "difficulty": 2,
+    "confusable_with": [
+      "I",
+      "G"
+    ],
+    "prompt": "Find the letter J"
+  },
+  {
+    "id": "letter_K",
+    "letter": "K",
+    "alphabet_index": 10,
+    "sound": "/k/",
+    "example_word": "kite",
+    "difficulty": 2,
+    "confusable_with": [
+      "X",
+      "H"
+    ],
+    "prompt": "Find the letter K"
+  },
+  {
+    "id": "letter_L",
+    "letter": "L",
+    "alphabet_index": 11,
+    "sound": "/l/",
+    "example_word": "lion",
+    "difficulty": 2,
+    "confusable_with": [
+      "I",
+      "T"
+    ],
+    "prompt": "Find the letter L"
+  },
+  {
+    "id": "letter_M",
+    "letter": "M",
+    "alphabet_index": 12,
+    "sound": "/m/",
+    "example_word": "moon",
+    "difficulty": 2,
+    "confusable_with": [
+      "N",
+      "W"
+    ],
+    "prompt": "Find the letter M"
+  },
+  {
+    "id": "letter_N",
+    "letter": "N",
+    "alphabet_index": 13,
+    "sound": "/n/",
+    "example_word": "nest",
+    "difficulty": 2,
+    "confusable_with": [
+      "M",
+      "H"
+    ],
+    "prompt": "Find the letter N"
+  },
+  {
+    "id": "letter_O",
+    "letter": "O",
+    "alphabet_index": 14,
+    "sound": "/o/",
+    "example_word": "owl",
+    "difficulty": 2,
+    "confusable_with": [
+      "A",
+      "Q"
+    ],
+    "prompt": "Find the letter O"
   },
   {
     "id": "letter_P",
     "letter": "P",
+    "alphabet_index": 15,
     "sound": "/p/",
     "example_word": "pig",
-    "difficulty": 1,
-    "confusable_with": ["B", "D"],
+    "difficulty": 2,
+    "confusable_with": [
+      "B",
+      "R"
+    ],
     "prompt": "Find the letter P"
+  },
+  {
+    "id": "letter_Q",
+    "letter": "Q",
+    "alphabet_index": 16,
+    "sound": "/q/",
+    "example_word": "queen",
+    "difficulty": 2,
+    "confusable_with": [
+      "O",
+      "G"
+    ],
+    "prompt": "Find the letter Q"
+  },
+  {
+    "id": "letter_R",
+    "letter": "R",
+    "alphabet_index": 17,
+    "sound": "/r/",
+    "example_word": "rain",
+    "difficulty": 2,
+    "confusable_with": [
+      "P",
+      "N"
+    ],
+    "prompt": "Find the letter R"
+  },
+  {
+    "id": "letter_S",
+    "letter": "S",
+    "alphabet_index": 18,
+    "sound": "/s/",
+    "example_word": "sun",
+    "difficulty": 3,
+    "confusable_with": [
+      "Z",
+      "C"
+    ],
+    "prompt": "Find the letter S"
+  },
+  {
+    "id": "letter_T",
+    "letter": "T",
+    "alphabet_index": 19,
+    "sound": "/t/",
+    "example_word": "top",
+    "difficulty": 3,
+    "confusable_with": [
+      "F",
+      "L"
+    ],
+    "prompt": "Find the letter T"
+  },
+  {
+    "id": "letter_U",
+    "letter": "U",
+    "alphabet_index": 20,
+    "sound": "/u/",
+    "example_word": "up",
+    "difficulty": 3,
+    "confusable_with": [
+      "V",
+      "W"
+    ],
+    "prompt": "Find the letter U"
+  },
+  {
+    "id": "letter_V",
+    "letter": "V",
+    "alphabet_index": 21,
+    "sound": "/v/",
+    "example_word": "van",
+    "difficulty": 3,
+    "confusable_with": [
+      "U",
+      "Y"
+    ],
+    "prompt": "Find the letter V"
+  },
+  {
+    "id": "letter_W",
+    "letter": "W",
+    "alphabet_index": 22,
+    "sound": "/w/",
+    "example_word": "web",
+    "difficulty": 3,
+    "confusable_with": [
+      "M",
+      "V"
+    ],
+    "prompt": "Find the letter W"
+  },
+  {
+    "id": "letter_X",
+    "letter": "X",
+    "alphabet_index": 23,
+    "sound": "/x/",
+    "example_word": "box",
+    "difficulty": 3,
+    "confusable_with": [
+      "K",
+      "Y"
+    ],
+    "prompt": "Find the letter X"
+  },
+  {
+    "id": "letter_Y",
+    "letter": "Y",
+    "alphabet_index": 24,
+    "sound": "/y/",
+    "example_word": "yarn",
+    "difficulty": 3,
+    "confusable_with": [
+      "V",
+      "X"
+    ],
+    "prompt": "Find the letter Y"
+  },
+  {
+    "id": "letter_Z",
+    "letter": "Z",
+    "alphabet_index": 25,
+    "sound": "/z/",
+    "example_word": "zoo",
+    "difficulty": 3,
+    "confusable_with": [
+      "S",
+      "N"
+    ],
+    "prompt": "Find the letter Z"
   }
 ]

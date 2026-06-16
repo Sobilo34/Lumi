@@ -32,6 +32,9 @@ class LearnerModel:
         "attempts",
         "correct_answers",
         "accuracy",
+        "current_letter_index",
+        "current_word_length",
+        "sentence_level",
     )
 
     def __init__(
@@ -65,6 +68,9 @@ class LearnerModel:
         profile.setdefault("correct_answers", 0)
         profile.setdefault("accuracy", 0.0)
         profile.setdefault("debug_persistent", False)
+        profile.setdefault("current_letter_index", 0)
+        profile.setdefault("current_word_length", 3)
+        profile.setdefault("sentence_level", 0)
         return profile
 
     def _load_or_create_profile(self) -> tuple[dict[str, Any], bool]:
@@ -168,6 +174,7 @@ class LearnerModel:
         key = letter.strip().upper()
         if key and key not in self.mastered_letters:
             self.mastered_letters.append(key)
+            self.weak_letters.pop(key, None)
             self.save_profile()
         return list(self.mastered_letters)
 

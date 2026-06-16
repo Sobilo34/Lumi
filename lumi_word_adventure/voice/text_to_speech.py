@@ -1,4 +1,8 @@
-"""Text-to-speech helper with graceful fallback."""
+"""Text-to-speech helper with graceful fallback.
+
+pyttsx3 must only be driven from one worker thread. Never call engine.stop()
+from the main/game thread while runAndWait() is active — that deadlocks the app.
+"""
 from __future__ import annotations
 
 from queue import Empty, Queue
@@ -16,7 +20,6 @@ class TextToSpeech:
         self._enabled = enabled
         self._rate = rate
         self._queue: Queue[str | None] = Queue()
-        self._lock = threading.Lock()
         self._engine: Any = None
         self._worker: threading.Thread | None = None
         self._available = False
@@ -38,7 +41,7 @@ class TextToSpeech:
             self._engine = pyttsx3.init()
             self._engine.setProperty("rate", self._rate)
             self._available = True
-            self._worker = threading.Thread(target=self._run_worker, daemon=True)
+            self._worker = threading.Thread(target=self._run_worker, daemon=True, name="lumi-tts")
             self._worker.start()
         except Exception as error:
             self._engine = None
@@ -66,6 +69,14 @@ class TextToSpeech:
                 print(f"[Lumi Voice] TTS playback failed safely: {error}")
                 break
 
+    def clear_pending(self) -> None:
+        """Drop queued lines without touching the pyttsx3 engine (thread-safe)."""
+        try:
+            while True:
+                self._queue.get_nowait()
+        except Empty:
+            pass
+
     def speak(self, text: str) -> bool:
         cleaned_text = str(text).strip()
         if not cleaned_text:
@@ -79,21 +90,19 @@ class TextToSpeech:
         return True
 
     def stop(self) -> None:
-        try:
-            while True:
-                self._queue.get_nowait()
-        except Empty:
-            pass
-        if self._engine is not None:
-            try:
-                self._engine.stop()
-            except Exception:
-                pass
+        """Clear pending speech only — safe to call from the game thread."""
+        self.clear_pending()
+
+    def shutdown(self) -> None:
+        """Stop worker thread during app exit."""
+        self.clear_pending()
+        if self._worker is not None and self._worker.is_alive():
+            self._queue.put(None)
 
     def set_enabled(self, enabled: bool) -> None:
         self._enabled = bool(enabled)
         if not self._enabled:
-            self.stop()
+            self.clear_pending()
 
     def set_rate(self, rate: int) -> None:
         self._rate = int(rate)
@@ -102,4 +111,3 @@ class TextToSpeech:
                 self._engine.setProperty("rate", self._rate)
             except Exception:
                 self._available = False
-

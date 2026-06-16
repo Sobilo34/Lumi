@@ -32,6 +32,13 @@ def get_feedback(
     if mistake_type == "bd_confusion":
         return _feedback_payload("incorrect", "Good try! B has a belly.")
 
+    if mistake_type == "letter_confusion":
+        if target and selected:
+            return _feedback_payload("incorrect", f"This is {selected.upper()}. Find {target.upper()}.")
+        if target:
+            return _feedback_payload("incorrect", f"Find {target.upper()}.")
+        return _feedback_payload("incorrect", "Good try! Let’s look again.")
+
     if mistake_type == "same_category_vocabulary_confusion":
         if selected:
             return _feedback_payload("incorrect", f"This is {selected}. A cat says meow. Find the cat.")

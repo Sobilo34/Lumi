@@ -8,4 +8,6 @@ def test_text_to_speech_safe_methods_do_not_crash() -> None:
 
     tts.set_rate(130)
     tts.set_enabled(True)
+    tts.clear_pending()
     tts.stop()
+    tts.shutdown()

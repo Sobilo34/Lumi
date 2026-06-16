@@ -13,7 +13,9 @@ def test_incorrect_feedback_is_supportive() -> None:
     assert feedback["message"] == "Good try! Let’s look again."
 
 
-def test_bd_confusion_feedback_mentions_belly() -> None:
+def test_letter_confusion_feedback_names_selected_and_target() -> None:
+    feedback = get_feedback(False, mistake_type="letter_confusion", target="B", selected="P")
+    assert feedback["message"] == "This is P. Find B."
     feedback = get_feedback(False, mistake_type="bd_confusion")
     assert feedback["type"] == "incorrect"
     assert feedback["message"] == "Good try! B has a belly."

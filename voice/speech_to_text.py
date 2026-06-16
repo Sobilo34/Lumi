@@ -18,6 +18,25 @@ sd: Any = None
 SR_AVAILABLE = False
 sr = None
 PYAUDIO_AVAILABLE = False
+_pyaudio_checked = False
+
+
+def _probe_pyaudio() -> bool:
+    """Check PyAudio once, lazily, so broken drivers cannot block import."""
+    global PYAUDIO_AVAILABLE, _pyaudio_checked
+    if _pyaudio_checked:
+        return PYAUDIO_AVAILABLE
+    _pyaudio_checked = True
+    try:
+        import pyaudio  # type: ignore
+
+        probe = pyaudio.PyAudio()
+        PYAUDIO_AVAILABLE = int(probe.get_device_count()) > 0
+        probe.terminate()
+    except Exception:
+        PYAUDIO_AVAILABLE = False
+    return PYAUDIO_AVAILABLE
+
 
 try:
     from vosk import Model, KaldiRecognizer  # type: ignore
@@ -54,22 +73,13 @@ try:
 except Exception:
     SR_AVAILABLE = False
 
-try:
-    import pyaudio  # type: ignore
-
-    _probe = pyaudio.PyAudio()
-    PYAUDIO_AVAILABLE = int(_probe.get_device_count()) > 0
-    _probe.terminate()
-except Exception:
-    PYAUDIO_AVAILABLE = False
-
 
 def _vosk_ready() -> bool:
     return bool(VOSK_AVAILABLE and SD_AVAILABLE and VOSK_MODEL_PATH)
 
 
 def _speech_recognition_ready() -> bool:
-    if not SR_AVAILABLE or sr is None or not PYAUDIO_AVAILABLE:
+    if not SR_AVAILABLE or sr is None or not _probe_pyaudio():
         return False
     try:
         names = sr.Microphone.list_microphone_names()
@@ -91,7 +101,7 @@ def get_status_message() -> str:
             return "Voice ready (Vosk offline)."
         if _speech_recognition_ready():
             return "Voice ready (SpeechRecognition)."
-        if SR_AVAILABLE and not PYAUDIO_AVAILABLE:
+        if SR_AVAILABLE and not _probe_pyaudio():
             return "Microphone driver is not ready. You can still tap answers."
         if VOSK_AVAILABLE and not VOSK_MODEL_PATH:
             return "Voice model is not installed. You can still tap answers."

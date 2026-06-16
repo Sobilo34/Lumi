@@ -21,13 +21,18 @@ class GameState:
     current_task_prompt: str = ""
     current_task_target: str = ""
     current_hint_level: int = 0
-    letter_demo_mode: bool = True
+    letter_demo_mode: bool = False
     preserve_word_garden_task: bool = False
+    preserve_letter_island_task: bool = False
+    letter_choice_slots: list[str] = field(default_factory=lambda: ["B", "D", "P", "A"])
+    word_choice_slots: list[str] = field(default_factory=lambda: ["cat", "dog", "sun", "ball"])
+    letter_review_mode: bool = False
     current_word_mode: str = ""
     word_garden_support: str = ""
     word_garden_option_count: int = 4
     last_word_selected: str = ""
     last_word_feedback_message: str = ""
+    last_letter_feedback_message: str = ""
     last_spoken_text: str = ""
     sentence_slots: list[str] = field(default_factory=lambda: ["", "", "", ""])
     sentence_locked_indices: list[int] = field(default_factory=list)

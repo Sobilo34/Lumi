@@ -19,5 +19,8 @@
   "completed_worlds": [],
   "badges": [],
   "attempts": 0,
-  "correct_answers": 0
+  "correct_answers": 0,
+  "current_letter_index": 0,
+  "current_word_length": 3,
+  "sentence_level": 0
 }
