@@ -1449,7 +1449,6 @@ class GameEngine:
                 draw_letter_mistake_overlay(
                     self.screen,
                     message=self.state.last_letter_feedback_message or "Let's look again.",
-                    target_letter=self.state.current_task_target or "A",
                 )
             except Exception:
                 pass

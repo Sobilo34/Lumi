@@ -186,12 +186,9 @@ def draw_letter_mistake_overlay(
     surface: pygame.Surface,
     *,
     message: str,
-    target_letter: str = "",
 ) -> None:
     rect = _pct_rect(0.08, 0.06, 0.34, 0.16)
     _draw_message_panel(surface, message, rect, font_size=20)
-    if target_letter:
-        _draw_find_prompt(surface, target_letter)
 
 
 def draw_word_garden_overlay(

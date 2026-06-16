@@ -1,10 +1,10 @@
 {
   "child_name": "Player 1",
-  "total_stars": 38,
+  "total_stars": 41,
   "lumi_energy": 100,
   "current_world": "main_menu",
   "difficulty": 2,
-  "correct_streak": 5,
+  "correct_streak": 6,
   "wrong_streak": 0,
   "weak_letters": {
     "A": 13
@@ -21,7 +21,8 @@
     "A",
     "B",
     "D",
-    "P"
+    "P",
+    "Q"
   ],
   "mastered_words": [
     "cat"
@@ -29,13 +30,14 @@
   "completed_worlds": [],
   "badges": [
     "Great Learner",
-    "B and D Master"
+    "B and D Master",
+    "Letter Hero"
   ],
   "debug_persistent": false,
-  "attempts": 32,
-  "correct_answers": 13,
-  "accuracy": 40.62,
-  "current_letter_index": 16,
+  "attempts": 33,
+  "correct_answers": 14,
+  "accuracy": 42.42,
+  "current_letter_index": 17,
   "current_word_length": 3,
   "sentence_level": 0
 }
