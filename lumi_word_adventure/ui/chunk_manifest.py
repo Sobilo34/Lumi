@@ -33,6 +33,7 @@ class ScreenChunkSpec:
     fallback_image: str
     layers: tuple[LayerSpec, ...] = ()
     dynamic: dict[str, Any] = field(default_factory=dict)
+    asset_root: str = ""
 
 
 def _pct_rect(x_pct: float, y_pct: float, w_pct: float, h_pct: float) -> dict[str, float]:
@@ -80,6 +81,7 @@ def load_manifest() -> dict[str, ScreenChunkSpec]:
             fallback_image=str(entry.get("fallback_image") or ""),
             layers=tuple(layers),
             dynamic=dict(entry.get("dynamic") or {}),
+            asset_root=str(entry.get("asset_root") or screen_id),
         )
     return specs
 
@@ -95,6 +97,7 @@ def get_screen_spec(screen_id: str, *, fallback_image: str) -> ScreenChunkSpec:
             fallback_image=fallback_image,
             layers=spec.layers,
             dynamic=spec.dynamic,
+            asset_root=spec.asset_root or screen_id,
         )
     return _default_screen_spec(screen_id, fallback_image)
 

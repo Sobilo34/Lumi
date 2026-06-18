@@ -19,11 +19,12 @@ class ChunkComposer:
         self._static_surface(spec)
 
     def _has_any_chunk(self, spec: ScreenChunkSpec) -> bool:
-        screen_dir = self.assets.chunks_dir / spec.screen_id
+        asset_root = spec.asset_root or spec.screen_id
+        screen_dir = self.assets.chunks_dir / asset_root
         if not screen_dir.is_dir():
             return False
         for layer in spec.layers:
-            if layer.file and self.assets.chunk_exists(spec.screen_id, layer.file):
+            if layer.file and self.assets.chunk_exists(asset_root, layer.file):
                 return True
         return False
 
@@ -35,25 +36,32 @@ class ChunkComposer:
         else:
             surface.fill(pygame.Color("#F4C2C2"))
 
-        draw_dynamic_layers(surface, view, spec.dynamic, assets=self.assets, screen_id=spec.screen_id)
+        draw_dynamic_layers(
+            surface,
+            view,
+            spec.dynamic,
+            assets=self.assets,
+            screen_id=spec.asset_root or spec.screen_id,
+        )
 
     def _static_surface(self, spec: ScreenChunkSpec) -> pygame.Surface:
         cached = self._static_cache.get(spec.screen_id)
         if cached is not None:
             return cached
+        asset_root = spec.asset_root or spec.screen_id
         static = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
         for layer in spec.layers:
             if layer.repeat == "letter_slots":
-                self._blit_card_frames(static, spec)
+                self._blit_card_frames(static, spec, asset_root)
             elif layer.repeat == "profile_slots":
-                self._blit_profile_frames(static, spec)
+                self._blit_profile_frames(static, spec, asset_root)
             else:
-                self._blit_layer(static, spec.screen_id, layer)
+                self._blit_layer(static, asset_root, layer)
         self._static_cache[spec.screen_id] = static
         return static
 
-    def _blit_layer(self, surface: pygame.Surface, screen_id: str, layer: LayerSpec) -> None:
-        image = self.assets.load_chunk(screen_id, layer.file)
+    def _blit_layer(self, surface: pygame.Surface, asset_root: str, layer: LayerSpec) -> None:
+        image = self.assets.load_chunk(asset_root, layer.file)
         if image is None:
             return
         x, y, w, h = slot_rect(
@@ -68,14 +76,14 @@ class ChunkComposer:
         if w <= 0 or h <= 0:
             return
         fit = layer.fit or ("fill" if layer.file == "background.png" else "contain")
-        scaled = self.assets.scaled_chunk(screen_id, layer.file, w, h, fit=fit)
+        scaled = self.assets.scaled_chunk(asset_root, layer.file, w, h, fit=fit)
         if scaled is None:
             return
         draw_x = x + (w - scaled.get_width()) // 2
         draw_y = y + (h - scaled.get_height()) // 2
         surface.blit(scaled, (draw_x, draw_y))
 
-    def _blit_card_frames(self, surface: pygame.Surface, spec: ScreenChunkSpec) -> None:
+    def _blit_card_frames(self, surface: pygame.Surface, spec: ScreenChunkSpec, asset_root: str) -> None:
         cards_spec = spec.dynamic.get("letter_cards") or spec.dynamic.get("word_cards") or {}
         if not isinstance(cards_spec, dict):
             return
@@ -84,11 +92,11 @@ class ChunkComposer:
             if not isinstance(slot, dict):
                 continue
             x, y, w, h = slot_rect(slot)
-            scaled = self.assets.scaled_chunk(spec.screen_id, frame_file, w, h, fit="fill")
+            scaled = self.assets.scaled_chunk(asset_root, frame_file, w, h, fit="fill")
             if scaled is not None:
                 surface.blit(scaled, (x, y))
 
-    def _blit_profile_frames(self, surface: pygame.Surface, spec: ScreenChunkSpec) -> None:
+    def _blit_profile_frames(self, surface: pygame.Surface, spec: ScreenChunkSpec, asset_root: str) -> None:
         cards_spec = spec.dynamic.get("profile_cards") or {}
         if not isinstance(cards_spec, dict):
             return
@@ -97,6 +105,6 @@ class ChunkComposer:
             if not isinstance(slot, dict):
                 continue
             x, y, w, h = slot_rect(slot)
-            scaled = self.assets.scaled_chunk(spec.screen_id, frame_file, w, h, fit="fill")
+            scaled = self.assets.scaled_chunk(asset_root, frame_file, w, h, fit="fill")
             if scaled is not None:
                 surface.blit(scaled, (x, y))

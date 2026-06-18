@@ -241,6 +241,7 @@ class GameEngine:
             practice_cards=self._practice_card_labels(),
             badge_names=tuple(str(name) for name in (self.state.last_unlocked_badges or [])),
             loading_progress=loading_progress,
+            highlight_letter_slot=int(getattr(self.state, "highlight_letter_slot", -1) or -1),
         )
 
     @property
@@ -575,6 +576,8 @@ class GameEngine:
         self.state.bd_confusion_attempts = 0
         self.state.bd_practice_target = ""
         self.state.bd_practice_step = 0
+        self.state.highlight_letter_slot = -1
+        self.state.last_selected_letter = ""
 
     def _configure_bd_practice(self, target_letter: str = "B") -> None:
         self.state.bd_practice_target = target_letter
@@ -1002,6 +1005,7 @@ class GameEngine:
                 self.state.preserve_letter_island_task = True
                 self.state.last_mistake_type = ""
                 self.state.bd_confusion_attempts = 0
+                self.state.highlight_letter_slot = -1
                 self.set_screen("letter_island_game")
                 return
             if action == "repeat_prompt":
@@ -1335,6 +1339,8 @@ class GameEngine:
             self.state.current_hint_level = 0
             self.state.bd_confusion_attempts = 0
             self.state.last_mistake_type = ""
+            self.state.last_selected_letter = selected_letter
+            self.state.highlight_letter_slot = self._slot_index_for_letter(selected_letter) or -1
             correct_message = get_feedback(True)["message"]
             self.state.last_letter_feedback_message = f"{correct_message} This is {target_letter}."
             self._play_feedback_sfx("correct", stars_earned=stars_earned)
@@ -1347,6 +1353,8 @@ class GameEngine:
         self.learner.attempts = int(self.learner.attempts) + 1
         self.learner.update_accuracy()
         self.learner.update_wrong_streak()
+        self.state.last_selected_letter = selected_letter
+        self.state.highlight_letter_slot = self._slot_index_for_letter(selected_letter) or -1
         self.state.last_mistake_type = diagnose_letter_mistake(target_letter, selected_letter)
         self.learner.record_weak_letter(target_letter)
         feedback = get_feedback(

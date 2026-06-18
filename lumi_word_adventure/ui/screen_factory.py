@@ -11,7 +11,10 @@ from ui.chunk_screen import ChunkScreen
 from ui.hitboxes import Hitbox
 from ui.scene_factory import create_component_screen
 from ui.scene_view import SceneView
-from ui.screens import create_screen_with_hitboxes
+from ui.screens import BaseScreen, create_screen_with_hitboxes
+
+# Full reference PNG only — no chunk layers or dynamic overlays.
+IMAGE_ONLY_SCREEN_IDS = frozenset({"welcome"})
 
 
 def create_game_screen(
@@ -22,8 +25,12 @@ def create_game_screen(
     view_fn: Callable[[], SceneView],
     *,
     prefer_procedural: bool = False,
-) -> ChunkScreen | object:
+) -> ChunkScreen | BaseScreen | object:
     fallback = registry.get_image_filename(screen_id)
+
+    if screen_id in IMAGE_ONLY_SCREEN_IDS:
+        return create_screen_with_hitboxes(fallback, hitboxes, asset_manager)
+
     spec = get_screen_spec(screen_id, fallback_image=fallback)
     composer = ChunkComposer(asset_manager)
 

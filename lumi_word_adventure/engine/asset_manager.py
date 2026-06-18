@@ -191,6 +191,37 @@ class AssetManager:
     def chunk_exists(self, screen_id: str, filename: str) -> bool:
         return (self.chunks_dir / screen_id / filename).is_file()
 
+    def load_letter_tile(self, asset_root: str, letter: str, *, selected: bool = False) -> pygame.Surface | None:
+        key = str(letter or "A").lower()
+        suffix = "_selected" if selected else ""
+        return self.load_chunk(asset_root, f"letters/{key}{suffix}.png")
+
+    def scaled_letter_tile(
+        self,
+        asset_root: str,
+        letter: str,
+        width: int,
+        height: int,
+        *,
+        selected: bool = False,
+    ) -> pygame.Surface | None:
+        if width <= 0 or height <= 0:
+            return None
+        key = str(letter or "A").lower()
+        suffix = "_selected" if selected else ""
+        filename = f"letters/{key}{suffix}.png"
+        cache_key = f"{asset_root}/{filename}@{width}x{height}"
+        if cache_key in self._scaled_cache:
+            return self._scaled_cache[cache_key]
+        image = self.load_letter_tile(asset_root, letter, selected=selected)
+        if image is None and selected:
+            image = self.load_letter_tile(asset_root, letter, selected=False)
+        if image is None:
+            return None
+        prepared = self._fit_surface(image, width, height, fit="contain")
+        self._scaled_cache[cache_key] = prepared
+        return prepared
+
     def preload_screen(self, screen_id: str, filenames: tuple[str, ...]) -> None:
         for filename in filenames:
             self.load_chunk(screen_id, filename)

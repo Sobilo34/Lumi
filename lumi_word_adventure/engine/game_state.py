@@ -33,6 +33,8 @@ class GameState:
     last_word_selected: str = ""
     last_word_feedback_message: str = ""
     last_letter_feedback_message: str = ""
+    last_selected_letter: str = ""
+    highlight_letter_slot: int = -1
     last_spoken_text: str = ""
     sentence_slots: list[str] = field(default_factory=lambda: ["", "", "", ""])
     sentence_locked_indices: list[int] = field(default_factory=list)

@@ -35,3 +35,4 @@ class SceneView:
     practice_cards: tuple[str, ...] = ("Practice B / D", "Practice Words", "Practice Sentences")
     badge_names: tuple[str, ...] = ()
     loading_progress: float = 0.66
+    highlight_letter_slot: int = -1

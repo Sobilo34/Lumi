@@ -85,6 +85,143 @@ def _draw_letter_cards(surface: pygame.Surface, spec: dict[str, Any], view: Scen
         )
 
 
+def _draw_letter_tile_cards(
+    surface: pygame.Surface,
+    spec: dict[str, Any],
+    view: SceneView,
+    assets: AssetManager | None,
+    asset_root: str,
+) -> None:
+    letters = tuple(str(item or "").upper() for item in (view.slot_letters or ()))
+    slots: list[dict[str, Any]] = list(spec.get("slots") or [])
+    highlight = int(getattr(view, "highlight_letter_slot", -1) or -1)
+    for index, slot in enumerate(slots[:4]):
+        if index >= len(letters):
+            break
+        x, y, w, h = slot_rect(slot)
+        selected = index == highlight
+        if assets is not None and asset_root:
+            tile = assets.scaled_letter_tile(asset_root, letters[index], w, h, selected=selected)
+            if tile is not None:
+                draw_x = x + (w - tile.get_width()) // 2
+                draw_y = y + (h - tile.get_height()) // 2
+                surface.blit(tile, (draw_x, draw_y))
+                continue
+        rect = pygame.Rect(x, y, w, h)
+        style = CARD_STYLES[index % len(CARD_STYLES)]
+        draw_rounded_rect(surface, rect, style["bg"], radius=18, border=style["border"], border_width=3)
+        blit_fitted_text(
+            surface,
+            content_rect(rect, padding=14),
+            letters[index],
+            style["fg"],
+            padding=0,
+            fill_height_ratio=0.72,
+            shadow=(50, 38, 48),
+        )
+
+
+def _draw_letter_island_hud(surface: pygame.Surface, spec: dict[str, Any], view: SceneView) -> None:
+    x, y, w, h = slot_rect(spec)
+    rect = pygame.Rect(x, y, w, h)
+    name = _field(view, "child_name", "Lumi")
+    energy = int(getattr(view, "lumi_energy", 100) or 100)
+    energy_max = int(getattr(view, "lumi_energy_max", 100) or 100)
+    name_size = max(16, min(22, int(h * 0.34)))
+    energy_size = max(13, min(18, int(h * 0.26)))
+    name_label = font(name_size, bold=True).render(name, True, HUD_PINK)
+    surface.blit(name_label, (rect.x + int(w * 0.34), rect.y + int(h * 0.12)))
+    energy_label = font(energy_size, bold=True).render(f"⚡ {energy}/{energy_max}", True, PROMPT_BROWN)
+    surface.blit(energy_label, (rect.x + int(w * 0.34), rect.y + int(h * 0.42)))
+    bar = pygame.Rect(rect.x + int(w * 0.34), rect.y + int(h * 0.68), int(w * 0.48), max(6, int(h * 0.14)))
+    pygame.draw.rect(surface, (255, 255, 255), bar, border_radius=5)
+    fill_w = int(bar.width * min(1.0, energy / max(1, energy_max)))
+    if fill_w:
+        pygame.draw.rect(surface, HUD_PINK, pygame.Rect(bar.x, bar.y, fill_w, bar.height), border_radius=5)
+
+
+def _draw_letter_island_progress(surface: pygame.Surface, spec: dict[str, Any], view: SceneView) -> None:
+    text = _field(view, str(spec.get("field") or "progress_text"), "")
+    if not text:
+        return
+    x, y, w, h = slot_rect(spec)
+    rect = pygame.Rect(x, y, w, h)
+    label = font(16, bold=True).render(text, True, PROMPT_BROWN)
+    surface.blit(label, label.get_rect(center=rect.center))
+
+
+def _draw_hud_stars_dynamic(surface: pygame.Surface, spec: dict[str, Any], view: SceneView) -> None:
+    x, y, w, h = slot_rect(spec)
+    filled = max(0, min(3, int(getattr(view, "stars_filled", 0) or 0)))
+    _draw_rating_stars(surface, x + w // 2, y + h // 2, filled, size=max(16, int(h * 0.42)))
+
+
+def _wrap_text(text_font: pygame.font.Font, text: str, max_width: int) -> list[str]:
+    words = text.split()
+    if not words:
+        return [""]
+    lines: list[str] = []
+    current = words[0]
+    for word in words[1:]:
+        trial = f"{current} {word}"
+        if text_font.size(trial)[0] <= max_width:
+            current = trial
+        else:
+            lines.append(current)
+            current = word
+    lines.append(current)
+    return lines
+
+
+def _draw_mistake_speech(surface: pygame.Surface, spec: dict[str, Any], view: SceneView) -> None:
+    x, y, w, h = slot_rect(spec)
+    rect = pygame.Rect(x, y, w, h)
+    message = _field(view, str(spec.get("field") or "feedback_message"), str(spec.get("default") or ""))
+    if not message:
+        return
+    target = _field(view, "target_letter", "B").upper()
+    text_font = font(max(15, min(20, int(h * 0.22))), bold=True)
+    lines = _wrap_text(text_font, message, int(w * 0.82))
+    line_h = text_font.get_height() + 2
+    total_h = line_h * len(lines)
+    start_y = rect.centery - total_h // 2 + int(h * 0.04)
+    for line in lines:
+        if target and target in line:
+            parts = line.split(target)
+            segments: list[tuple[str, tuple[int, int, int]]] = []
+            for part_index, part in enumerate(parts):
+                if part:
+                    segments.append((part, PROMPT_BROWN))
+                if part_index < len(parts) - 1:
+                    segments.append((target, (155, 95, 195)))
+            line_w = sum(text_font.size(text)[0] for text, _ in segments)
+            cursor_x = rect.centerx - line_w // 2
+            for text, color in segments:
+                label = text_font.render(text, True, color)
+                surface.blit(label, (cursor_x, start_y))
+                cursor_x += label.get_width()
+        else:
+            label = text_font.render(line, True, PROMPT_BROWN)
+            surface.blit(label, label.get_rect(midtop=(rect.centerx, start_y)))
+        start_y += line_h
+
+
+def _draw_bd_hint_panel(surface: pygame.Surface, spec: dict[str, Any], view: SceneView) -> None:
+    message = _field(view, "feedback_message", "")
+    if "belly" not in message.lower():
+        return
+    x, y, w, h = slot_rect(spec)
+    panel = pygame.Rect(x, y, w, h)
+    draw_rounded_rect(surface, panel, (255, 255, 255), radius=16, border=(210, 185, 155), border_width=2)
+    b_rect = pygame.Rect(panel.x + int(w * 0.08), panel.centery - int(h * 0.28), int(h * 0.55), int(h * 0.55))
+    d_rect = pygame.Rect(panel.right - int(w * 0.08) - int(h * 0.55), panel.centery - int(h * 0.28), int(h * 0.55), int(h * 0.55))
+    for rect, letter, col in ((b_rect, "B", (155, 95, 195)), (d_rect, "D", (85, 165, 105))):
+        draw_rounded_rect(surface, rect, (245, 240, 250), radius=10, border=col, border_width=2)
+        blit_fitted_text(surface, rect, letter, col, padding=8, fill_height_ratio=0.65)
+    hint = font(max(14, int(h * 0.22)), bold=True).render("B has a belly.", True, PROMPT_BROWN)
+    surface.blit(hint, hint.get_rect(center=(panel.centerx, panel.bottom - int(h * 0.22))))
+
+
 def _draw_word_cards(surface: pygame.Surface, spec: dict[str, Any], view: SceneView) -> None:
     words = tuple(str(item or "").lower() for item in (view.slot_words or ()))
     slots: list[dict[str, Any]] = list(spec.get("slots") or [])
@@ -288,6 +425,18 @@ def draw_dynamic_layers(
             _draw_find_letter(surface, spec, view)
         elif layer_type == "letter_cards":
             _draw_letter_cards(surface, spec, view)
+        elif layer_type == "letter_tile_cards":
+            _draw_letter_tile_cards(surface, spec, view, assets, active_screen)
+        elif layer_type == "letter_island_hud":
+            _draw_letter_island_hud(surface, spec, view)
+        elif layer_type == "letter_island_progress":
+            _draw_letter_island_progress(surface, spec, view)
+        elif layer_type == "hud_stars_dynamic":
+            _draw_hud_stars_dynamic(surface, spec, view)
+        elif layer_type == "mistake_speech":
+            _draw_mistake_speech(surface, spec, view)
+        elif layer_type == "bd_hint_panel":
+            _draw_bd_hint_panel(surface, spec, view)
         elif layer_type == "word_cards":
             _draw_word_cards(surface, spec, view)
         elif layer_type == "touch_word":

@@ -31,10 +31,7 @@ class ScreenRegistry:
             ScreenDefinition(
                 "welcome",
                 "02_welcome_start.png",
-                (
-                    HitboxDefinition("Start", 0.36, 0.79, 0.28, 0.11, target="how_to_play"),
-                    HitboxDefinition("Speaker", 0.015, 0.035, 0.07, 0.11, action="replay_welcome_audio"),
-                ),
+                (HitboxDefinition("Start", 0.36, 0.82, 0.28, 0.11, target="how_to_play"),),
             ),
             ScreenDefinition(
                 "profile_selection",
@@ -51,20 +48,20 @@ class ScreenRegistry:
                 "main_menu",
                 "04_main_menu.png",
                 (
-                    HitboxDefinition("Play", 0.57, 0.195, 0.33, 0.16, target="world_map"),
-                    HitboxDefinition("Practice", 0.57, 0.402, 0.33, 0.145, target="practice_weak_skills"),
-                    HitboxDefinition("Report", 0.57, 0.595, 0.33, 0.135, target="teacher_report"),
-                    HitboxDefinition("Settings", 0.57, 0.77, 0.33, 0.135, target="settings"),
-                    HitboxDefinition("Speaker", 0.015, 0.035, 0.07, 0.11, action="replay_main_menu_audio"),
-                    HitboxDefinition("Profile", 0.88, 0.035, 0.07, 0.11, action="show_profile"),
+                    HitboxDefinition("Play", 0.57, 0.19, 0.33, 0.17, target="world_map"),
+                    HitboxDefinition("Practice", 0.57, 0.4, 0.33, 0.16, target="practice_weak_skills"),
+                    HitboxDefinition("Report", 0.57, 0.59, 0.33, 0.15, target="teacher_report"),
+                    HitboxDefinition("Settings", 0.57, 0.76, 0.33, 0.15, target="settings"),
+                    HitboxDefinition("Speaker", 0.02, 0.04, 0.07, 0.1, action="replay_main_menu_audio"),
+                    HitboxDefinition("Profile", 0.88, 0.03, 0.07, 0.1, action="show_profile"),
                 ),
             ),
             ScreenDefinition(
                 "how_to_play",
                 "05_instruction_how_to_play.png",
                 (
-                    HitboxDefinition("Let's Go", 0.33, 0.81, 0.33, 0.11, target="world_map"),
-                    HitboxDefinition("Speaker", 0.71, 0.81, 0.07, 0.11, action="replay_instruction_audio"),
+                    HitboxDefinition("Let's Go", 0.34, 0.82, 0.31, 0.13, target="world_map"),
+                    HitboxDefinition("Speaker", 0.7, 0.82, 0.08, 0.13, action="replay_instruction_audio"),
                 ),
             ),
             ScreenDefinition(
