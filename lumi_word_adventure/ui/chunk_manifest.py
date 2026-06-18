@@ -113,3 +113,28 @@ def slot_rect(spec: dict[str, Any]) -> tuple[int, int, int, int]:
     x = int(SCREEN_WIDTH * float(spec.get("x_pct") or 0))
     y = int(SCREEN_HEIGHT * float(spec.get("y_pct") or 0))
     return x, y, w, h
+
+
+def _horizontal_center_px(spec: dict[str, Any]) -> int:
+    """Center x within an optional board container, else x_pct on screen."""
+    container_w = spec.get("container_w_pct")
+    if container_w is not None:
+        left = int(SCREEN_WIDTH * float(spec.get("container_x_pct") or 0))
+        width = int(SCREEN_WIDTH * float(container_w))
+        return left + width // 2
+    return int(SCREEN_WIDTH * float(spec.get("x_pct") or 0.5))
+
+
+def row_tile_slots(spec: dict[str, Any]) -> list[tuple[int, int, int, int]]:
+    """Evenly spaced tile rects centered in the board container or at x_pct."""
+    count = int(spec.get("count") or 4)
+    tile_w = int(SCREEN_WIDTH * float(spec.get("tile_w_pct") or 0.11))
+    tile_h = int(SCREEN_HEIGHT * float(spec.get("tile_h_pct") or 0.22))
+    gap = int(SCREEN_WIDTH * float(spec.get("gap_pct") or 0.028))
+    cx = _horizontal_center_px(spec)
+    cy = int(SCREEN_HEIGHT * float(spec.get("y_pct") or 0.56))
+    total_w = count * tile_w + max(0, count - 1) * gap
+    left = cx - total_w // 2
+    top = cy - tile_h // 2
+    step = tile_w + gap
+    return [(left + index * step, top, tile_w, tile_h) for index in range(count)]

@@ -14,7 +14,10 @@ from ui.scene_view import SceneView
 from ui.screens import BaseScreen, create_screen_with_hitboxes
 
 # Full reference PNG only — no chunk layers or dynamic overlays.
-IMAGE_ONLY_SCREEN_IDS = frozenset({"welcome"})
+IMAGE_ONLY_SCREEN_IDS = frozenset({
+    "welcome",
+    "letter_mistake_hint",
+})
 
 
 def create_game_screen(

@@ -21,7 +21,7 @@ from ui.components.primitives import (
     fit_font_size,
     font,
 )
-from ui.chunk_manifest import slot_rect
+from ui.chunk_manifest import _horizontal_center_px, row_tile_slots, slot_rect
 from ui.scene_view import SceneView
 
 if TYPE_CHECKING:
@@ -64,6 +64,30 @@ def _draw_find_letter(surface: pygame.Surface, spec: dict[str, Any], view: Scene
     )
 
 
+def _draw_find_letter_png(
+    surface: pygame.Surface,
+    spec: dict[str, Any],
+    view: SceneView,
+    assets: AssetManager | None,
+    asset_root: str,
+) -> None:
+    letter = _field(view, str(spec.get("field") or "target_letter"), "A").upper()
+    draw_spec = dict(spec)
+    if "container_w_pct" in draw_spec and "x_pct" not in draw_spec:
+        cx = _horizontal_center_px(draw_spec)
+        draw_spec["anchor"] = "center"
+        draw_spec["x_pct"] = cx / SCREEN_WIDTH
+    x, y, w, h = slot_rect(draw_spec)
+    if assets is not None and asset_root:
+        prompt = assets.scaled_find_prompt(asset_root, letter, w, h)
+        if prompt is not None:
+            draw_x = x + (w - prompt.get_width()) // 2
+            draw_y = y + (h - prompt.get_height()) // 2
+            surface.blit(prompt, (draw_x, draw_y))
+            return
+    _draw_find_letter(surface, spec, view)
+
+
 def _draw_letter_cards(surface: pygame.Surface, spec: dict[str, Any], view: SceneView) -> None:
     letters = tuple(str(item or "").upper() for item in (view.slot_letters or ()))
     slots: list[dict[str, Any]] = list(spec.get("slots") or [])
@@ -85,6 +109,15 @@ def _draw_letter_cards(surface: pygame.Surface, spec: dict[str, Any], view: Scen
         )
 
 
+def _tile_slot_rects(spec: dict[str, Any]) -> list[tuple[int, int, int, int]]:
+    if str(spec.get("layout") or "") == "row":
+        return row_tile_slots(spec)
+    slots: list[dict[str, Any]] = list(spec.get("slots") or [])
+    if slots:
+        return [slot_rect(slot) for slot in slots[:4]]
+    return row_tile_slots(spec)
+
+
 def _draw_letter_tile_cards(
     surface: pygame.Surface,
     spec: dict[str, Any],
@@ -93,15 +126,27 @@ def _draw_letter_tile_cards(
     asset_root: str,
 ) -> None:
     letters = tuple(str(item or "").upper() for item in (view.slot_letters or ()))
-    slots: list[dict[str, Any]] = list(spec.get("slots") or [])
+    slot_rects = _tile_slot_rects(spec)
     highlight = int(getattr(view, "highlight_letter_slot", -1) or -1)
-    for index, slot in enumerate(slots[:4]):
+    highlight_mode = str(spec.get("highlight_mode") or "slot")
+    target_letter = _field(view, "target_letter", "").upper()
+    for index, (x, y, w, h) in enumerate(slot_rects[:4]):
         if index >= len(letters):
             break
-        x, y, w, h = slot_rect(slot)
-        selected = index == highlight
+        if highlight_mode == "target_letter":
+            selected = letters[index] == target_letter
+        else:
+            selected = index == highlight
         if assets is not None and asset_root:
-            tile = assets.scaled_letter_tile(asset_root, letters[index], w, h, selected=selected)
+            selected_scale = float(spec.get("selected_scale") or 1.22)
+            tile = assets.scaled_letter_tile(
+                asset_root,
+                letters[index],
+                w,
+                h,
+                selected=selected,
+                selected_scale=selected_scale,
+            )
             if tile is not None:
                 draw_x = x + (w - tile.get_width()) // 2
                 draw_y = y + (h - tile.get_height()) // 2
@@ -423,6 +468,8 @@ def draw_dynamic_layers(
                 _draw_text_banner(surface, pygame.Rect(x, y, w, h), text)
         elif layer_type == "find_letter":
             _draw_find_letter(surface, spec, view)
+        elif layer_type == "find_letter_png":
+            _draw_find_letter_png(surface, spec, view, assets, active_screen)
         elif layer_type == "letter_cards":
             _draw_letter_cards(surface, spec, view)
         elif layer_type == "letter_tile_cards":

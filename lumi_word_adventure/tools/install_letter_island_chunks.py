@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Copy Letter Island chunk PNGs from Cursor assets into assets/ui_chunks/letter_island_game/."""
+"""Install Letter Island assets: static bg, find prompts A–Z, letter tiles."""
 from __future__ import annotations
 
 import shutil
@@ -7,29 +7,43 @@ import string
 from pathlib import Path
 
 ASSETS = Path("/home/bilal/.cursor/projects/home-bilal-bilal-projects-Learning-AIU-python-Lumi/assets")
-DEST = Path(__file__).resolve().parents[1] / "assets" / "ui_chunks" / "letter_island_game"
-PROFILE = Path(__file__).resolve().parents[1] / "assets" / "ui_chunks" / "profile_selection"
-WELCOME = Path(__file__).resolve().parents[1] / "assets" / "ui_chunks" / "welcome"
+PROJECT = Path(__file__).resolve().parents[1]
+DEST = PROJECT / "assets" / "ui_chunks" / "letter_island_game"
+REF = PROJECT.parent / "reference_interfaces"
 
-UI_CHUNKS: dict[str, str] = {
-    "background.png": "48433057-aeb2-4df2-ade0-491fb3ad86ed",
-    "board.png": "73fe7195-7513-4ba6-a37c-b657a18b3000",
-    "sign.png": "c1cb3173-64a5-4976-b1d3-2308c3da41ed",
-    "hud_profile.png": "bd898187-f422-4bfd-ac55-29fe9b34478f",
-    "hud_stars.png": "8a471180-53a1-43ee-98e5-70394801ab57",
-    "mascot.png": "7c78b0b2-87d1-4fcc-8481-54cd04575b70",
-    "mascot_celebrate.png": "ab9306e1-eee6-4370-b222-b675f2ae640b",
-    "mascot_point.png": "7c78b0b2-87d1-4fcc-8481-54cd04575b70",
-    "btn_repeat.png": "dca11bc5-e4d5-4cb9-bf03-5915144bb65e",
-    "btn_hint.png": "4a41904d-4537-4287-8e7c-e04a2e936b2d",
-    "btn_speak.png": "18a3153e-26b5-407b-8d68-d400b56e7dc6",
-    "btn_next.png": "95bf23bd-6042-4bd3-a000-abea3209f9f4",
-    "btn_try_again.png": "ece4d164-a20c-48ad-a87a-1706ea69a240",
-    "speech_great_job.png": "eacb8b99-2c6d-40a1-b1f6-b352596447bf",
-    "speech_bubble.png": "ea2ae738-2e69-4c47-b4cc-867563ccf8bc",
+# Static gameplay background (empty board — no find text or letter options).
+BACKGROUND_UUID = "86df1731-ec95-463f-83f0-3d3b42c202ca"
+SUCCESS_BACKGROUND_UUID = "c459dc81-ba6f-43ca-9a18-6cb76b0fcfab"
+
+# "Find X" prompt PNGs (verified letter → uuid).
+FIND_PROMPTS: dict[str, str] = {
+    "A": "4433000a-35b5-4add-84ef-7d565b38aba9",
+    "B": "16193ba7-b1ec-4aee-a452-cdeb652c7f7b",
+    "C": "32d77f03-7133-4939-8e76-9338b39638ea",
+    "D": "b47a3808-46d2-453d-b297-cfaaf96a76da",
+    "E": "2b4df08d-0f65-4ec3-83a9-fe1c288ebc35",
+    "F": "07f61f19-4edd-4aa4-981a-9eb615865fdf",
+    "G": "8421e8a2-7669-42ff-ab3e-0ac42d41c4a2",
+    "H": "82d1bacd-b413-435c-9f48-d122b6107ef7",
+    "I": "7f8f4cf1-c463-4aae-aa70-f99dab4669d4",
+    "J": "9c627b41-2472-4ed5-8097-83b45bd419de",
+    "K": "75e56736-a5fe-4f3a-9aff-4c6ff6b764d2",
+    "L": "ad31777b-9012-4caa-a198-e16bcd89de85",
+    "M": "4c5fe00c-bd00-4461-a71d-26963815616e",
+    "N": "a3795137-da43-405f-979e-dfc5039d116a",
+    "O": "6d252578-2b42-47bc-83eb-5b12416a9029",
+    "P": "e53f0c05-2c5d-4e4e-8f32-3b60eb475794",
+    "Q": "7e836bf4-88be-46e9-9dc1-d725f4bcd82a",
+    "R": "31be3f60-8b22-423c-abed-3906f69a600f",
+    "S": "02ad49a0-117a-4748-9b99-fcc55d9fa3d4",
+    "T": "3d43df29-b1d0-422b-ab86-3e112811653e",
+    "U": "ca0fbebf-2147-44f1-a1cb-4c11e13a16ed",
+    "W": "c92a53d9-daf9-4693-84af-ab8a2fcbb0d5",
+    "X": "75751cdb-f6f4-47c6-a9fe-1512f62d1060",
+    "Y": "e863d00c-fb0c-4223-8483-f372007bf74a",
+    "Z": "eae80c66-584e-49ee-9e56-fed6cb88100b",
 }
 
-# Portrait tiles A–J (768×1024)
 PORTRAIT_LETTERS: dict[str, tuple[str, str]] = {
     letter: (f"{ids[0]}", f"{ids[1]}")
     for letter, ids in zip(
@@ -49,7 +63,6 @@ PORTRAIT_LETTERS: dict[str, tuple[str, str]] = {
     )
 }
 
-# Square tiles K–Z (1024×1024)
 SQUARE_LETTERS: dict[str, tuple[str, str]] = {
     letter: (sel, norm)
     for letter, sel, norm in [
@@ -81,23 +94,34 @@ def _copy_uuid(uuid: str, dest: Path) -> None:
     shutil.copy2(source, dest)
 
 
+def _clear_ui_chunks() -> None:
+    if not DEST.is_dir():
+        return
+    for path in DEST.iterdir():
+        if path.name in {"letters", "find"}:
+            continue
+        if path.is_file():
+            path.unlink()
+        elif path.is_dir():
+            shutil.rmtree(path)
+
+
 def main() -> None:
+    find_dir = DEST / "find"
     letters_dir = DEST / "letters"
+    if find_dir.exists():
+        shutil.rmtree(find_dir)
     if letters_dir.exists():
         shutil.rmtree(letters_dir)
+    _clear_ui_chunks()
     DEST.mkdir(parents=True, exist_ok=True)
+    REF.mkdir(parents=True, exist_ok=True)
 
-    for name, uuid in UI_CHUNKS.items():
-        _copy_uuid(uuid, DEST / name)
+    _copy_uuid(BACKGROUND_UUID, REF / "07_letter_island_gameplay.png")
+    _copy_uuid(SUCCESS_BACKGROUND_UUID, REF / "08_letter_correct_feedback.png")
 
-    for src_name, dest_name in (("btn_back.png", "btn_home.png"), ("btn_settings.png", "btn_settings.png")):
-        source = PROFILE / src_name
-        if source.is_file():
-            shutil.copy2(source, DEST / dest_name)
-
-    welcome_mascot = WELCOME / "mascot.png"
-    if welcome_mascot.is_file():
-        shutil.copy2(welcome_mascot, DEST / "mascot.png")
+    for letter, uuid in FIND_PROMPTS.items():
+        _copy_uuid(uuid, find_dir / f"{letter.lower()}.png")
 
     for letter, (sel_id, norm_id) in PORTRAIT_LETTERS.items():
         key = letter.lower()
@@ -109,8 +133,10 @@ def main() -> None:
         _copy_uuid(sel_id, letters_dir / f"{key}_selected.png")
         _copy_uuid(norm_id, letters_dir / f"{key}.png")
 
-    print(f"Installed Letter Island chunks to {DEST}")
-    print(f"  UI files: {len(UI_CHUNKS)}")
+    print(f"Installed Letter Island assets to {DEST}")
+    print(f"  Background: {REF / '07_letter_island_gameplay.png'}")
+    print(f"  Success bg: {REF / '08_letter_correct_feedback.png'}")
+    print(f"  Find prompts: {len(FIND_PROMPTS)} (V uses procedural fallback)")
     print(f"  Letter tiles: {len(list(letters_dir.glob('*.png')))}")
 
 

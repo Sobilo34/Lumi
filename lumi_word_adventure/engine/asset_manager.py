@@ -204,18 +204,48 @@ class AssetManager:
         height: int,
         *,
         selected: bool = False,
+        selected_scale: float = 1.22,
     ) -> pygame.Surface | None:
         if width <= 0 or height <= 0:
             return None
         key = str(letter or "A").lower()
         suffix = "_selected" if selected else ""
         filename = f"letters/{key}{suffix}.png"
-        cache_key = f"{asset_root}/{filename}@{width}x{height}"
+        scale = selected_scale if selected else 1.0
+        fit_w = max(1, int(width * scale))
+        fit_h = max(1, int(height * scale))
+        cache_key = f"{asset_root}/{filename}@{width}x{height}@s{scale}"
         if cache_key in self._scaled_cache:
             return self._scaled_cache[cache_key]
         image = self.load_letter_tile(asset_root, letter, selected=selected)
         if image is None and selected:
             image = self.load_letter_tile(asset_root, letter, selected=False)
+        if image is None:
+            return None
+        prepared = self._fit_surface(image, fit_w, fit_h, fit="contain")
+        self._scaled_cache[cache_key] = prepared
+        return prepared
+
+    def load_find_prompt(self, asset_root: str, letter: str) -> pygame.Surface | None:
+        key = str(letter or "A").upper()
+        if not key.isalpha() or len(key) != 1:
+            return None
+        return self.load_chunk(asset_root, f"find/{key.lower()}.png")
+
+    def scaled_find_prompt(
+        self,
+        asset_root: str,
+        letter: str,
+        width: int,
+        height: int,
+    ) -> pygame.Surface | None:
+        if width <= 0 or height <= 0:
+            return None
+        key = str(letter or "A").lower()
+        cache_key = f"{asset_root}/find/{key}@{width}x{height}"
+        if cache_key in self._scaled_cache:
+            return self._scaled_cache[cache_key]
+        image = self.load_find_prompt(asset_root, letter)
         if image is None:
             return None
         prepared = self._fit_surface(image, width, height, fit="contain")

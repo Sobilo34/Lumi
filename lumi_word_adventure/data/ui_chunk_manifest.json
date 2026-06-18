@@ -82,97 +82,65 @@
     "letter_island_game": {
       "asset_root": "letter_island_game",
       "fallback_image": "07_letter_island_gameplay.png",
-      "layers": [
-        { "id": "background", "file": "background.png", "z": 0, "x_pct": 0, "y_pct": 0, "w_pct": 1, "h_pct": 1, "fit": "fill" },
-        { "id": "board", "file": "board.png", "z": 10, "anchor": "center", "x_pct": 0.5, "y_pct": 0.38, "w_pct": 0.61, "h_pct": 0.56, "fit": "contain" },
-        { "id": "sign", "file": "sign.png", "z": 12, "anchor": "center", "x_pct": 0.115, "y_pct": 0.79, "w_pct": 0.18, "h_pct": 0.2, "fit": "contain" },
-        { "id": "mascot", "file": "mascot.png", "z": 14, "anchor": "center", "x_pct": 0.125, "y_pct": 0.58, "w_pct": 0.15, "h_pct": 0.28, "fit": "contain" },
-        { "id": "hud_profile", "file": "hud_profile.png", "z": 20, "anchor": "center", "x_pct": 0.172, "y_pct": 0.065, "w_pct": 0.2, "h_pct": 0.095, "fit": "contain" },
-        { "id": "hud_stars", "file": "hud_stars.png", "z": 20, "anchor": "center", "x_pct": 0.795, "y_pct": 0.065, "w_pct": 0.13, "h_pct": 0.055, "fit": "contain" },
-        { "id": "btn_home", "file": "btn_home.png", "z": 28, "anchor": "center", "x_pct": 0.04, "y_pct": 0.07, "w_pct": 0.065, "h_pct": 0.12, "fit": "contain" },
-        { "id": "btn_settings", "file": "btn_settings.png", "z": 28, "anchor": "center", "x_pct": 0.96, "y_pct": 0.07, "w_pct": 0.065, "h_pct": 0.12, "fit": "contain" },
-        { "id": "btn_repeat", "file": "btn_repeat.png", "z": 30, "anchor": "center", "x_pct": 0.36, "y_pct": 0.855, "w_pct": 0.1, "h_pct": 0.18, "fit": "contain" },
-        { "id": "btn_hint", "file": "btn_hint.png", "z": 30, "anchor": "center", "x_pct": 0.5, "y_pct": 0.855, "w_pct": 0.11, "h_pct": 0.18, "fit": "contain" },
-        { "id": "btn_speak", "file": "btn_speak.png", "z": 30, "anchor": "center", "x_pct": 0.64, "y_pct": 0.855, "w_pct": 0.1, "h_pct": 0.18, "fit": "contain" }
-      ],
+      "layers": [],
       "dynamic": {
-        "letter_island_hud": { "type": "letter_island_hud", "x_pct": 0.075, "y_pct": 0.018, "w_pct": 0.195, "h_pct": 0.095 },
-        "letter_island_progress": { "type": "letter_island_progress", "field": "progress_text", "x_pct": 0.34, "y_pct": 0.018, "w_pct": 0.32, "h_pct": 0.055 },
-        "find_prompt": { "type": "find_letter", "field": "target_letter", "x_pct": 0.395, "y_pct": 0.19, "w_pct": 0.21, "h_pct": 0.08 },
+        "find_prompt": {
+          "type": "find_letter_png",
+          "field": "target_letter",
+          "anchor": "center",
+          "container_x_pct": 0.259,
+          "container_w_pct": 0.534,
+          "y_pct": 0.305,
+          "w_pct": 0.34,
+          "h_pct": 0.1
+        },
         "letter_cards": {
           "type": "letter_tile_cards",
-          "slots": [
-            { "x_pct": 0.29, "y_pct": 0.435, "w_pct": 0.13, "h_pct": 0.22 },
-            { "x_pct": 0.43, "y_pct": 0.435, "w_pct": 0.13, "h_pct": 0.22 },
-            { "x_pct": 0.57, "y_pct": 0.435, "w_pct": 0.13, "h_pct": 0.22 },
-            { "x_pct": 0.71, "y_pct": 0.435, "w_pct": 0.13, "h_pct": 0.22 }
-          ]
+          "layout": "row",
+          "count": 4,
+          "container_x_pct": 0.259,
+          "container_w_pct": 0.534,
+          "y_pct": 0.56,
+          "tile_w_pct": 0.11,
+          "tile_h_pct": 0.22,
+          "gap_pct": 0.028
         }
       }
     },
     "letter_correct_feedback": {
       "asset_root": "letter_island_game",
       "fallback_image": "08_letter_correct_feedback.png",
-      "layers": [
-        { "id": "background", "file": "background.png", "z": 0, "x_pct": 0, "y_pct": 0, "w_pct": 1, "h_pct": 1, "fit": "fill" },
-        { "id": "board", "file": "board.png", "z": 10, "anchor": "center", "x_pct": 0.5, "y_pct": 0.38, "w_pct": 0.61, "h_pct": 0.56, "fit": "contain" },
-        { "id": "sign", "file": "sign.png", "z": 12, "anchor": "center", "x_pct": 0.115, "y_pct": 0.79, "w_pct": 0.18, "h_pct": 0.2, "fit": "contain" },
-        { "id": "mascot", "file": "mascot_celebrate.png", "z": 14, "anchor": "center", "x_pct": 0.125, "y_pct": 0.58, "w_pct": 0.15, "h_pct": 0.28, "fit": "contain" },
-        { "id": "speech_great", "file": "speech_great_job.png", "z": 16, "anchor": "center", "x_pct": 0.2, "y_pct": 0.1, "w_pct": 0.34, "h_pct": 0.13, "fit": "contain" },
-        { "id": "hud_profile", "file": "hud_profile.png", "z": 20, "anchor": "center", "x_pct": 0.172, "y_pct": 0.065, "w_pct": 0.2, "h_pct": 0.095, "fit": "contain" },
-        { "id": "hud_stars", "file": "hud_stars.png", "z": 20, "anchor": "center", "x_pct": 0.795, "y_pct": 0.065, "w_pct": 0.13, "h_pct": 0.055, "fit": "contain" },
-        { "id": "btn_home", "file": "btn_home.png", "z": 28, "anchor": "center", "x_pct": 0.04, "y_pct": 0.07, "w_pct": 0.065, "h_pct": 0.12, "fit": "contain" },
-        { "id": "btn_settings", "file": "btn_settings.png", "z": 28, "anchor": "center", "x_pct": 0.96, "y_pct": 0.07, "w_pct": 0.065, "h_pct": 0.12, "fit": "contain" },
-        { "id": "btn_next", "file": "btn_next.png", "z": 30, "anchor": "center", "x_pct": 0.5, "y_pct": 0.845, "w_pct": 0.29, "h_pct": 0.11, "fit": "contain" }
-      ],
+      "layers": [],
       "dynamic": {
-        "letter_island_hud": { "type": "letter_island_hud", "x_pct": 0.075, "y_pct": 0.018, "w_pct": 0.195, "h_pct": 0.095 },
-        "letter_island_progress": { "type": "letter_island_progress", "field": "progress_text", "x_pct": 0.34, "y_pct": 0.018, "w_pct": 0.32, "h_pct": 0.055 },
-        "find_prompt": { "type": "find_letter", "field": "target_letter", "x_pct": 0.395, "y_pct": 0.19, "w_pct": 0.21, "h_pct": 0.08 },
+        "find_prompt": {
+          "type": "find_letter_png",
+          "field": "target_letter",
+          "anchor": "center",
+          "container_x_pct": 0.329,
+          "container_w_pct": 0.485,
+          "y_pct": 0.305,
+          "w_pct": 0.34,
+          "h_pct": 0.1
+        },
         "letter_cards": {
           "type": "letter_tile_cards",
-          "slots": [
-            { "x_pct": 0.29, "y_pct": 0.435, "w_pct": 0.13, "h_pct": 0.22 },
-            { "x_pct": 0.43, "y_pct": 0.435, "w_pct": 0.13, "h_pct": 0.22 },
-            { "x_pct": 0.57, "y_pct": 0.435, "w_pct": 0.13, "h_pct": 0.22 },
-            { "x_pct": 0.71, "y_pct": 0.435, "w_pct": 0.13, "h_pct": 0.22 }
-          ]
+          "layout": "row",
+          "count": 4,
+          "highlight_mode": "target_letter",
+          "container_x_pct": 0.329,
+          "container_w_pct": 0.485,
+          "y_pct": 0.56,
+          "tile_w_pct": 0.11,
+          "tile_h_pct": 0.22,
+          "gap_pct": 0.028
         }
       }
     },
     "letter_mistake_hint": {
       "asset_root": "letter_island_game",
       "fallback_image": "09_letter_mistake_hint.png",
-      "layers": [
-        { "id": "background", "file": "background.png", "z": 0, "x_pct": 0, "y_pct": 0, "w_pct": 1, "h_pct": 1, "fit": "fill" },
-        { "id": "board", "file": "board.png", "z": 10, "anchor": "center", "x_pct": 0.5, "y_pct": 0.38, "w_pct": 0.61, "h_pct": 0.56, "fit": "contain" },
-        { "id": "sign", "file": "sign.png", "z": 12, "anchor": "center", "x_pct": 0.115, "y_pct": 0.79, "w_pct": 0.18, "h_pct": 0.2, "fit": "contain" },
-        { "id": "mascot", "file": "mascot_point.png", "z": 14, "anchor": "center", "x_pct": 0.125, "y_pct": 0.58, "w_pct": 0.15, "h_pct": 0.28, "fit": "contain" },
-        { "id": "speech_bubble", "file": "speech_bubble.png", "z": 16, "anchor": "center", "x_pct": 0.22, "y_pct": 0.1, "w_pct": 0.34, "h_pct": 0.13, "fit": "contain" },
-        { "id": "hud_profile", "file": "hud_profile.png", "z": 20, "anchor": "center", "x_pct": 0.172, "y_pct": 0.065, "w_pct": 0.2, "h_pct": 0.095, "fit": "contain" },
-        { "id": "hud_stars", "file": "hud_stars.png", "z": 20, "anchor": "center", "x_pct": 0.795, "y_pct": 0.065, "w_pct": 0.13, "h_pct": 0.055, "fit": "contain" },
-        { "id": "btn_home", "file": "btn_home.png", "z": 28, "anchor": "center", "x_pct": 0.04, "y_pct": 0.07, "w_pct": 0.065, "h_pct": 0.12, "fit": "contain" },
-        { "id": "btn_settings", "file": "btn_settings.png", "z": 28, "anchor": "center", "x_pct": 0.96, "y_pct": 0.07, "w_pct": 0.065, "h_pct": 0.12, "fit": "contain" },
-        { "id": "btn_try_again", "file": "btn_try_again.png", "z": 30, "anchor": "center", "x_pct": 0.345, "y_pct": 0.855, "w_pct": 0.17, "h_pct": 0.085, "fit": "contain" },
-        { "id": "btn_repeat", "file": "btn_repeat.png", "z": 30, "anchor": "center", "x_pct": 0.535, "y_pct": 0.855, "w_pct": 0.1, "h_pct": 0.18, "fit": "contain" },
-        { "id": "btn_hint", "file": "btn_hint.png", "z": 30, "anchor": "center", "x_pct": 0.64, "y_pct": 0.855, "w_pct": 0.11, "h_pct": 0.18, "fit": "contain" }
-      ],
-      "dynamic": {
-        "letter_island_hud": { "type": "letter_island_hud", "x_pct": 0.075, "y_pct": 0.018, "w_pct": 0.195, "h_pct": 0.095 },
-        "letter_island_progress": { "type": "letter_island_progress", "field": "progress_text", "x_pct": 0.34, "y_pct": 0.018, "w_pct": 0.32, "h_pct": 0.055 },
-        "find_prompt": { "type": "find_letter", "field": "target_letter", "x_pct": 0.395, "y_pct": 0.19, "w_pct": 0.21, "h_pct": 0.08 },
-        "mistake_speech": { "type": "mistake_speech", "field": "feedback_message", "x_pct": 0.055, "y_pct": 0.045, "w_pct": 0.34, "h_pct": 0.13 },
-        "bd_hint_panel": { "type": "bd_hint_panel", "x_pct": 0.22, "y_pct": 0.62, "w_pct": 0.56, "h_pct": 0.14 },
-        "letter_cards": {
-          "type": "letter_tile_cards",
-          "slots": [
-            { "x_pct": 0.29, "y_pct": 0.435, "w_pct": 0.13, "h_pct": 0.22 },
-            { "x_pct": 0.43, "y_pct": 0.435, "w_pct": 0.13, "h_pct": 0.22 },
-            { "x_pct": 0.57, "y_pct": 0.435, "w_pct": 0.13, "h_pct": 0.22 },
-            { "x_pct": 0.71, "y_pct": 0.435, "w_pct": 0.13, "h_pct": 0.22 }
-          ]
-        }
-      }
+      "layers": [],
+      "dynamic": {}
     },
     "word_garden_game": {
       "fallback_image": "11_word_garden_gameplay.png",
