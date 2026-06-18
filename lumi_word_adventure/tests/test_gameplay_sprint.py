@@ -68,6 +68,37 @@ def test_letter_island_follows_alphabet_curriculum(engine: GameEngine) -> None:
     assert len(engine.state.letter_choice_slots) == 4
 
 
+def test_letter_island_next_round_syncs_target_and_slots(engine: GameEngine) -> None:
+    engine._configure_letter_island_task()
+    first_target = str(engine.state.current_task_target or "A").upper()
+    first_slots = [str(letter).upper() for letter in engine.state.letter_choice_slots]
+    assert first_target in first_slots
+    slot_index = _slot_for_target(engine, first_target)
+    engine.set_screen("letter_island_game")
+    engine._handle_letter_island_action(f"select_letter_slot_{slot_index}")
+    assert engine.state.current_screen_id == "letter_correct_feedback"
+    assert engine.state.pending_letter_curriculum_advance is True
+    assert engine.state.completed_letter_target == first_target
+    assert first_target in engine.state.completed_letter_choices
+
+    success_view = engine._scene_view()
+    assert success_view.target_letter == first_target
+    assert first_target in success_view.slot_letters
+
+    engine._handle_action("next_activity")
+    assert engine.state.current_screen_id == "letter_island_game"
+    assert engine.state.pending_letter_curriculum_advance is False
+
+    next_target = str(engine.state.current_task_target or "A").upper()
+    next_slots = [str(letter).upper() for letter in engine.state.letter_choice_slots]
+    view = engine._scene_view()
+    assert next_target in next_slots
+    assert view.target_letter == next_target
+    assert tuple(view.slot_letters) == tuple(next_slots)
+    if next_target != first_target:
+        assert next_slots != first_slots
+
+
 def test_letter_island_correct_increments_attempts(engine: GameEngine) -> None:
     engine._configure_letter_island_task()
     target = engine.state.current_task_target or "A"

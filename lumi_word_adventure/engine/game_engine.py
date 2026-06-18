@@ -34,6 +34,7 @@ from engine.personal_tutor import (
     advance_letter_curriculum,
     advance_sentence_level,
     advance_word_length,
+    build_letter_choices,
     build_letter_round,
     build_sentence_round,
     build_word_round,
@@ -55,14 +56,16 @@ from ui.settings_overlay import draw_settings_overlay
 from ui.screen_factory import create_game_screen
 from ui.scene_view import SceneView
 from ui.chunk_preload import EARLY_SCREEN_IDS, collect_chunk_files
-from ui.chunk_manifest import get_screen_spec
+from ui.chunk_manifest import get_screen_spec, row_tile_slots
 from ui.chunk_screen import ChunkScreen
+from ui.hitboxes import Hitbox
 from voice.text_to_speech import TextToSpeech
 import voice.speech_to_text as speech_to_text
 from voice.voice_checker import check_spoken_answer
 
 
 LETTER_SLOT_COUNT = 4
+LETTER_ISLAND_ENTRY_SCREENS = frozenset({"world_map", "main_menu", "how_to_play"})
 WORD_GARDEN_VISIBLE = ("cat", "dog", "sun", "ball")
 LEGACY_WORD_ACTIONS = {
     "select_word_cat": "cat",
@@ -202,6 +205,18 @@ class GameEngine:
         if screen_id == "bd_practice":
             target_letter = str(self.state.bd_practice_target or target_letter or "B").upper()
 
+        slot_letters = tuple(str(letter).upper() for letter in self.state.letter_choice_slots[:4])
+        highlight_letter_slot = int(getattr(self.state, "highlight_letter_slot", -1) or -1)
+        if screen_id == "letter_correct_feedback":
+            target_letter = str(
+                self.state.completed_letter_target or self.state.current_task_target or "A"
+            ).upper()
+            completed = self.state.completed_letter_choices or self.state.letter_choice_slots
+            slot_letters = tuple(str(letter).upper() for letter in completed[:4])
+            highlight_letter_slot = -1
+        elif screen_id == "letter_island_game":
+            highlight_letter_slot = -1
+
         voice_target = str(self.state.current_task_target or "apple").lower()
         if len(voice_target) <= 1:
             voice_target = "apple"
@@ -219,7 +234,7 @@ class GameEngine:
             total_stars=int(getattr(self.learner, "total_stars", 0) or 0),
             progress_text=self._progress_text_for_screen(screen_id),
             target_letter=target_letter,
-            slot_letters=tuple(str(letter).upper() for letter in self.state.letter_choice_slots[:4]),
+            slot_letters=slot_letters,
             held_letter=target_letter,
             target_word=str(self.state.current_task_target or "cat").lower(),
             slot_words=tuple(str(word).lower() for word in self.state.word_choice_slots[:4]),
@@ -241,7 +256,7 @@ class GameEngine:
             practice_cards=self._practice_card_labels(),
             badge_names=tuple(str(name) for name in (self.state.last_unlocked_badges or [])),
             loading_progress=loading_progress,
-            highlight_letter_slot=int(getattr(self.state, "highlight_letter_slot", -1) or -1),
+            highlight_letter_slot=highlight_letter_slot,
         )
 
     @property
@@ -263,7 +278,20 @@ class GameEngine:
         return self._sentence_questions
 
     def _hitboxes_for_screen(self, screen_id: str):
-        hitboxes = self.registry.get_hitboxes(screen_id)
+        hitboxes = list(self.registry.get_hitboxes(screen_id))
+        if screen_id == "letter_island_game":
+            hitboxes = [box for box in hitboxes if not box.action.startswith("select_letter_slot_")]
+            spec = get_screen_spec(screen_id, fallback_image=self.registry.get_image_filename(screen_id))
+            cards = spec.dynamic.get("letter_cards") or {}
+            if isinstance(cards, dict):
+                for index, (x, y, w, h) in enumerate(row_tile_slots(cards)):
+                    hitboxes.append(
+                        Hitbox(
+                            name=f"Letter slot {index + 1}",
+                            rect=pygame.Rect(x, y, w, h),
+                            action=f"select_letter_slot_{index}",
+                        )
+                    )
         if screen_id != "settings":
             return hitboxes
         if DEBUG_HITBOXES or bool(self.settings.load_settings().get("debug_hitboxes")):
@@ -311,12 +339,16 @@ class GameEngine:
             if screen_id == "letter_island_game":
                 if self.state.preserve_letter_island_task:
                     self.state.preserve_letter_island_task = False
-                elif previous_screen_id not in {
-                    "letter_mistake_hint",
-                    "letter_correct_feedback",
-                    "bd_practice",
-                }:
+                elif previous_screen_id == "letter_correct_feedback":
                     self._configure_letter_island_task()
+                elif previous_screen_id in LETTER_ISLAND_ENTRY_SCREENS:
+                    self._configure_letter_island_task()
+                elif not str(self.state.current_task_target or "").strip():
+                    self._configure_letter_island_task()
+                if not getattr(self, "_letter_island_preloaded", False):
+                    self.asset_manager.load_image("07_letter_island_gameplay.png")
+                    self.asset_manager.load_image("08_letter_correct_feedback.png")
+                    self._letter_island_preloaded = True
             if screen_id == "microphone_check":
                 self.state.microphone_status_message = ""
                 self.state.microphone_test_mode = False
@@ -564,12 +596,25 @@ class GameEngine:
             return cleaned
         return fallback if fallback in WORD_GARDEN_VISIBLE else "cat"
 
+    def _apply_letter_round(self, target: str, choices: list[str]) -> None:
+        letter = str(target or "A").upper()
+        slots = [str(item).upper() for item in choices[:LETTER_SLOT_COUNT]]
+        if letter not in slots:
+            slots = [str(item).upper() for item in build_letter_choices(letter, self.letter_questions)[:LETTER_SLOT_COUNT]]
+        self.state.current_task_target = letter
+        self.state.letter_choice_slots = slots
+
     def _configure_letter_island_task(self) -> None:
+        if self.state.pending_letter_curriculum_advance:
+            mastered_letter = str(self.state.current_task_target or "A").upper()
+            advance_letter_curriculum(self.learner, mastered=True, letter=mastered_letter)
+            self.state.pending_letter_curriculum_advance = False
+
         round_data = build_letter_round(self.learner, self.letter_questions)
         letter = str(round_data.get("target") or "A").upper()
-        self.state.current_task_target = letter
+        choices = build_letter_choices(letter, self.letter_questions)
         self.state.current_task_prompt = str(round_data.get("prompt") or f"Find the letter {letter}.")
-        self.state.letter_choice_slots = list(round_data.get("choices") or ["A", "B", "C", "D"])
+        self._apply_letter_round(letter, choices)
         self.state.letter_review_mode = bool(round_data.get("review_mode"))
         self.state.current_hint_level = 0
         self.state.last_mistake_type = ""
@@ -578,6 +623,29 @@ class GameEngine:
         self.state.bd_practice_step = 0
         self.state.highlight_letter_slot = -1
         self.state.last_selected_letter = ""
+        self.state.completed_letter_target = ""
+        self.state.completed_letter_choices = []
+        self._warm_letter_round_assets(letter, choices)
+
+    def _warm_letter_round_assets(self, target: str, choices: list[str]) -> None:
+        asset_root = "letter_island_game"
+        tile_w = int(1280 * 0.11)
+        tile_h = int(720 * 0.22)
+        find_w = int(1280 * 0.34)
+        find_h = int(720 * 0.1)
+        letters = {str(target).upper()}
+        letters.update(str(item).upper() for item in choices[:LETTER_SLOT_COUNT])
+        for letter in letters:
+            self.asset_manager.scaled_find_prompt(asset_root, letter, find_w, find_h)
+            self.asset_manager.scaled_letter_tile(asset_root, letter, tile_w, tile_h, selected=False)
+            self.asset_manager.scaled_letter_tile(
+                asset_root,
+                letter,
+                tile_w,
+                tile_h,
+                selected=True,
+                selected_scale=1.22,
+            )
 
     def _configure_bd_practice(self, target_letter: str = "B") -> None:
         self.state.bd_practice_target = target_letter
@@ -997,7 +1065,6 @@ class GameEngine:
             self.set_screen("world_map")
             return
         if self.state.current_screen_id == "letter_correct_feedback" and action == "next_activity":
-            self._configure_letter_island_task()
             self.set_screen("letter_island_game")
             return
         if self.state.current_screen_id == "letter_mistake_hint":
@@ -1334,13 +1401,17 @@ class GameEngine:
             update_score(self.learner, stars_earned)
             self.learner.mark_letter_mastered(target_letter)
             if not self.state.letter_review_mode:
-                advance_letter_curriculum(self.learner, mastered=True, letter=target_letter)
+                self.state.pending_letter_curriculum_advance = True
             unlocked = check_badge_unlocks(self.learner)
             self.state.current_hint_level = 0
             self.state.bd_confusion_attempts = 0
             self.state.last_mistake_type = ""
             self.state.last_selected_letter = selected_letter
-            self.state.highlight_letter_slot = self._slot_index_for_letter(selected_letter) or -1
+            self.state.highlight_letter_slot = -1
+            self.state.completed_letter_target = target_letter
+            self.state.completed_letter_choices = [
+                str(item).upper() for item in self.state.letter_choice_slots[:LETTER_SLOT_COUNT]
+            ]
             correct_message = get_feedback(True)["message"]
             self.state.last_letter_feedback_message = f"{correct_message} This is {target_letter}."
             self._play_feedback_sfx("correct", stars_earned=stars_earned)

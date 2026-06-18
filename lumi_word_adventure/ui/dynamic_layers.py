@@ -127,16 +127,15 @@ def _draw_letter_tile_cards(
 ) -> None:
     letters = tuple(str(item or "").upper() for item in (view.slot_letters or ()))
     slot_rects = _tile_slot_rects(spec)
-    highlight = int(getattr(view, "highlight_letter_slot", -1) or -1)
-    highlight_mode = str(spec.get("highlight_mode") or "slot")
     target_letter = _field(view, "target_letter", "").upper()
+    tile_variant = str(spec.get("tile_variant") or "normal")
     for index, (x, y, w, h) in enumerate(slot_rects[:4]):
         if index >= len(letters):
             break
-        if highlight_mode == "target_letter":
+        if tile_variant == "success":
             selected = letters[index] == target_letter
         else:
-            selected = index == highlight
+            selected = False
         if assets is not None and asset_root:
             selected_scale = float(spec.get("selected_scale") or 1.22)
             tile = assets.scaled_letter_tile(
@@ -145,7 +144,7 @@ def _draw_letter_tile_cards(
                 w,
                 h,
                 selected=selected,
-                selected_scale=selected_scale,
+                selected_scale=selected_scale if selected else 1.0,
             )
             if tile is not None:
                 draw_x = x + (w - tile.get_width()) // 2

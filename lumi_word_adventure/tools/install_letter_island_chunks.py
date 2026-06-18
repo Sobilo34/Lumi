@@ -4,10 +4,17 @@ from __future__ import annotations
 
 import shutil
 import string
+import sys
 from pathlib import Path
 
-ASSETS = Path("/home/bilal/.cursor/projects/home-bilal-bilal-projects-Learning-AIU-python-Lumi/assets")
+import pygame
+
 PROJECT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(PROJECT))
+
+from engine.asset_manager import _trim_flat_backdrop  # noqa: E402
+
+ASSETS = Path("/home/bilal/.cursor/projects/home-bilal-bilal-projects-Learning-AIU-python-Lumi/assets")
 DEST = PROJECT / "assets" / "ui_chunks" / "letter_island_game"
 REF = PROJECT.parent / "reference_interfaces"
 
@@ -94,6 +101,26 @@ def _copy_uuid(uuid: str, dest: Path) -> None:
     shutil.copy2(source, dest)
 
 
+def _pretrim_asset_tree(asset_root: Path, relative_dir: str) -> int:
+    """Write trimmed PNGs to .trim_cache so first gameplay frame is fast."""
+    pygame.init()
+    if pygame.display.get_surface() is None:
+        pygame.display.set_mode((1, 1))
+    source_dir = asset_root / relative_dir
+    cache_dir = asset_root / ".trim_cache" / "letter_island_game" / relative_dir
+    if not source_dir.is_dir():
+        return 0
+    count = 0
+    for png in sorted(source_dir.glob("*.png")):
+        image = pygame.image.load(str(png))
+        trimmed = _trim_flat_backdrop(image)
+        out = cache_dir / png.name
+        out.parent.mkdir(parents=True, exist_ok=True)
+        pygame.image.save(trimmed, str(out))
+        count += 1
+    return count
+
+
 def _clear_ui_chunks() -> None:
     if not DEST.is_dir():
         return
@@ -113,6 +140,9 @@ def main() -> None:
         shutil.rmtree(find_dir)
     if letters_dir.exists():
         shutil.rmtree(letters_dir)
+    trim_cache = DEST / ".trim_cache" / "letter_island_game"
+    if trim_cache.exists():
+        shutil.rmtree(trim_cache)
     _clear_ui_chunks()
     DEST.mkdir(parents=True, exist_ok=True)
     REF.mkdir(parents=True, exist_ok=True)
@@ -133,11 +163,15 @@ def main() -> None:
         _copy_uuid(sel_id, letters_dir / f"{key}_selected.png")
         _copy_uuid(norm_id, letters_dir / f"{key}.png")
 
+    trimmed_letters = _pretrim_asset_tree(DEST, "letters")
+    trimmed_find = _pretrim_asset_tree(DEST, "find")
+
     print(f"Installed Letter Island assets to {DEST}")
     print(f"  Background: {REF / '07_letter_island_gameplay.png'}")
     print(f"  Success bg: {REF / '08_letter_correct_feedback.png'}")
     print(f"  Find prompts: {len(FIND_PROMPTS)} (V uses procedural fallback)")
     print(f"  Letter tiles: {len(list(letters_dir.glob('*.png')))}")
+    print(f"  Pre-trimmed: {trimmed_letters} letters, {trimmed_find} find prompts")
 
 
 if __name__ == "__main__":

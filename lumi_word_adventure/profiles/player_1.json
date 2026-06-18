@@ -1,10 +1,10 @@
 {
   "child_name": "Player 1",
-  "total_stars": 58,
+  "total_stars": 88,
   "lumi_energy": 100,
   "current_world": "main_menu",
   "difficulty": 1,
-  "correct_streak": 3,
+  "correct_streak": 6,
   "wrong_streak": 0,
   "weak_letters": {
     "F": 3
@@ -38,7 +38,15 @@
     "O",
     "P",
     "Q",
-    "R"
+    "R",
+    "S",
+    "T",
+    "U",
+    "V",
+    "W",
+    "X",
+    "Y",
+    "Z"
   ],
   "mastered_words": [
     "and"
@@ -50,10 +58,10 @@
     "Great Learner"
   ],
   "debug_persistent": false,
-  "attempts": 40,
-  "correct_answers": 20,
-  "accuracy": 50.0,
-  "current_letter_index": 18,
+  "attempts": 70,
+  "correct_answers": 30,
+  "accuracy": 42.86,
+  "current_letter_index": 25,
   "current_word_length": 3,
   "sentence_level": 0
 }

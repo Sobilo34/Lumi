@@ -27,6 +27,9 @@ class GameState:
     letter_choice_slots: list[str] = field(default_factory=lambda: ["B", "D", "P", "A"])
     word_choice_slots: list[str] = field(default_factory=lambda: ["cat", "dog", "sun", "ball"])
     letter_review_mode: bool = False
+    pending_letter_curriculum_advance: bool = False
+    completed_letter_target: str = ""
+    completed_letter_choices: list[str] = field(default_factory=list)
     current_word_mode: str = ""
     word_garden_support: str = ""
     word_garden_option_count: int = 4

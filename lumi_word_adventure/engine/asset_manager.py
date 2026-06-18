@@ -14,6 +14,9 @@ def _is_flat_backdrop(r: int, g: int, b: int, a: int) -> bool:
     peak = max(r, g, b)
     if peak - min(r, g, b) < 28 and peak > 195:
         return True
+    # Cream / beige letter-tile squares from exported PNGs.
+    if r > 215 and g > 200 and b > 165 and r >= g >= b:
+        return True
     return False
 
 
@@ -255,3 +258,29 @@ class AssetManager:
     def preload_screen(self, screen_id: str, filenames: tuple[str, ...]) -> None:
         for filename in filenames:
             self.load_chunk(screen_id, filename)
+
+    def preload_letter_island(
+        self,
+        asset_root: str = "letter_island_game",
+        *,
+        tile_w: int = 140,
+        tile_h: int = 158,
+        find_w: int = 435,
+        find_h: int = 72,
+    ) -> None:
+        """Warm scaled letter/find caches for the active round sizes."""
+        from string import ascii_uppercase
+
+        for filename in ("07_letter_island_gameplay.png", "08_letter_correct_feedback.png"):
+            self.load_image(filename)
+        for letter in ascii_uppercase:
+            self.scaled_find_prompt(asset_root, letter, find_w, find_h)
+            self.scaled_letter_tile(asset_root, letter, tile_w, tile_h, selected=False)
+            self.scaled_letter_tile(
+                asset_root,
+                letter,
+                tile_w,
+                tile_h,
+                selected=True,
+                selected_scale=1.22,
+            )

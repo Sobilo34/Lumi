@@ -98,6 +98,7 @@
           "type": "letter_tile_cards",
           "layout": "row",
           "count": 4,
+          "tile_variant": "normal",
           "container_x_pct": 0.259,
           "container_w_pct": 0.534,
           "y_pct": 0.56,
@@ -126,13 +127,14 @@
           "type": "letter_tile_cards",
           "layout": "row",
           "count": 4,
-          "highlight_mode": "target_letter",
+          "tile_variant": "success",
           "container_x_pct": 0.329,
           "container_w_pct": 0.485,
           "y_pct": 0.56,
           "tile_w_pct": 0.11,
           "tile_h_pct": 0.22,
-          "gap_pct": 0.028
+          "gap_pct": 0.028,
+          "selected_scale": 1.22
         }
       }
     },
