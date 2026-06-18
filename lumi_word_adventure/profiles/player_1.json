@@ -1,43 +1,26 @@
 {
   "child_name": "Player 1",
-  "total_stars": 41,
+  "total_stars": 3,
   "lumi_energy": 100,
   "current_world": "main_menu",
-  "difficulty": 2,
-  "correct_streak": 6,
+  "difficulty": 1,
+  "correct_streak": 1,
   "wrong_streak": 0,
-  "weak_letters": {
-    "A": 13
-  },
-  "weak_words": {
-    "cat": 1,
-    "apple": 2
-  },
+  "weak_letters": {},
+  "weak_words": {},
   "sentence_errors": {},
-  "hint_usage": {
-    "level_1": 1
-  },
+  "hint_usage": {},
   "mastered_letters": [
-    "A",
-    "B",
-    "D",
-    "P",
-    "Q"
+    "A"
   ],
-  "mastered_words": [
-    "cat"
-  ],
+  "mastered_words": [],
   "completed_worlds": [],
-  "badges": [
-    "Great Learner",
-    "B and D Master",
-    "Letter Hero"
-  ],
+  "badges": [],
   "debug_persistent": false,
-  "attempts": 33,
-  "correct_answers": 14,
-  "accuracy": 42.42,
-  "current_letter_index": 17,
+  "attempts": 2,
+  "correct_answers": 1,
+  "accuracy": 50.0,
+  "current_letter_index": 1,
   "current_word_length": 3,
   "sentence_level": 0
 }

@@ -1,0 +1,19 @@
+{
+  "child_name": "Player 1",
+  "stars_earned": 33,
+  "accuracy_percent": 69,
+  "strong_skill": "Letter recognition",
+  "needs_practice": "None",
+  "weak_letters": {},
+  "weak_words": {
+    "apple": 1,
+    "and": 1
+  },
+  "sentence_errors": {},
+  "recommended_next_activity": "World Map",
+  "recommended_screen_id": "06_world_map",
+  "generated_at": "2026-06-16T16:12:22+00:00",
+  "attempts": 16,
+  "correct_answers": 11,
+  "difficulty": 1
+}

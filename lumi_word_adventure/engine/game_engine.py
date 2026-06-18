@@ -18,7 +18,6 @@ from config import (
 import csv
 import os
 from datetime import datetime
-from engine.asset_manager import AssetManager
 from engine.adaptive_ai import (
     choose_hint,
     choose_next_question,
@@ -46,18 +45,18 @@ from engine.sound_manager import SoundManager
 from engine.voice_guard import is_stt_ready, safe_listen_once, stt_status_message
 from engine.scoring import calculate_stars, check_badge_unlocks, update_score
 from data_loader import load_letters, load_sentences, load_vocabulary
+from engine.asset_manager import AssetManager
 from reports.report_generator import generate_report, resolve_engine_screen_id
-from ui.gameplay_overlay import (
-    draw_letter_correct_overlay,
-    draw_letter_island_overlay,
-    draw_letter_mistake_overlay,
-    draw_word_garden_overlay,
-)
+from ui.gameplay_overlay import draw_word_garden_overlay
 from ui.microphone_overlay import draw_microphone_check_overlay
 from ui.offline_overlay import draw_offline_overlay
 from ui.report_overlay import draw_teacher_report_overlays
 from ui.settings_overlay import draw_settings_overlay
-from ui.screens import create_screen_with_hitboxes
+from ui.screen_factory import create_game_screen
+from ui.scene_view import SceneView
+from ui.chunk_preload import EARLY_SCREEN_IDS, collect_chunk_files
+from ui.chunk_manifest import get_screen_spec
+from ui.chunk_screen import ChunkScreen
 from voice.text_to_speech import TextToSpeech
 import voice.speech_to_text as speech_to_text
 from voice.voice_checker import check_spoken_answer
@@ -96,16 +95,153 @@ class GameEngine:
         self._sentence_questions: list | None = None
         self._apply_loaded_settings(self.settings.load_settings())
         self._log_voice_startup_status()
-        self.screens = {
-            screen_id: create_screen_with_hitboxes(
-                self.registry.get_image_filename(screen_id),
-                self._hitboxes_for_screen(screen_id),
-                self.asset_manager,
-            )
-            for screen_id in self.registry.screen_ids
-        }
+        self.screens = self._build_screens()
+        self._preload_queue: list[tuple[str, str]] = self._build_preload_queue()
+        self._static_warmed: set[str] = set()
         self.state.current_screen_id = self.registry.screen_ids[0]
         self.current_screen = self.screens[self.state.current_screen_id]
+
+    def _build_screens(self) -> dict:
+        screens: dict = {}
+        for screen_id in self.registry.screen_ids:
+            hitboxes = self._hitboxes_for_screen(screen_id)
+            screens[screen_id] = create_game_screen(
+                screen_id,
+                hitboxes,
+                self.registry,
+                self.asset_manager,
+                self._scene_view,
+            )
+        return screens
+
+    def _build_preload_queue(self) -> list[tuple[str, str]]:
+        queue: list[tuple[str, str]] = []
+        for screen_id in EARLY_SCREEN_IDS:
+            spec = get_screen_spec(screen_id, fallback_image=self.registry.get_image_filename(screen_id))
+            for filename in collect_chunk_files(spec):
+                queue.append((screen_id, filename))
+        return queue
+
+    def _warm_screen_static(self, screen_id: str) -> None:
+        if screen_id in self._static_warmed:
+            return
+        screen = self.screens.get(screen_id)
+        if not isinstance(screen, ChunkScreen):
+            self._static_warmed.add(screen_id)
+            return
+        spec = get_screen_spec(screen_id, fallback_image=self.registry.get_image_filename(screen_id))
+        screen._composer.warm_static(spec)
+        self._static_warmed.add(screen_id)
+
+    def _drain_preload_queue(self, *, max_items: int = 6) -> None:
+        touched: set[str] = set()
+        for _ in range(max_items):
+            if not self._preload_queue:
+                break
+            screen_id, filename = self._preload_queue.pop(0)
+            self.asset_manager.load_chunk(screen_id, filename)
+            touched.add(screen_id)
+        for screen_id in touched:
+            if not self._preload_queue or not any(item[0] == screen_id for item in self._preload_queue):
+                self._warm_screen_static(screen_id)
+
+    def _settings_status_text(self) -> str:
+        if not self.state.settings_status_message or self.state.settings_status_shown_at_ms is None:
+            return ""
+        elapsed = pygame.time.get_ticks() - int(self.state.settings_status_shown_at_ms)
+        if elapsed <= SETTINGS_STATUS_DISPLAY_MS:
+            return self.state.settings_status_message
+        self.state.settings_status_message = ""
+        self.state.settings_status_shown_at_ms = None
+        return ""
+
+    def _practice_card_labels(self) -> tuple[str, ...]:
+        return (
+            "Practice B",
+            "Practice D",
+            "Practice Word Cat",
+            "Practice Sentence",
+        )
+
+    def _progress_text_for_screen(self, screen_id: str) -> str:
+        if screen_id.startswith("letter") or screen_id == "bd_practice":
+            return self._letter_progress_text()
+        if screen_id.startswith("word"):
+            return self._word_progress_text()
+        if screen_id.startswith("sentence"):
+            return "Sentence castle"
+        return ""
+
+    def _scene_view(self) -> SceneView:
+        screen_id = self.state.current_screen_id
+        stars = min(3, max(0, int(getattr(self.state, "stars", 0) or 0)))
+        child_name = str(getattr(self.learner, "child_name", None) or "Player 1")
+        energy = int(getattr(self.learner, "lumi_energy", 100) or 100)
+        loading_progress = 0.66
+        if screen_id == "splash_loading":
+            elapsed = pygame.time.get_ticks() - int(self.state.splash_started_at or 0)
+            loading_progress = min(1.0, max(0.05, elapsed / max(1, SPLASH_DURATION_MS)))
+
+        feedback_message = ""
+        if screen_id == "letter_mistake_hint":
+            feedback_message = str(self.state.last_letter_feedback_message or "")
+        elif screen_id == "letter_correct_feedback":
+            feedback_message = str(self.state.last_letter_feedback_message or "")
+        elif screen_id == "word_mistake_hint":
+            feedback_message = str(self.state.last_word_feedback_message or "")
+        elif screen_id == "word_correct_feedback":
+            feedback_message = str(self.state.last_word_feedback_message or "")
+        elif screen_id == "voice_correct_feedback":
+            feedback_message = str(self.state.last_word_feedback_message or "")
+        elif screen_id in {"sentence_mistake_hint", "sentence_correct_feedback"}:
+            feedback_message = str(self.state.sentence_feedback_message or "")
+        elif screen_id == "end_session":
+            feedback_message = END_SESSION_MESSAGE
+
+        target_letter = str(self.state.current_task_target or "A").upper()
+        if screen_id == "bd_practice":
+            target_letter = str(self.state.bd_practice_target or target_letter or "B").upper()
+
+        voice_target = str(self.state.current_task_target or "apple").lower()
+        if len(voice_target) <= 1:
+            voice_target = "apple"
+
+        teacher_report = dict(self.state.teacher_report or {})
+        if screen_id == "teacher_report" and not teacher_report:
+            teacher_report = generate_report(self.learner.get_profile())
+
+        return SceneView(
+            screen_id=screen_id,
+            child_name=child_name,
+            lumi_energy=energy,
+            lumi_energy_max=100,
+            stars_filled=stars,
+            total_stars=int(getattr(self.learner, "total_stars", 0) or 0),
+            progress_text=self._progress_text_for_screen(screen_id),
+            target_letter=target_letter,
+            slot_letters=tuple(str(letter).upper() for letter in self.state.letter_choice_slots[:4]),
+            held_letter=target_letter,
+            target_word=str(self.state.current_task_target or "cat").lower(),
+            slot_words=tuple(str(word).lower() for word in self.state.word_choice_slots[:4]),
+            voice_target=voice_target,
+            voice_listening=screen_id == "listening_state",
+            sentence_prompt=str(self.state.current_task_prompt or "Build the sentence."),
+            sentence_words=tuple(str(word) for word in self.state.sentence_target_words[:4]),
+            sentence_slots=tuple(str(slot) for slot in self.state.sentence_slots[:4]),
+            feedback_message=feedback_message,
+            music_enabled=bool(self.state.music_enabled),
+            voice_enabled=bool(self.state.voice_enabled),
+            difficulty_mode=self._current_difficulty_mode(),
+            settings_status=self._settings_status_text(),
+            teacher_report=teacher_report,
+            offline_message=str(self.state.offline_status_message or offline_prompt_text("")),
+            microphone_status=str(
+                self.state.microphone_status_message or MICROPHONE_CHECK_DEFAULT_PROMPT
+            ),
+            practice_cards=self._practice_card_labels(),
+            badge_names=tuple(str(name) for name in (self.state.last_unlocked_badges or [])),
+            loading_progress=loading_progress,
+        )
 
     @property
     def word_questions(self) -> list:
@@ -1355,6 +1491,7 @@ class GameEngine:
     def update(self) -> None:
         self.current_screen.update()
         if self.state.current_screen_id == "splash_loading":
+            self._drain_preload_queue(max_items=8)
             elapsed = pygame.time.get_ticks() - self.state.splash_started_at
             if elapsed >= SPLASH_DURATION_MS:
                 self.set_screen("welcome")
@@ -1371,17 +1508,8 @@ class GameEngine:
         self.voice.shutdown()
 
     def draw(self) -> None:
-        # runtime override: allow temporary toggle during debugging
         debug_mode = bool(DEBUG_HITBOXES or self.debug_hitboxes)
         self.current_screen.draw(self.screen, debug_hitboxes=debug_mode)
-        if self.state.current_screen_id == VOICE_FALLBACK_SCREEN_ID:
-            try:
-                draw_offline_overlay(
-                    self.screen,
-                    self.state.offline_status_message or offline_prompt_text(""),
-                )
-            except Exception:
-                pass
         if debug_mode:
             # draw a small translucent overlay with label and timer
             try:
@@ -1399,60 +1527,26 @@ class GameEngine:
                 # fonts may not be available in test environments; fail silently
                 pass
 
-        if self.state.current_screen_id == "teacher_report":
+        screen_id = self.state.current_screen_id
+        if screen_id == "teacher_report":
             try:
                 if not self.state.teacher_report:
                     self._configure_teacher_report()
                 draw_teacher_report_overlays(self.screen, self.state.teacher_report or {})
             except Exception:
                 pass
-        if self.state.current_screen_id == "settings":
+        if screen_id == "settings":
             try:
-                status_message = ""
-                if self.state.settings_status_message and self.state.settings_status_shown_at_ms is not None:
-                    elapsed = pygame.time.get_ticks() - int(self.state.settings_status_shown_at_ms)
-                    if elapsed <= SETTINGS_STATUS_DISPLAY_MS:
-                        status_message = self.state.settings_status_message
-                    else:
-                        self.state.settings_status_message = ""
-                        self.state.settings_status_shown_at_ms = None
                 draw_settings_overlay(
                     self.screen,
                     music_enabled=bool(self.state.music_enabled),
                     voice_enabled=bool(self.state.voice_enabled),
                     difficulty_mode=self._current_difficulty_mode(),
-                    status_message=status_message,
+                    status_message=self._settings_status_text(),
                 )
             except Exception:
                 pass
-        if self.state.current_screen_id == "letter_island_game":
-            try:
-                draw_letter_island_overlay(
-                    self.screen,
-                    target_letter=self.state.current_task_target or "A",
-                    slot_letters=self.state.letter_choice_slots,
-                    progress_text=self._letter_progress_text(),
-                )
-            except Exception:
-                pass
-        if self.state.current_screen_id == "letter_correct_feedback":
-            try:
-                draw_letter_correct_overlay(
-                    self.screen,
-                    target_letter=self.state.current_task_target or "A",
-                    message=self.state.last_letter_feedback_message or "Great job!",
-                )
-            except Exception:
-                pass
-        if self.state.current_screen_id == "letter_mistake_hint":
-            try:
-                draw_letter_mistake_overlay(
-                    self.screen,
-                    message=self.state.last_letter_feedback_message or "Let's look again.",
-                )
-            except Exception:
-                pass
-        if self.state.current_screen_id == "word_garden_game":
+        if screen_id == "word_garden_game":
             try:
                 draw_word_garden_overlay(
                     self.screen,
@@ -1462,12 +1556,21 @@ class GameEngine:
                 )
             except Exception:
                 pass
-        if self.state.current_screen_id == "microphone_check":
+        if screen_id == "microphone_check":
             try:
                 status_text = self.state.microphone_status_message or MICROPHONE_CHECK_DEFAULT_PROMPT
                 draw_microphone_check_overlay(self.screen, status_text)
             except Exception:
                 pass
+        if screen_id == VOICE_FALLBACK_SCREEN_ID:
+            try:
+                draw_offline_overlay(
+                    self.screen,
+                    self.state.offline_status_message or offline_prompt_text(""),
+                )
+            except Exception:
+                pass
+
         # show export notification dialog for a few seconds
         try:
             if self.state.last_export_path and self.state.last_export_time_ms:

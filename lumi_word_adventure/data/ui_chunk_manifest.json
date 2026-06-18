@@ -1,0 +1,162 @@
+{
+  "version": 1,
+  "target_size": { "width": 1280, "height": 720 },
+  "notes": "Drop PNG chunks under assets/ui_chunks/<screen_id>/. Missing layer files are skipped. If no chunks exist for a screen, the fallback_image from reference_interfaces/ is used. Dynamic slots render live game data on top.",
+  "screens": {
+    "splash_loading": {
+      "fallback_image": "01_splash_loading.png",
+      "layers": [
+        { "id": "background", "file": "background.png", "z": 0, "x_pct": 0, "y_pct": 0, "w_pct": 1, "h_pct": 1 },
+        { "id": "logo", "file": "logo.png", "z": 10, "anchor": "center", "x_pct": 0.5, "y_pct": 0.115, "w_pct": 0.62, "h_pct": 0.13 },
+        { "id": "letter_a", "file": "letter_a.png", "z": 15, "anchor": "center", "x_pct": 0.095, "y_pct": 0.255, "w_pct": 0.085, "h_pct": 0.13 },
+        { "id": "letter_b", "file": "letter_b.png", "z": 15, "anchor": "center", "x_pct": 0.155, "y_pct": 0.405, "w_pct": 0.085, "h_pct": 0.13 },
+        { "id": "letter_c", "file": "letter_c.png", "z": 15, "anchor": "center", "x_pct": 0.905, "y_pct": 0.235, "w_pct": 0.085, "h_pct": 0.13 },
+        { "id": "card_apple", "file": "card_apple.png", "z": 16, "anchor": "center", "x_pct": 0.095, "y_pct": 0.555, "w_pct": 0.115, "h_pct": 0.175 },
+        { "id": "card_cat", "file": "card_cat.png", "z": 16, "anchor": "center", "x_pct": 0.895, "y_pct": 0.395, "w_pct": 0.115, "h_pct": 0.175 },
+        { "id": "card_boat", "file": "card_boat.png", "z": 16, "anchor": "center", "x_pct": 0.865, "y_pct": 0.595, "w_pct": 0.115, "h_pct": 0.175 },
+        { "id": "mascot", "file": "mascot.png", "z": 20, "anchor": "center", "x_pct": 0.5, "y_pct": 0.455, "w_pct": 0.24, "h_pct": 0.36 },
+        { "id": "loading_bar", "file": "loading_bar.png", "z": 30, "anchor": "center", "x_pct": 0.5, "y_pct": 0.868, "w_pct": 0.44, "h_pct": 0.058 }
+      ],
+      "dynamic": {
+        "loading_progress": {
+          "type": "splash_star_progress",
+          "anchor": "center",
+          "x_pct": 0.5,
+          "y_pct": 0.868,
+          "w_pct": 0.44,
+          "h_pct": 0.055,
+          "field": "loading_progress",
+          "star_count": 10
+        },
+        "loading_label": {
+          "type": "loading_label",
+          "anchor": "center",
+          "x_pct": 0.5,
+          "y_pct": 0.808,
+          "w_pct": 0.3,
+          "h_pct": 0.05
+        }
+      }
+    },
+    "welcome": {
+      "fallback_image": "02_welcome_start.png",
+      "layers": [
+        { "id": "background", "file": "background.png", "z": 0, "x_pct": 0, "y_pct": 0, "w_pct": 1, "h_pct": 1 },
+        { "id": "logo", "file": "logo.png", "z": 10, "anchor": "center", "x_pct": 0.5, "y_pct": 0.115, "w_pct": 0.62, "h_pct": 0.13 },
+        { "id": "card_apple", "file": "card_apple.png", "z": 12, "anchor": "center", "x_pct": 0.105, "y_pct": 0.22, "w_pct": 0.11, "h_pct": 0.17 },
+        { "id": "card_cat", "file": "card_cat.png", "z": 12, "anchor": "center", "x_pct": 0.895, "y_pct": 0.2, "w_pct": 0.11, "h_pct": 0.17 },
+        { "id": "card_boat", "file": "card_boat.png", "z": 12, "anchor": "center", "x_pct": 0.855, "y_pct": 0.62, "w_pct": 0.11, "h_pct": 0.17 },
+        { "id": "letter_a", "file": "letter_a.png", "z": 14, "anchor": "center", "x_pct": 0.12, "y_pct": 0.36, "w_pct": 0.08, "h_pct": 0.12 },
+        { "id": "letter_b", "file": "letter_b.png", "z": 14, "anchor": "center", "x_pct": 0.28, "y_pct": 0.68, "w_pct": 0.08, "h_pct": 0.12 },
+        { "id": "letter_c", "file": "letter_c.png", "z": 14, "anchor": "center", "x_pct": 0.88, "y_pct": 0.34, "w_pct": 0.08, "h_pct": 0.12 },
+        { "id": "mascot", "file": "mascot.png", "z": 20, "anchor": "center", "x_pct": 0.24, "y_pct": 0.52, "w_pct": 0.26, "h_pct": 0.38 },
+        { "id": "speech_bubble", "file": "speech_bubble.png", "z": 25, "anchor": "center", "x_pct": 0.62, "y_pct": 0.42, "w_pct": 0.48, "h_pct": 0.16 },
+        { "id": "btn_speaker", "file": "btn_speaker.png", "z": 28, "anchor": "center", "x_pct": 0.05, "y_pct": 0.09, "w_pct": 0.065, "h_pct": 0.11 },
+        { "id": "btn_star", "file": "btn_star.png", "z": 28, "anchor": "center", "x_pct": 0.91, "y_pct": 0.09, "w_pct": 0.065, "h_pct": 0.11 },
+        { "id": "btn_abc", "file": "btn_abc.png", "z": 28, "anchor": "center", "x_pct": 0.965, "y_pct": 0.09, "w_pct": 0.065, "h_pct": 0.11 },
+        { "id": "start_button", "file": "start_button.png", "z": 30, "anchor": "center", "x_pct": 0.5, "y_pct": 0.845, "w_pct": 0.28, "h_pct": 0.11 }
+      ],
+      "dynamic": {
+        "speech_text": {
+          "type": "welcome_speech",
+          "anchor": "center",
+          "x_pct": 0.62,
+          "y_pct": 0.42,
+          "w_pct": 0.44,
+          "h_pct": 0.13,
+          "field": "feedback_message",
+          "default": "Hi! I'm Lumi! Let's learn together!"
+        }
+      }
+    },
+    "profile_selection": {
+      "fallback_image": "03_profile_selection.png",
+      "layers": [
+        { "id": "background", "file": "background.png", "z": 0, "x_pct": 0, "y_pct": 0, "w_pct": 1, "h_pct": 1, "fit": "fill" },
+        { "id": "title_banner", "file": "title_banner.png", "z": 10, "anchor": "center", "x_pct": 0.5, "y_pct": 0.115, "w_pct": 0.55, "h_pct": 0.105 },
+        { "id": "letter_a", "file": "letter_a.png", "z": 12, "anchor": "center", "x_pct": 0.11, "y_pct": 0.21, "w_pct": 0.075, "h_pct": 0.11 },
+        { "id": "letter_c", "file": "letter_c.png", "z": 12, "anchor": "center", "x_pct": 0.875, "y_pct": 0.30, "w_pct": 0.075, "h_pct": 0.11 },
+        { "id": "letter_b", "file": "letter_b.png", "z": 12, "anchor": "center", "x_pct": 0.855, "y_pct": 0.52, "w_pct": 0.075, "h_pct": 0.11 },
+        { "id": "mascot_decor", "file": "mascot_decor.png", "z": 14, "anchor": "center", "x_pct": 0.17, "y_pct": 0.78, "w_pct": 0.22, "h_pct": 0.34 },
+        { "id": "profile_frames", "file": "profile_card_frame.png", "z": 16, "repeat": "profile_slots" },
+        { "id": "btn_back", "file": "btn_back.png", "z": 28, "anchor": "center", "x_pct": 0.05, "y_pct": 0.09, "w_pct": 0.065, "h_pct": 0.11 },
+        { "id": "btn_settings", "file": "btn_settings.png", "z": 28, "anchor": "center", "x_pct": 0.945, "y_pct": 0.09, "w_pct": 0.065, "h_pct": 0.11 }
+      ],
+      "dynamic": {
+        "profile_cards": {
+          "type": "profile_cards",
+          "card_frame": "profile_card_frame.png",
+          "slots": [
+            {
+              "anchor": "center",
+              "x_pct": 0.31,
+              "y_pct": 0.505,
+              "w_pct": 0.18,
+              "h_pct": 0.45,
+              "avatar": "avatar_player1.png",
+              "name": "Player 1",
+              "name_color": [235, 95, 135],
+              "stars": 2
+            },
+            {
+              "anchor": "center",
+              "x_pct": 0.52,
+              "y_pct": 0.505,
+              "w_pct": 0.18,
+              "h_pct": 0.45,
+              "avatar": "avatar_player2.png",
+              "name": "Player 2",
+              "name_color": [155, 95, 195],
+              "stars": 2
+            },
+            {
+              "anchor": "center",
+              "x_pct": 0.74,
+              "y_pct": 0.505,
+              "w_pct": 0.18,
+              "h_pct": 0.45,
+              "avatar": "avatar_new.png",
+              "name": "New Player",
+              "name_color": [235, 95, 135],
+              "stars": 0
+            }
+          ]
+        }
+      }
+    },
+    "letter_island_game": {
+      "fallback_image": "07_letter_island_gameplay.png",
+      "layers": [
+        { "id": "background", "file": "background.png", "z": 0, "x_pct": 0, "y_pct": 0, "w_pct": 1, "h_pct": 1 },
+        { "id": "board", "file": "board.png", "z": 10, "x_pct": 0.195, "y_pct": 0.115, "w_pct": 0.61, "h_pct": 0.555 },
+        { "id": "hud", "file": "hud.png", "z": 20, "x_pct": 0, "y_pct": 0, "w_pct": 1, "h_pct": 0.12 },
+        { "id": "footer_actions", "file": "footer_actions.png", "z": 15, "x_pct": 0.28, "y_pct": 0.78, "w_pct": 0.44, "h_pct": 0.18 },
+        { "id": "card_frame", "file": "card_frame.png", "z": 12, "repeat": "letter_slots" }
+      ],
+      "dynamic": {
+        "progress_banner": { "type": "text_banner", "x_pct": 0.34, "y_pct": 0.018, "w_pct": 0.32, "h_pct": 0.055, "field": "progress_text" },
+        "find_prompt": { "type": "find_letter", "x_pct": 0.395, "y_pct": 0.19, "field": "target_letter" },
+        "letter_cards": {
+          "type": "letter_cards",
+          "field": "slot_letters",
+          "card_frame": "card_frame.png",
+          "slots": [
+            { "x_pct": 0.29, "y_pct": 0.435, "w_pct": 0.13, "h_pct": 0.22 },
+            { "x_pct": 0.43, "y_pct": 0.435, "w_pct": 0.13, "h_pct": 0.22 },
+            { "x_pct": 0.57, "y_pct": 0.435, "w_pct": 0.13, "h_pct": 0.22 },
+            { "x_pct": 0.71, "y_pct": 0.435, "w_pct": 0.13, "h_pct": 0.22 }
+          ]
+        }
+      }
+    },
+    "word_garden_game": {
+      "fallback_image": "11_word_garden_gameplay.png",
+      "layers": [
+        { "id": "background", "file": "background.png", "z": 0, "x_pct": 0, "y_pct": 0, "w_pct": 1, "h_pct": 1 },
+        { "id": "board", "file": "board.png", "z": 10, "x_pct": 0.18, "y_pct": 0.18, "w_pct": 0.66, "h_pct": 0.5 },
+        { "id": "hud", "file": "hud.png", "z": 20, "x_pct": 0, "y_pct": 0, "w_pct": 1, "h_pct": 0.12 }
+      ],
+      "dynamic": {}
+    }
+  }
+}

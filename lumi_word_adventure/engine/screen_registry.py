@@ -32,19 +32,19 @@ class ScreenRegistry:
                 "welcome",
                 "02_welcome_start.png",
                 (
-                    HitboxDefinition("Start", 0.38, 0.78, 0.24, 0.13, target="how_to_play"),
-                    HitboxDefinition("Speaker", 0.02, 0.04, 0.06, 0.1, action="replay_welcome_audio"),
+                    HitboxDefinition("Start", 0.36, 0.79, 0.28, 0.11, target="how_to_play"),
+                    HitboxDefinition("Speaker", 0.015, 0.035, 0.07, 0.11, action="replay_welcome_audio"),
                 ),
             ),
             ScreenDefinition(
                 "profile_selection",
                 "03_profile_selection.png",
                 (
-                    HitboxDefinition("Back", 0.01, 0.02, 0.07, 0.1, target="welcome"),
-                    HitboxDefinition("Settings", 0.91, 0.03, 0.07, 0.1, target="settings"),
+                    HitboxDefinition("Back", 0.015, 0.035, 0.07, 0.11, target="welcome"),
+                    HitboxDefinition("Settings", 0.915, 0.035, 0.07, 0.11, target="settings"),
                     HitboxDefinition("Player 1", 0.22, 0.28, 0.18, 0.45, target="main_menu"),
-                    HitboxDefinition("Player 2", 0.43, 0.28, 0.18, 0.45, target="main_menu"),
-                    HitboxDefinition("New Player", 0.65, 0.28, 0.18, 0.45, target="main_menu"),
+                    HitboxDefinition("Player 2", 0.41, 0.28, 0.18, 0.45, target="main_menu"),
+                    HitboxDefinition("New Player", 0.63, 0.28, 0.18, 0.45, target="main_menu"),
                 ),
             ),
             ScreenDefinition(

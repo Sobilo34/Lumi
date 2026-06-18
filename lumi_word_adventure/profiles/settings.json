@@ -1,6 +1,6 @@
 {
   "music_enabled": true,
   "voice_enabled": true,
-  "difficulty_mode": "Medium",
+  "difficulty_mode": "Easy",
   "debug_hitboxes": false
 }
