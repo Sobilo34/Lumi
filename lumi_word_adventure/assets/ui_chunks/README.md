@@ -23,6 +23,30 @@ assets/ui_chunks/
     hud.png             # optional top bar chrome
     footer_actions.png  # optional Repeat/Hint/Speak buttons
     card_frame.png      # optional empty card template (repeated x4)
+  how_to_play/
+    background.png
+    panel_frame.png
+    title_how_to_play.png
+    step_listen.png
+    step_tap.png
+    step_speak.png
+    step_stars.png
+    mascot.png
+    btn_lets_go.png
+    btn_speaker.png
+  main_menu/
+    background.png
+    logo.png
+    mascot.png
+    btn_play.png
+    btn_practice.png
+    btn_report.png
+    btn_settings.png
+    btn_speaker.png
+    btn_star.png
+    abc_blocks.png
+    letter_a/b/c.png   # optional; reuse splash pack
+    card_apple/cat/boat.png
   profile_selection/
     background.png
     title_banner.png

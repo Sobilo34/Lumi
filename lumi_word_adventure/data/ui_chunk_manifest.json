@@ -124,6 +124,44 @@
         }
       }
     },
+    "main_menu": {
+      "fallback_image": "04_main_menu.png",
+      "layers": [
+        { "id": "background", "file": "background.png", "z": 0, "x_pct": 0, "y_pct": 0, "w_pct": 1, "h_pct": 1, "fit": "fill" },
+        { "id": "logo", "file": "logo.png", "z": 10, "anchor": "center", "x_pct": 0.38, "y_pct": 0.115, "w_pct": 0.54, "h_pct": 0.125 },
+        { "id": "card_apple", "file": "card_apple.png", "z": 12, "anchor": "center", "x_pct": 0.105, "y_pct": 0.21, "w_pct": 0.105, "h_pct": 0.165 },
+        { "id": "card_cat", "file": "card_cat.png", "z": 12, "anchor": "center", "x_pct": 0.895, "y_pct": 0.19, "w_pct": 0.105, "h_pct": 0.165 },
+        { "id": "card_boat", "file": "card_boat.png", "z": 12, "anchor": "center", "x_pct": 0.865, "y_pct": 0.615, "w_pct": 0.105, "h_pct": 0.165 },
+        { "id": "letter_a", "file": "letter_a.png", "z": 14, "anchor": "center", "x_pct": 0.115, "y_pct": 0.34, "w_pct": 0.075, "h_pct": 0.115 },
+        { "id": "letter_b", "file": "letter_b.png", "z": 14, "anchor": "center", "x_pct": 0.22, "y_pct": 0.50, "w_pct": 0.075, "h_pct": 0.115 },
+        { "id": "letter_c", "file": "letter_c.png", "z": 14, "anchor": "center", "x_pct": 0.875, "y_pct": 0.325, "w_pct": 0.075, "h_pct": 0.115 },
+        { "id": "abc_blocks", "file": "abc_blocks.png", "z": 15, "anchor": "center", "x_pct": 0.115, "y_pct": 0.815, "w_pct": 0.115, "h_pct": 0.135 },
+        { "id": "mascot", "file": "mascot.png", "z": 20, "anchor": "center", "x_pct": 0.27, "y_pct": 0.565, "w_pct": 0.30, "h_pct": 0.40 },
+        { "id": "btn_play", "file": "btn_play.png", "z": 25, "anchor": "center", "x_pct": 0.735, "y_pct": 0.275, "w_pct": 0.335, "h_pct": 0.155 },
+        { "id": "btn_practice", "file": "btn_practice.png", "z": 25, "anchor": "center", "x_pct": 0.735, "y_pct": 0.48, "w_pct": 0.335, "h_pct": 0.145 },
+        { "id": "btn_report", "file": "btn_report.png", "z": 25, "anchor": "center", "x_pct": 0.735, "y_pct": 0.665, "w_pct": 0.335, "h_pct": 0.135 },
+        { "id": "btn_settings", "file": "btn_settings.png", "z": 25, "anchor": "center", "x_pct": 0.735, "y_pct": 0.835, "w_pct": 0.335, "h_pct": 0.135 },
+        { "id": "btn_speaker", "file": "btn_speaker.png", "z": 28, "anchor": "center", "x_pct": 0.05, "y_pct": 0.09, "w_pct": 0.065, "h_pct": 0.11 },
+        { "id": "btn_star", "file": "btn_star.png", "z": 28, "anchor": "center", "x_pct": 0.915, "y_pct": 0.09, "w_pct": 0.065, "h_pct": 0.11 }
+      ],
+      "dynamic": {}
+    },
+    "how_to_play": {
+      "fallback_image": "05_instruction_how_to_play.png",
+      "layers": [
+        { "id": "background", "file": "background.png", "z": 0, "x_pct": 0, "y_pct": 0, "w_pct": 1, "h_pct": 1, "fit": "fill" },
+        { "id": "panel_frame", "file": "panel_frame.png", "z": 10, "anchor": "center", "x_pct": 0.52, "y_pct": 0.435, "w_pct": 0.72, "h_pct": 0.50 },
+        { "id": "title_how_to_play", "file": "title_how_to_play.png", "z": 15, "anchor": "center", "x_pct": 0.52, "y_pct": 0.208, "w_pct": 0.42, "h_pct": 0.085 },
+        { "id": "step_listen", "file": "step_listen.png", "z": 18, "anchor": "center", "x_pct": 0.365, "y_pct": 0.378, "w_pct": 0.285, "h_pct": 0.205 },
+        { "id": "step_tap", "file": "step_tap.png", "z": 18, "anchor": "center", "x_pct": 0.675, "y_pct": 0.378, "w_pct": 0.285, "h_pct": 0.205 },
+        { "id": "step_speak", "file": "step_speak.png", "z": 18, "anchor": "center", "x_pct": 0.365, "y_pct": 0.555, "w_pct": 0.285, "h_pct": 0.205 },
+        { "id": "step_stars", "file": "step_stars.png", "z": 18, "anchor": "center", "x_pct": 0.675, "y_pct": 0.555, "w_pct": 0.285, "h_pct": 0.205 },
+        { "id": "mascot", "file": "mascot.png", "z": 22, "anchor": "center", "x_pct": 0.17, "y_pct": 0.56, "w_pct": 0.26, "h_pct": 0.36 },
+        { "id": "btn_lets_go", "file": "btn_lets_go.png", "z": 28, "anchor": "center", "x_pct": 0.495, "y_pct": 0.865, "w_pct": 0.32, "h_pct": 0.11 },
+        { "id": "btn_speaker", "file": "btn_speaker.png", "z": 28, "anchor": "center", "x_pct": 0.745, "y_pct": 0.865, "w_pct": 0.065, "h_pct": 0.11 }
+      ],
+      "dynamic": {}
+    },
     "letter_island_game": {
       "fallback_image": "07_letter_island_gameplay.png",
       "layers": [

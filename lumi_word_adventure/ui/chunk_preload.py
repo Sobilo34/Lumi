@@ -6,7 +6,7 @@ from engine.screen_registry import ScreenRegistry
 from ui.chunk_manifest import ScreenChunkSpec, get_screen_spec
 from ui.chunk_screen import ChunkScreen
 
-EARLY_SCREEN_IDS = ("splash_loading", "welcome", "profile_selection")
+EARLY_SCREEN_IDS = ("splash_loading", "welcome", "profile_selection", "main_menu", "how_to_play")
 
 
 def collect_chunk_files(spec: ScreenChunkSpec) -> tuple[str, ...]:
