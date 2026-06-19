@@ -134,6 +134,8 @@ def _is_word_object_border(r: int, g: int, b: int, a: int) -> bool:
         return True
     if r > 248 and g > 240 and b > 230:
         return True
+    if a > 12 and r > 245 and g > 228 and b > 210 and r - b < 50:
+        return True
     if r > 232 and g > 228 and b > 222 and max(r, g, b) - min(r, g, b) < 18:
         return True
     if r > 185 and g > 85 and b > 95 and r > g and r > b + 15:
@@ -222,23 +224,36 @@ def _bbox_matching(
     return pygame.Rect(min_x, min_y, max_x - min_x + 1, max_y - min_y + 1)
 
 
+def _knock_out_word_card_pixels(surface: pygame.Surface) -> pygame.Surface:
+    """Make card frame / cream fill transparent so only the illustration remains."""
+    result = surface.convert_alpha()
+    width, height = result.get_size()
+    for y in range(height):
+        for x in range(width):
+            color = result.get_at((x, y))
+            if _is_word_object_border(color.r, color.g, color.b, color.a):
+                result.set_at((x, y), (0, 0, 0, 0))
+    return result
+
+
+def _process_word_garden_object(image: pygame.Surface) -> pygame.Surface:
+    """Strip export padding and baked-in card art from object PNGs."""
+    surface = _crop_to_opaque_bbox(_knock_out_export_padding(image))
+    surface = _strip_word_object_borders(surface)
+    surface = _knock_out_word_card_pixels(surface)
+    illustration = _bbox_matching(
+        surface,
+        lambda r, g, b, a: a > 12 and not _is_word_object_border(r, g, b, a),
+        step=1,
+    )
+    if illustration is not None and illustration.width >= 20 and illustration.height >= 20:
+        return surface.subsurface(illustration).copy()
+    return _crop_to_opaque_bbox(surface)
+
+
 def _extract_word_object_illustration(image: pygame.Surface) -> pygame.Surface:
     """Keep only the painted object; drop baked-in card frame and export padding."""
-    surface = _crop_to_opaque_bbox(_knock_out_export_padding(image))
-    cream_rect = _bbox_matching(surface, _is_cream_card_face)
-    if cream_rect is not None:
-        card = surface.subsurface(cream_rect).copy()
-        illustration_rect = _bbox_matching(
-            card,
-            lambda r, g, b, a: a > 12
-            and not _is_cream_card_face(r, g, b, a)
-            and not _is_pink_card_frame(r, g, b, a)
-            and not _is_export_padding(r, g, b, a),
-            step=1,
-        )
-        if illustration_rect is not None and illustration_rect.width >= 24 and illustration_rect.height >= 24:
-            return card.subsurface(illustration_rect).copy()
-    return _strip_word_object_borders(surface)
+    return _process_word_garden_object(image)
 
 
 def _knock_out_light_backdrop(image: pygame.Surface) -> pygame.Surface:
@@ -264,11 +279,16 @@ def _process_word_garden_chunk(image: pygame.Surface, *, crop: bool = False) -> 
     return _crop_to_opaque_bbox(surface)
 
 
-WORD_GARDEN_TRIM_CACHE_VERSION = "v4"
+WORD_GARDEN_TRIM_CACHE_VERSION = "v6"
 
 
 def _word_garden_trim_cache_stale(filename: str, surface: pygame.Surface, source: pygame.Surface) -> bool:
     """Ignore old caches from previous processing pipelines."""
+    if filename.startswith("objects/"):
+        return (
+            surface.get_width() >= min(450, source.get_width() - 80)
+            and surface.get_height() >= min(450, source.get_height() - 80)
+        )
     if filename.startswith("prompts/"):
         return surface.get_width() >= min(850, source.get_width() - 40)
     return False
@@ -402,7 +422,7 @@ class AssetManager:
                     image = pygame.image.load(str(image_path))
                     image = self._prepare_surface(image)
                     if filename.startswith("objects/"):
-                        image = _crop_to_opaque_bbox(_knock_out_export_padding(image))
+                        image = _process_word_garden_object(image)
                     elif filename.startswith("prompts/"):
                         image = _process_word_garden_chunk(image, crop=False)
                     elif use_trim_cache:

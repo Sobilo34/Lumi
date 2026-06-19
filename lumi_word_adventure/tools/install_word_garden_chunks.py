@@ -20,6 +20,7 @@ from engine.asset_manager import (
     _extract_word_object_illustration,
     _knock_out_export_padding,
     _knock_out_light_backdrop,
+    _process_word_garden_object,
 )
 
 ASSETS = Path("/home/bilal/.cursor/projects/home-bilal-bilal-projects-Learning-AIU-python-Lumi/assets")
@@ -78,7 +79,7 @@ def _copy(src_name: str, dest: Path, *, process: bool = False, crop: bool = Fals
         if crop:
             image = _extract_word_object_illustration(image)
         elif "objects" in dest.as_posix().replace("\\", "/"):
-            image = _crop_to_opaque_bbox(image)
+            image = _process_word_garden_object(image)
         else:
             image = _crop_to_opaque_bbox(_knock_out_light_backdrop(image))
         pygame.image.save(image, str(dest))

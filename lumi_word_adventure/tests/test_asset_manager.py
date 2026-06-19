@@ -52,8 +52,8 @@ def test_word_garden_object_chunks_drop_export_padding() -> None:
     manager = AssetManager()
     trimmed = manager.load_chunk("word_garden_game", "objects/cat.png")
     assert trimmed is not None
-    assert trimmed.get_width() <= raw.get_width()
-    assert trimmed.get_height() <= raw.get_height()
+    assert trimmed.get_width() < raw.get_width() - 100
+    assert trimmed.get_height() < raw.get_height() - 100
 
 
 def test_word_garden_prompt_and_object_fit_inside_layout_slots() -> None:
