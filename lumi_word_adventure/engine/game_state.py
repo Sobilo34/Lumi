@@ -49,7 +49,8 @@ class GameState:
     bd_confusion_attempts: int = 0
     history: list[str] = field(default_factory=list)
     last_unlocked_badges: list[str] = field(default_factory=list)
-    badge_return_screen: str = ""
+    world_map_status_message: str = ""
+    world_map_status_shown_at_ms: int | None = None
     practice_recommendation: dict | None = None
     debug_persistent: bool = False
     debug_smoke_duration_ms: int = 5000
@@ -65,3 +66,4 @@ class GameState:
     settings_status_shown_at_ms: int | None = None
     end_session_pending: bool = False
     session_end_report_path: str = ""
+    last_completed_world_id: str = ""

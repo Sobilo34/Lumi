@@ -1,27 +1,18 @@
 {
   "child_name": "Player 1",
-  "total_stars": 81,
+  "total_stars": 78,
   "lumi_energy": 100,
-  "current_world": 3,
+  "current_world": "main_menu",
   "difficulty": 1,
-  "correct_streak": 1,
+  "correct_streak": 26,
   "wrong_streak": 0,
-  "weak_letters": {
-    "T": 6,
-    "Z": 11
-  },
+  "weak_letters": {},
   "weak_words": {},
   "sentence_errors": {},
   "hint_usage": {
-    "level_1": 4,
-    "level_2": 4,
-    "level_3": 2,
-    "level_4": 2,
-    "level_5": 2,
-    "level_6": 2,
-    "level_7": 1,
-    "level_8": 1,
-    "level_9": 1
+    "level_1": 0,
+    "level_2": 0,
+    "level_3": 0
   },
   "mastered_letters": [
     "A",
@@ -52,7 +43,9 @@
     "Z"
   ],
   "mastered_words": [],
-  "completed_worlds": [],
+  "completed_worlds": [
+    "letter_island"
+  ],
   "badges": [
     "B and D Master",
     "Letter Hero",
@@ -62,9 +55,9 @@
     "Badge C"
   ],
   "debug_persistent": false,
-  "attempts": 48,
-  "correct_answers": 29,
-  "accuracy": 60.42,
+  "attempts": 26,
+  "correct_answers": 26,
+  "accuracy": 100.0,
   "current_letter_index": 25,
   "current_word_length": 3,
   "sentence_level": 0

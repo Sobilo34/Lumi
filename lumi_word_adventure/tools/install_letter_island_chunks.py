@@ -45,6 +45,7 @@ FIND_PROMPTS: dict[str, str] = {
     "S": "02ad49a0-117a-4748-9b99-fcc55d9fa3d4",
     "T": "3d43df29-b1d0-422b-ab86-3e112811653e",
     "U": "ca0fbebf-2147-44f1-a1cb-4c11e13a16ed",
+    "V": "2e663b07-410d-4b09-a4db-9eaee163037e",
     "W": "c92a53d9-daf9-4693-84af-ab8a2fcbb0d5",
     "X": "75751cdb-f6f4-47c6-a9fe-1512f62d1060",
     "Y": "e863d00c-fb0c-4223-8483-f372007bf74a",
@@ -169,7 +170,7 @@ def main() -> None:
     print(f"Installed Letter Island assets to {DEST}")
     print(f"  Background: {REF / '07_letter_island_gameplay.png'}")
     print(f"  Success bg: {REF / '08_letter_correct_feedback.png'}")
-    print(f"  Find prompts: {len(FIND_PROMPTS)} (V uses procedural fallback)")
+    print(f"  Find prompts: {len(FIND_PROMPTS)}")
     print(f"  Letter tiles: {len(list(letters_dir.glob('*.png')))}")
     print(f"  Pre-trimmed: {trimmed_letters} letters, {trimmed_find} find prompts")
 

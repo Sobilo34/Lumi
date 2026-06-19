@@ -1,0 +1,16 @@
+{
+  "child_name": "Player 1",
+  "stars_earned": 78,
+  "accuracy_percent": 100,
+  "strong_skill": "Letter recognition",
+  "needs_practice": "None",
+  "weak_letters": {},
+  "weak_words": {},
+  "sentence_errors": {},
+  "recommended_next_activity": "World Map",
+  "recommended_screen_id": "06_world_map",
+  "generated_at": "2026-06-19T08:39:39+00:00",
+  "attempts": 26,
+  "correct_answers": 26,
+  "difficulty": 1
+}

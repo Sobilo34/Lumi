@@ -14,6 +14,7 @@ from config import (
     SPLASH_DURATION_MS,
     VOICE_ENABLED_DEFAULT,
     VOICE_FALLBACK_SCREEN_ID,
+    WORLD_MAP_STATUS_DISPLAY_MS,
 )
 import csv
 import os
@@ -40,6 +41,19 @@ from engine.personal_tutor import (
     build_word_round,
 )
 from engine.offline_fallback import offline_prompt_text, resolve_offline_message
+from engine.world_progression import (
+    WORLD_LETTER_ISLAND,
+    WORLD_SENTENCE_CASTLE,
+    WORLD_WORD_GARDEN,
+    latest_completed_world,
+    locked_world_message,
+    maybe_complete_letter_island,
+    maybe_complete_word_garden,
+    prepare_world_practice,
+    screen_accessible,
+    sync_world_completion,
+    world_map_progress_text,
+)
 from engine.screen_registry import ScreenRegistry
 from engine.settings_manager import SettingsManager, difficulty_mode_to_level
 from engine.sound_manager import SoundManager
@@ -52,7 +66,9 @@ from ui.gameplay_overlay import draw_word_garden_overlay
 from ui.microphone_overlay import draw_microphone_check_overlay
 from ui.offline_overlay import draw_offline_overlay
 from ui.report_overlay import draw_teacher_report_overlays
+from ui.settings_overlay import draw_settings_overlay
 from ui.badge_overlay import draw_badge_unlock_overlay
+from ui.world_map_overlay import draw_world_map_overlay
 from ui.screen_factory import create_game_screen
 from ui.scene_view import SceneView
 from ui.chunk_preload import EARLY_SCREEN_IDS, collect_chunk_files
@@ -158,6 +174,59 @@ class GameEngine:
         self.state.settings_status_shown_at_ms = None
         return ""
 
+    def _world_map_status_text(self) -> str:
+        if not self.state.world_map_status_message or self.state.world_map_status_shown_at_ms is None:
+            return ""
+        elapsed = pygame.time.get_ticks() - int(self.state.world_map_status_shown_at_ms)
+        if elapsed <= WORLD_MAP_STATUS_DISPLAY_MS:
+            return self.state.world_map_status_message
+        self.state.world_map_status_message = ""
+        self.state.world_map_status_shown_at_ms = None
+        return ""
+
+    def _show_world_map_status(self, message: str) -> None:
+        self.state.world_map_status_message = message
+        self.state.world_map_status_shown_at_ms = pygame.time.get_ticks()
+
+    def _show_world_locked_feedback(self, screen_id: str) -> None:
+        message = locked_world_message(screen_id)
+        self._show_world_map_status(message)
+        if self.state.voice_enabled:
+            self.voice.speak(message)
+
+    def _mark_world_completed(self, world_id: str) -> None:
+        key = str(world_id or "").strip()
+        if key:
+            self.state.last_completed_world_id = key
+
+    def _start_practice_for_completed_world(self) -> None:
+        world_id = str(
+            self.state.last_completed_world_id or latest_completed_world(self.learner)
+        ).strip()
+        if not world_id:
+            world_id = WORLD_LETTER_ISLAND
+        screen_id = prepare_world_practice(self.learner, world_id)
+        self.state.pending_letter_curriculum_advance = False
+        self.state.preserve_letter_island_task = False
+        self.state.preserve_word_garden_task = False
+        self.state.letter_review_mode = False
+        self.state.completed_letter_target = ""
+        self.state.completed_letter_choices = []
+        self.state.gameplay_refresh_pending = True
+        self.set_screen(screen_id)
+        if self.state.voice_enabled:
+            self.voice.speak("Let's practice this world again!")
+
+    def _notify_world_unlocked(self, world_id: str) -> None:
+        messages = {
+            WORLD_WORD_GARDEN: "Word Garden unlocked!",
+            WORLD_SENTENCE_CASTLE: "Sentence Castle unlocked!",
+        }
+        message = messages.get(world_id, "New world unlocked!")
+        self._show_world_map_status(message)
+        if self.state.voice_enabled:
+            self.voice.speak(message)
+
     def _practice_card_labels(self) -> tuple[str, ...]:
         return (
             "Practice B",
@@ -167,6 +236,8 @@ class GameEngine:
         )
 
     def _progress_text_for_screen(self, screen_id: str) -> str:
+        if screen_id == "world_map":
+            return world_map_progress_text(self.learner)
         if screen_id.startswith("letter") or screen_id == "bd_practice":
             return self._letter_progress_text()
         if screen_id.startswith("word"):
@@ -308,6 +379,7 @@ class GameEngine:
         self.state.difficulty = difficulty_level
         self.learner.difficulty = difficulty_level
         self.learner.save_profile()
+        sync_world_completion(self.learner)
         self.voice.set_enabled(self.state.voice_enabled)
         self.sound.set_enabled(self.state.music_enabled)
         self.debug_hitboxes = bool(DEBUG_HITBOXES or settings.get("debug_hitboxes", False))
@@ -336,6 +408,9 @@ class GameEngine:
         screen.hitboxes = self._hitboxes_for_screen(screen_id)
 
     def change_screen(self, screen_id: str) -> None:
+        if not screen_accessible(self.learner, screen_id):
+            self._show_world_locked_feedback(screen_id)
+            return
         if screen_id in self.screens:
             previous_screen_id = self.state.current_screen_id
             if screen_id == "word_garden_game":
@@ -392,6 +467,10 @@ class GameEngine:
                 self._configure_sentence_castle_task()
                 if self.state.gameplay_refresh_pending:
                     self.state.gameplay_refresh_pending = False
+            if screen_id == "world_map":
+                sync_world_completion(self.learner)
+            if screen_id == "progress_complete" and not self.state.last_completed_world_id:
+                self.state.last_completed_world_id = latest_completed_world(self.learner)
             if screen_id == "settings":
                 self._refresh_screen_hitboxes("settings")
             if screen_id == "badge_unlock":
@@ -741,6 +820,8 @@ class GameEngine:
         self.state.bd_confusion_attempts = 0
         self.state.last_unlocked_badges = []
         self.state.badge_return_screen = ""
+        self.state.world_map_status_message = ""
+        self.state.world_map_status_shown_at_ms = None
         self.state.last_spoken_text = ""
         self.state.practice_recommendation = None
         self.state.teacher_report = None
@@ -877,6 +958,9 @@ class GameEngine:
             self.learner.update_accuracy()
             update_score(self.learner, stars_earned)
             self.learner.mark_word_mastered(target_word)
+            if maybe_complete_word_garden(self.learner):
+                self._mark_world_completed(WORLD_WORD_GARDEN)
+                self._notify_world_unlocked(WORLD_SENTENCE_CASTLE)
             unlocked = check_badge_unlocks(self.learner)
             self.state.current_hint_level = 0
             self.state.last_word_feedback_message = self._word_garden_correct_message()
@@ -1308,6 +1392,8 @@ class GameEngine:
             self.set_screen(previous)
             return
         if action == "view_badges":
+            if not self.state.last_completed_world_id:
+                self.state.last_completed_world_id = latest_completed_world(self.learner)
             self.set_screen("progress_complete")
             return
         if self.state.current_screen_id == "letter_island_game" and (
@@ -1374,7 +1460,7 @@ class GameEngine:
                 self.set_screen("world_map")
                 return
             if action == "practice_again":
-                self.set_screen("practice_weak_skills")
+                self._start_practice_for_completed_world()
                 return
         if action == "practice_bd_b":
             self._configure_bd_practice("B")
@@ -1473,6 +1559,13 @@ class GameEngine:
             self.learner.mark_letter_mastered(target_letter)
             if not self.state.letter_review_mode:
                 self.state.pending_letter_curriculum_advance = True
+            if maybe_complete_letter_island(
+                self.learner,
+                letter=target_letter,
+                curriculum=not self.state.letter_review_mode,
+            ):
+                self._mark_world_completed(WORLD_LETTER_ISLAND)
+                self._notify_world_unlocked(WORLD_WORD_GARDEN)
             milestone_unlocked = check_letter_milestone_badges(
                 self.learner,
                 target_letter,
@@ -1689,6 +1782,14 @@ class GameEngine:
                 if not self.state.teacher_report:
                     self._configure_teacher_report()
                 draw_teacher_report_overlays(self.screen, self.state.teacher_report or {})
+            except Exception:
+                pass
+        if screen_id == "world_map":
+            try:
+                draw_world_map_overlay(
+                    self.screen,
+                    status_message=self._world_map_status_text(),
+                )
             except Exception:
                 pass
         if screen_id == "settings":

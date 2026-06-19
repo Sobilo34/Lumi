@@ -1,0 +1,135 @@
+"""World map unlock progression tests."""
+from __future__ import annotations
+
+import os
+from pathlib import Path
+
+import pygame
+import pytest
+
+from engine.game_engine import GameEngine
+from engine.learner_model import LearnerModel
+from engine.personal_tutor import ALPHABET
+from engine.world_progression import (
+    WORLD_LETTER_ISLAND,
+    WORLD_SENTENCE_CASTLE,
+    WORLD_WORD_GARDEN,
+    letter_island_complete,
+    maybe_complete_letter_island,
+    maybe_complete_word_garden,
+    prepare_world_practice,
+    screen_accessible,
+    sentence_castle_unlocked,
+    sync_world_completion,
+    word_garden_unlocked,
+)
+
+
+@pytest.fixture()
+def engine(tmp_path: Path) -> GameEngine:
+    os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
+    os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
+    if not pygame.get_init():
+        pygame.init()
+    screen = pygame.display.set_mode((1280, 720))
+    game = GameEngine(screen)
+    game.learner = LearnerModel(profile_path=tmp_path / "player_1.json")
+    return game
+
+
+def test_new_profile_locks_word_garden_and_sentence_castle(engine: GameEngine) -> None:
+    assert not word_garden_unlocked(engine.learner)
+    assert not sentence_castle_unlocked(engine.learner)
+    assert screen_accessible(engine.learner, "letter_island_game")
+    assert not screen_accessible(engine.learner, "word_garden_game")
+    assert not screen_accessible(engine.learner, "sentence_castle_game")
+
+
+def test_mastering_z_unlocks_word_garden(engine: GameEngine) -> None:
+    engine.learner.mastered_letters = list(ALPHABET)
+    engine.learner.current_letter_index = len(ALPHABET) - 1
+    engine.learner.save_profile()
+
+    assert maybe_complete_letter_island(engine.learner, letter="Z", curriculum=True)
+    assert WORLD_LETTER_ISLAND in engine.learner.completed_worlds
+    assert word_garden_unlocked(engine.learner)
+    assert screen_accessible(engine.learner, "word_garden_game")
+    assert not sentence_castle_unlocked(engine.learner)
+
+
+def test_mastering_all_word_garden_words_unlocks_sentence_castle(engine: GameEngine) -> None:
+    engine.learner.completed_worlds = [WORLD_LETTER_ISLAND]
+    engine.learner.mastered_words = ["cat", "dog", "sun", "ball"]
+    engine.learner.save_profile()
+
+    assert maybe_complete_word_garden(engine.learner)
+    assert WORLD_WORD_GARDEN in engine.learner.completed_worlds
+    assert sentence_castle_unlocked(engine.learner)
+    assert screen_accessible(engine.learner, "sentence_castle_game")
+
+
+def test_world_map_blocks_locked_navigation(engine: GameEngine) -> None:
+    engine.set_screen("world_map")
+    engine._handle_action("word_garden_game")
+    assert engine.state.current_screen_id == "world_map"
+    assert "Letter Island" in engine.state.world_map_status_message
+
+
+def test_sync_backfills_completed_worlds_from_progress(engine: GameEngine) -> None:
+    engine.learner.mastered_letters = list(ALPHABET)
+    engine.learner.current_letter_index = len(ALPHABET) - 1
+    engine.learner.mastered_words = ["cat", "dog", "sun", "ball"]
+    engine.learner.completed_worlds = []
+    engine.learner.save_profile()
+
+    completed = sync_world_completion(engine.learner)
+    assert WORLD_LETTER_ISLAND in completed
+    assert WORLD_WORD_GARDEN in completed
+    assert letter_island_complete(engine.learner)
+    assert sentence_castle_unlocked(engine.learner)
+
+
+def test_prepare_world_practice_resets_cursor_keeps_unlocks(engine: GameEngine) -> None:
+    engine.learner.completed_worlds = [WORLD_LETTER_ISLAND]
+    engine.learner.mastered_letters = list(ALPHABET)
+    engine.learner.current_letter_index = len(ALPHABET) - 1
+    engine.learner.save_profile()
+
+    screen_id = prepare_world_practice(engine.learner, WORLD_LETTER_ISLAND)
+
+    assert screen_id == "letter_island_game"
+    assert engine.learner.current_letter_index == 0
+    assert WORLD_LETTER_ISLAND in engine.learner.completed_worlds
+    assert word_garden_unlocked(engine.learner)
+
+
+def test_practice_again_replays_letter_island_keeps_word_garden_unlocked(engine: GameEngine) -> None:
+    engine.learner.completed_worlds = [WORLD_LETTER_ISLAND]
+    engine.learner.mastered_letters = list(ALPHABET)
+    engine.learner.current_letter_index = len(ALPHABET) - 1
+    engine.learner.save_profile()
+    engine.state.last_completed_world_id = WORLD_LETTER_ISLAND
+    engine.set_screen("progress_complete")
+
+    engine._handle_action("practice_again")
+
+    assert engine.state.current_screen_id == "letter_island_game"
+    assert engine.learner.current_letter_index == 0
+    assert screen_accessible(engine.learner, "word_garden_game")
+    assert engine.state.current_task_target == "A"
+
+
+def test_practice_again_after_word_garden_keeps_sentence_castle_unlocked(engine: GameEngine) -> None:
+    engine.learner.completed_worlds = [WORLD_LETTER_ISLAND, WORLD_WORD_GARDEN]
+    engine.learner.mastered_letters = list(ALPHABET)
+    engine.learner.mastered_words = ["cat", "dog", "sun", "ball"]
+    engine.learner.current_word_length = 5
+    engine.learner.save_profile()
+    engine.state.last_completed_world_id = WORLD_WORD_GARDEN
+    engine.set_screen("progress_complete")
+
+    engine._handle_action("practice_again")
+
+    assert engine.state.current_screen_id == "word_garden_game"
+    assert engine.learner.current_word_length == 3
+    assert screen_accessible(engine.learner, "sentence_castle_game")
