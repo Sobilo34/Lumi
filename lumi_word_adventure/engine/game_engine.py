@@ -44,7 +44,7 @@ from engine.screen_registry import ScreenRegistry
 from engine.settings_manager import SettingsManager, difficulty_mode_to_level
 from engine.sound_manager import SoundManager
 from engine.voice_guard import is_stt_ready, safe_listen_once, stt_status_message
-from engine.scoring import calculate_stars, check_badge_unlocks, update_score
+from engine.scoring import calculate_stars, check_badge_unlocks, check_letter_milestone_badges, update_score
 from data_loader import load_letters, load_sentences, load_vocabulary
 from engine.asset_manager import AssetManager
 from reports.report_generator import generate_report, resolve_engine_screen_id
@@ -52,7 +52,7 @@ from ui.gameplay_overlay import draw_word_garden_overlay
 from ui.microphone_overlay import draw_microphone_check_overlay
 from ui.offline_overlay import draw_offline_overlay
 from ui.report_overlay import draw_teacher_report_overlays
-from ui.settings_overlay import draw_settings_overlay
+from ui.badge_overlay import draw_badge_unlock_overlay
 from ui.screen_factory import create_game_screen
 from ui.scene_view import SceneView
 from ui.chunk_preload import EARLY_SCREEN_IDS, collect_chunk_files
@@ -328,6 +328,13 @@ class GameEngine:
             f"stt_available={speech_to_text.is_available()} backend={backend} status='{status_message}'"
         )
 
+    def _refresh_screen_hitboxes(self, screen_id: str) -> None:
+        """Reload hitboxes for a screen (keeps layout in sync with the PNG)."""
+        screen = self.screens.get(screen_id)
+        if screen is None or not hasattr(screen, "hitboxes"):
+            return
+        screen.hitboxes = self._hitboxes_for_screen(screen_id)
+
     def change_screen(self, screen_id: str) -> None:
         if screen_id in self.screens:
             previous_screen_id = self.state.current_screen_id
@@ -336,15 +343,21 @@ class GameEngine:
                     self.state.preserve_word_garden_task = False
                 else:
                     self._configure_word_garden_task()
+                if self.state.gameplay_refresh_pending:
+                    self.state.gameplay_refresh_pending = False
             if screen_id == "letter_island_game":
                 if self.state.preserve_letter_island_task:
                     self.state.preserve_letter_island_task = False
-                elif previous_screen_id == "letter_correct_feedback":
+                elif (
+                    self.state.gameplay_refresh_pending
+                    or previous_screen_id == "letter_correct_feedback"
+                    or previous_screen_id in LETTER_ISLAND_ENTRY_SCREENS
+                    or previous_screen_id == "settings"
+                    or not str(self.state.current_task_target or "").strip()
+                    or " " in str(self.state.current_task_target or "")
+                ):
                     self._configure_letter_island_task()
-                elif previous_screen_id in LETTER_ISLAND_ENTRY_SCREENS:
-                    self._configure_letter_island_task()
-                elif not str(self.state.current_task_target or "").strip():
-                    self._configure_letter_island_task()
+                    self.state.gameplay_refresh_pending = False
                 if not getattr(self, "_letter_island_preloaded", False):
                     self.asset_manager.load_image("07_letter_island_gameplay.png")
                     self.asset_manager.load_image("08_letter_correct_feedback.png")
@@ -377,6 +390,12 @@ class GameEngine:
                 "sentence_mistake_hint",
             }:
                 self._configure_sentence_castle_task()
+                if self.state.gameplay_refresh_pending:
+                    self.state.gameplay_refresh_pending = False
+            if screen_id == "settings":
+                self._refresh_screen_hitboxes("settings")
+            if screen_id == "badge_unlock":
+                self._refresh_screen_hitboxes("badge_unlock")
             self.state.current_screen_id = screen_id
             self.current_screen = self.screens[screen_id]
             self.state.history.append(screen_id)
@@ -610,6 +629,7 @@ class GameEngine:
             advance_letter_curriculum(self.learner, mastered=True, letter=mastered_letter)
             self.state.pending_letter_curriculum_advance = False
 
+        self.asset_manager.invalidate_letter_tiles("letter_island_game")
         round_data = build_letter_round(self.learner, self.letter_questions)
         letter = str(round_data.get("target") or "A").upper()
         choices = build_letter_choices(letter, self.letter_questions)
@@ -686,6 +706,58 @@ class GameEngine:
         self.state.sentence_slots = [""] * len(words)
         self.state.sentence_locked_indices = []
         self.state.sentence_feedback_message = ""
+
+    def _reset_all_progress(self) -> None:
+        """Reset saved learner progress and clear in-memory gameplay state."""
+        self.learner.reset_profile(keep_child_name=True)
+        settings = self.settings.load_settings()
+        difficulty_level = difficulty_mode_to_level(str(settings.get("difficulty_mode", "Medium")))
+        self.learner.difficulty = difficulty_level
+        self.learner.lumi_energy = 100
+        self.learner.save_profile()
+        self.state.difficulty = difficulty_level
+
+        self.state.stars = 0
+        self.state.last_action = ""
+        self.state.last_mistake_type = ""
+        self.state.current_hint_level = 0
+        self.state.letter_demo_mode = False
+        self.state.preserve_letter_island_task = False
+        self.state.preserve_word_garden_task = False
+        self.state.letter_review_mode = False
+        self.state.pending_letter_curriculum_advance = False
+        self.state.completed_letter_target = ""
+        self.state.completed_letter_choices = []
+        self.state.highlight_letter_slot = -1
+        self.state.last_selected_letter = ""
+        self.state.last_letter_feedback_message = ""
+        self.state.last_word_selected = ""
+        self.state.last_word_feedback_message = ""
+        self.state.current_word_mode = ""
+        self.state.word_garden_support = ""
+        self.state.word_garden_option_count = 4
+        self.state.bd_practice_target = ""
+        self.state.bd_practice_step = 0
+        self.state.bd_confusion_attempts = 0
+        self.state.last_unlocked_badges = []
+        self.state.badge_return_screen = ""
+        self.state.last_spoken_text = ""
+        self.state.practice_recommendation = None
+        self.state.teacher_report = None
+        self.state.microphone_status_message = ""
+        self.state.end_session_pending = False
+        self.state.session_end_report_path = ""
+        self.state.offline_status_message = ""
+        self.state.sentence_target_words = ["I", "see", "a", "cat"]
+        self.state.sentence_slots = ["", "", "", ""]
+        self.state.sentence_locked_indices = []
+        self.state.sentence_feedback_message = ""
+        self.state.word_choice_slots = list(WORD_GARDEN_VISIBLE)
+        self.state.gameplay_refresh_pending = True
+        self.state.history = [self.state.current_screen_id] if self.state.current_screen_id else []
+
+        # Letter island owns current_task_target; word/sentence configure on screen entry.
+        self._configure_letter_island_task()
 
     def _is_sentence_complete(self) -> bool:
         return all(bool(slot) for slot in self.state.sentence_slots)
@@ -784,11 +856,13 @@ class GameEngine:
 
         return False
 
-    def _handle_badges(self, unlocked: list[str]) -> None:
+    def _handle_badges(self, unlocked: list[str], *, return_screen: str = "") -> None:
         """Record unlocked badges and switch to the badge unlock screen."""
         if not unlocked:
             return
         self.state.last_unlocked_badges = unlocked
+        if return_screen:
+            self.state.badge_return_screen = return_screen
         self._play_feedback_sfx("badge")
         self.set_screen("badge_unlock")
 
@@ -1222,7 +1296,11 @@ class GameEngine:
             self.set_screen("main_menu")
             return
         if action == "continue_from_badge":
-            # return to the previous screen before the badge popup
+            return_screen = str(self.state.badge_return_screen or "").strip()
+            self.state.badge_return_screen = ""
+            if return_screen:
+                self.set_screen(return_screen)
+                return
             if len(self.state.history) >= 2:
                 previous = self.state.history[-2]
             else:
@@ -1269,16 +1347,9 @@ class GameEngine:
                 self.voice.speak(f"Difficulty {difficulty_mode}")
             return
         if action in {"reset_progress", "reset_profile"}:
-            self.learner.reset_profile()
-            settings = self.settings.load_settings()
-            difficulty_level = difficulty_mode_to_level(str(settings.get("difficulty_mode", "Medium")))
-            self.state.difficulty = difficulty_level
-            self.learner.difficulty = difficulty_level
-            self.learner.save_profile()
-            self._configure_letter_island_task()
-            self.state.practice_recommendation = None
-            self.state.teacher_report = None
-            self.state.microphone_status_message = ""
+            if self.state.current_screen_id != "settings":
+                return
+            self._reset_all_progress()
             print("Profile reset successfully")
             self._show_settings_status("Profile reset successfully")
             if self.state.voice_enabled:
@@ -1402,7 +1473,13 @@ class GameEngine:
             self.learner.mark_letter_mastered(target_letter)
             if not self.state.letter_review_mode:
                 self.state.pending_letter_curriculum_advance = True
-            unlocked = check_badge_unlocks(self.learner)
+            milestone_unlocked = check_letter_milestone_badges(
+                self.learner,
+                target_letter,
+                curriculum=not self.state.letter_review_mode,
+            )
+            general_unlocked = check_badge_unlocks(self.learner)
+            unlocked = milestone_unlocked + [name for name in general_unlocked if name not in milestone_unlocked]
             self.state.current_hint_level = 0
             self.state.bd_confusion_attempts = 0
             self.state.last_mistake_type = ""
@@ -1416,7 +1493,7 @@ class GameEngine:
             self.state.last_letter_feedback_message = f"{correct_message} This is {target_letter}."
             self._play_feedback_sfx("correct", stars_earned=stars_earned)
             if unlocked:
-                self._handle_badges(unlocked)
+                self._handle_badges(unlocked, return_screen="letter_correct_feedback")
                 return
             self.set_screen("letter_correct_feedback")
             return
@@ -1548,7 +1625,7 @@ class GameEngine:
             msg = get_feedback("badge_unlock")["message"]
             if getattr(self.state, "last_unlocked_badges", None):
                 names = ", ".join(self.state.last_unlocked_badges)
-                msg = f"You unlocked: {names}. " + msg
+                msg = f"You unlocked {names}. {msg}"
             self.voice.speak(msg)
             return
 
@@ -1622,6 +1699,14 @@ class GameEngine:
                     voice_enabled=bool(self.state.voice_enabled),
                     difficulty_mode=self._current_difficulty_mode(),
                     status_message=self._settings_status_text(),
+                )
+            except Exception:
+                pass
+        if screen_id == "badge_unlock":
+            try:
+                draw_badge_unlock_overlay(
+                    self.screen,
+                    badge_names=tuple(str(name) for name in (self.state.last_unlocked_badges or [])),
                 )
             except Exception:
                 pass

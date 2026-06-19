@@ -69,16 +69,105 @@ def test_settings_difficulty_cycles_easy_medium_hard(engine: GameEngine) -> None
 
 
 def test_settings_reset_progress_keeps_settings(engine: GameEngine) -> None:
+    engine.learner.child_name = "Alex"
     engine.learner.total_stars = 10
+    engine.learner.current_letter_index = 12
+    engine.learner.mastered_letters = ["A", "B", "C"]
+    engine.learner.badges = ["First Star"]
+    engine.learner.lumi_energy = 42
     engine.learner.save_profile()
+    engine.state.completed_letter_target = "M"
+    engine.state.completed_letter_choices = ["M", "N", "O", "P"]
+    engine.state.pending_letter_curriculum_advance = True
+    engine.state.preserve_letter_island_task = True
     engine.settings.toggle_music()
     engine.set_screen("settings")
 
     engine._handle_action("reset_progress")
 
+    assert engine.learner.child_name == "Alex"
     assert engine.learner.total_stars == 0
+    assert engine.learner.lumi_energy == 100
+    assert engine.learner.current_letter_index == 0
+    assert engine.learner.mastered_letters == []
+    assert engine.learner.badges == []
+    assert engine.state.completed_letter_target == ""
+    assert engine.state.pending_letter_curriculum_advance is False
+    assert engine.state.preserve_letter_island_task is False
+    assert engine.state.current_task_target == "A"
+    assert engine.state.gameplay_refresh_pending is True
     assert engine.state.settings_status_message == "Profile reset successfully"
     assert engine.settings.load_settings()["music_enabled"] is False
+
+
+def test_settings_reset_progress_restarts_letter_island(engine: GameEngine) -> None:
+    engine.learner.current_letter_index = 18
+    engine.learner.save_profile()
+    engine.set_screen("letter_island_game")
+    assert engine.state.current_task_target != "A"
+
+    engine.set_screen("settings")
+    engine._handle_action("reset_progress")
+    engine.set_screen("letter_island_game")
+
+    assert engine.learner.current_letter_index == 0
+    assert engine.state.current_task_target == "A"
+    assert engine.state.gameplay_refresh_pending is False
+
+
+def test_settings_reset_progress_ignored_off_settings(engine: GameEngine) -> None:
+    engine.learner.total_stars = 5
+    engine.learner.save_profile()
+    engine.set_screen("main_menu")
+
+    engine._handle_action("reset_progress")
+
+    assert engine.learner.total_stars == 5
+
+
+def test_settings_reset_progress_click_hitbox(engine: GameEngine) -> None:
+    engine.learner.total_stars = 8
+    engine.learner.save_profile()
+    engine.set_screen("settings")
+    hitboxes = engine.registry.get_hitboxes("settings")
+    reset = next(box for box in hitboxes if box.name == "Reset")
+    clicked = engine.current_screen.handle_click(reset.rect.center)
+    assert clicked is not None
+    assert clicked.action == "reset_progress"
+    engine._handle_action(clicked.action)
+    assert engine.learner.total_stars == 0
+
+
+def test_settings_reset_progress_clicks_visual_button(engine: GameEngine) -> None:
+    """Reset hitbox must cover the painted Reset button on 25_settings.png."""
+    import pygame
+
+    engine.learner.total_stars = 12
+    engine.learner.save_profile()
+    engine.set_screen("settings")
+    visual_center = (int(1280 * 0.705), int(720 * 0.644))
+    event = pygame.event.Event(pygame.MOUSEBUTTONDOWN, {"pos": visual_center, "button": 1})
+    engine.handle_event(event)
+    assert engine.learner.total_stars == 0
+    assert engine.state.settings_status_message == "Profile reset successfully"
+
+
+def test_settings_controls_align_with_png(engine: GameEngine) -> None:
+    """Each settings control click should hit the intended action."""
+    import pygame
+
+    engine.set_screen("settings")
+    samples = (
+        ((int(1280 * 0.652), int(720 * 0.242)), "toggle_music"),
+        ((int(1280 * 0.653), int(720 * 0.384)), "toggle_voice"),
+        ((int(1280 * 0.652), int(720 * 0.430)), "microphone_check"),
+        ((int(1280 * 0.645), int(720 * 0.545)), "change_difficulty"),
+        ((int(1280 * 0.705), int(720 * 0.644)), "reset_progress"),
+    )
+    for point, expected in samples:
+        clicked = engine.current_screen.handle_click(point)
+        assert clicked is not None, f"missed click at {point}"
+        assert (clicked.action or clicked.target) == expected, f"at {point} got {clicked.action or clicked.target}"
 
 
 def test_settings_test_mic_hitbox_target(engine: GameEngine) -> None:

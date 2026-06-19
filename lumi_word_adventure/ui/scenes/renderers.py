@@ -578,8 +578,8 @@ def render_badge_unlock(surface: pygame.Surface, view: SceneView) -> None:
         draw_rounded_rect(surface, badge_rect, (255, 224, 150), radius=18, border=(255, 255, 255), border_width=3)
         _text(surface, "★", 54, badge_rect.center, (255, 255, 255))
         _text(surface, badge, 18, (badge_rect.centerx, badge_rect.bottom + 22), HUD_PINK_DARK)
-    draw_cta_button(surface, pct_rect(0.50, 0.78, 0.30, 0.14), "Continue")
-    draw_menu_button(surface, pct_rect(0.82, 0.08, 0.14, 0.12), "View Badges", accent=(170, 197, 243))
+    draw_cta_button(surface, pct_rect(0.28, 0.76, 0.22, 0.13), "Continue")
+    draw_menu_button(surface, pct_rect(0.55, 0.76, 0.24, 0.13), "View Badges", accent=(170, 197, 243))
 
 
 def render_progress_complete(surface: pygame.Surface, view: SceneView) -> None:
@@ -649,11 +649,11 @@ def render_settings(surface: pygame.Surface, view: SceneView) -> None:
     panel_inner = draw_stitched_panel(surface, panel_outer, border_color=(215, 183, 233))
     _text(surface, "Settings", 50, (panel_inner.centerx, panel_inner.y + 46), PROMPT_BROWN)
     rows = (
-        ("Music", "ON" if view.music_enabled else "OFF", pct_rect(0.72, 0.20, 0.12, 0.08)),
-        ("Voice", "ON" if view.voice_enabled else "OFF", pct_rect(0.72, 0.33, 0.12, 0.08)),
-        ("Difficulty", str(view.difficulty_mode or "Medium"), pct_rect(0.66, 0.58, 0.16, 0.09)),
+        ("Music", "ON" if view.music_enabled else "OFF", pct_rect(0.59, 0.19, 0.13, 0.09)),
+        ("Voice", "ON" if view.voice_enabled else "OFF", pct_rect(0.59, 0.34, 0.14, 0.08)),
+        ("Difficulty", str(view.difficulty_mode or "Medium"), pct_rect(0.57, 0.505, 0.15, 0.075)),
     )
-    row_y = [0.20, 0.33, 0.58]
+    row_y = [0.19, 0.34, 0.505]
     for idx, (title_text, value, control_rect) in enumerate(rows):
         y = int(SCREEN_HEIGHT * row_y[idx])
         _text(surface, title_text, 34, (int(SCREEN_WIDTH * 0.38), y + 30), PROMPT_BROWN)
@@ -662,8 +662,8 @@ def render_settings(surface: pygame.Surface, view: SceneView) -> None:
             _text(surface, value, 22, (control_rect.centerx, control_rect.centery), (255, 255, 255))
         else:
             draw_menu_button(surface, control_rect, value, accent=(172, 196, 245))
-    draw_menu_button(surface, pct_rect(0.63, 0.46, 0.19, 0.08), "Test Mic", accent=(255, 195, 111))
-    draw_menu_button(surface, pct_rect(0.69, 0.72, 0.14, 0.08), "Reset", accent=(255, 166, 186))
+    draw_menu_button(surface, pct_rect(0.58, 0.395, 0.14, 0.07), "Test Mic", accent=(255, 195, 111))
+    draw_menu_button(surface, pct_rect(0.62, 0.585, 0.17, 0.11), "Reset", accent=(255, 166, 186))
     if view.settings_status:
         status = pct_rect(0.28, 0.84, 0.44, 0.07)
         draw_rounded_rect(surface, status, (255, 255, 255), radius=12, border=HUD_PINK, border_width=2)

@@ -26,10 +26,7 @@ class ComponentScreen:
             hitbox.draw(screen, debug_hitboxes)
 
     def handle_click(self, position: tuple[int, int]) -> Hitbox | None:
-        for hitbox in self.hitboxes:
-            if hitbox.contains(position):
-                return hitbox
-        return None
+        return Hitbox.pick_at(self.hitboxes, position)
 
     def handle_event(self, event: pygame.event.Event) -> str | None:
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:

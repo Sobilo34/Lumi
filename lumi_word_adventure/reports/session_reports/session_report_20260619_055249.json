@@ -1,0 +1,23 @@
+{
+  "child_name": "Player 1",
+  "stars_earned": 91,
+  "accuracy_percent": 42,
+  "strong_skill": "Letter recognition",
+  "needs_practice": "Sentence order",
+  "weak_letters": {
+    "F": 3,
+    "Z": 3
+  },
+  "weak_words": {
+    "apple": 1
+  },
+  "sentence_errors": {
+    "word_order": 2
+  },
+  "recommended_next_activity": "Sentence Castle",
+  "recommended_screen_id": "17_sentence_castle_gameplay",
+  "generated_at": "2026-06-18T21:52:49+00:00",
+  "attempts": 74,
+  "correct_answers": 31,
+  "difficulty": 1
+}

@@ -118,6 +118,25 @@ def _tile_slot_rects(spec: dict[str, Any]) -> list[tuple[int, int, int, int]]:
     return row_tile_slots(spec)
 
 
+def letter_tile_uses_selected(
+    *,
+    screen_id: str,
+    tile_variant: str,
+    slot_letter: str,
+    target_letter: str,
+) -> bool:
+    """Challenge tiles are always normal; success highlights only the correct letter."""
+    screen = str(screen_id or "").strip()
+    variant = str(tile_variant or "normal").strip().lower()
+    if screen == "letter_island_game" or variant == "normal":
+        return False
+    if screen == "letter_correct_feedback" or variant == "success":
+        slot = str(slot_letter or "").strip().upper()
+        target = str(target_letter or "").strip().upper()
+        return bool(slot) and slot == target
+    return False
+
+
 def _draw_letter_tile_cards(
     surface: pygame.Surface,
     spec: dict[str, Any],
@@ -129,13 +148,16 @@ def _draw_letter_tile_cards(
     slot_rects = _tile_slot_rects(spec)
     target_letter = _field(view, "target_letter", "").upper()
     tile_variant = str(spec.get("tile_variant") or "normal")
+    screen_id = str(view.screen_id or "")
     for index, (x, y, w, h) in enumerate(slot_rects[:4]):
         if index >= len(letters):
             break
-        if tile_variant == "success":
-            selected = letters[index] == target_letter
-        else:
-            selected = False
+        selected = letter_tile_uses_selected(
+            screen_id=screen_id,
+            tile_variant=tile_variant,
+            slot_letter=letters[index],
+            target_letter=target_letter,
+        )
         if assets is not None and asset_root:
             selected_scale = float(spec.get("selected_scale") or 1.22)
             tile = assets.scaled_letter_tile(

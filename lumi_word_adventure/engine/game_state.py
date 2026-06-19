@@ -24,6 +24,7 @@ class GameState:
     letter_demo_mode: bool = False
     preserve_word_garden_task: bool = False
     preserve_letter_island_task: bool = False
+    gameplay_refresh_pending: bool = False
     letter_choice_slots: list[str] = field(default_factory=lambda: ["B", "D", "P", "A"])
     word_choice_slots: list[str] = field(default_factory=lambda: ["cat", "dog", "sun", "ball"])
     letter_review_mode: bool = False
@@ -48,6 +49,7 @@ class GameState:
     bd_confusion_attempts: int = 0
     history: list[str] = field(default_factory=list)
     last_unlocked_badges: list[str] = field(default_factory=list)
+    badge_return_screen: str = ""
     practice_recommendation: dict | None = None
     debug_persistent: bool = False
     debug_smoke_duration_ms: int = 5000

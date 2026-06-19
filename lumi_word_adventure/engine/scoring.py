@@ -4,6 +4,19 @@ from __future__ import annotations
 from copy import deepcopy
 from typing import Any, Callable
 
+# Letter Island curriculum milestones shown on 21_badge_unlock.png.
+LETTER_MILESTONE_BADGES: dict[str, str] = {
+    "Badge A": "J",
+    "Badge B": "T",
+    "Badge C": "Z",
+}
+
+BADGE_DISPLAY_SUBTITLES: dict[str, str] = {
+    "Badge A": "Letters A–J Complete!",
+    "Badge B": "Letter T Mastered!",
+    "Badge C": "Letters U–Z Complete!",
+}
+
 
 BADGE_DEFINITIONS: dict[str, Callable[[dict[str, Any]], bool]] = {
     "Letter Hero": lambda profile: len(profile.get("mastered_letters", [])) >= 5,
@@ -56,6 +69,43 @@ def calculate_accuracy(correct_count: int, total_attempts: int) -> float:
     if total_attempts <= 0:
         return 0.0
     return round((max(0, correct_count) / total_attempts) * 100, 2)
+
+
+def check_letter_milestone_badges(
+    profile: Any,
+    mastered_letter: str,
+    *,
+    curriculum: bool = True,
+) -> list[str]:
+    """Unlock Badge A/B/C when the learner completes J, T, or Z in curriculum mode."""
+    if not curriculum:
+        return []
+    letter = str(mastered_letter or "").strip().upper()
+    badge_name = next(
+        (name for name, milestone in LETTER_MILESTONE_BADGES.items() if milestone == letter),
+        None,
+    )
+    if badge_name is None:
+        return []
+
+    profile_dict = _profile_dict(profile)
+    if badge_name in profile_dict.get("badges", []):
+        return []
+
+    if hasattr(profile, "add_badge") and callable(profile.add_badge):
+        profile.add_badge(badge_name)
+    elif isinstance(profile, dict):
+        badges = list(profile.get("badges", []))
+        if badge_name not in badges:
+            badges.append(badge_name)
+            profile["badges"] = badges
+
+    _persist_profile(profile)
+    return [badge_name]
+
+
+def badge_subtitle(badge_name: str) -> str:
+    return BADGE_DISPLAY_SUBTITLES.get(badge_name.strip(), "Great work!")
 
 
 def check_badge_unlocks(profile: Any) -> list[str]:

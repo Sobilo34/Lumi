@@ -191,6 +191,14 @@ class AssetManager:
                     self._chunk_cache[cache_key] = None
         return self._chunk_cache[cache_key]
 
+    def invalidate_letter_tiles(self, asset_root: str = "letter_island_game") -> None:
+        """Drop cached letter PNGs so updated assets in letters/ are reloaded."""
+        needle = f"{asset_root}/letters/"
+        for cache in (self._chunk_cache, self._scaled_cache):
+            for key in list(cache.keys()):
+                if needle in key:
+                    del cache[key]
+
     def chunk_exists(self, screen_id: str, filename: str) -> bool:
         return (self.chunks_dir / screen_id / filename).is_file()
 

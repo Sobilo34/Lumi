@@ -110,8 +110,11 @@ class LearnerModel:
     def save_profile(self) -> None:
         self._write_profile(self._profile)
 
-    def reset_profile(self) -> dict[str, Any]:
+    def reset_profile(self, *, keep_child_name: bool = True) -> dict[str, Any]:
+        saved_name = str(self._profile.get("child_name") or "").strip()
         self._profile = self._normalize_profile(self._default_profile())
+        if keep_child_name and saved_name:
+            self._profile["child_name"] = saved_name
         self.save_profile()
         return self.get_profile()
 

@@ -1,4 +1,11 @@
-from engine.scoring import calculate_accuracy, calculate_stars, check_badge_unlocks, update_score
+from engine.scoring import (
+    calculate_accuracy,
+    calculate_stars,
+    check_badge_unlocks,
+    check_letter_milestone_badges,
+    update_score,
+)
+from engine.learner_model import LearnerModel
 
 
 def test_correct_without_hint_gives_three_stars() -> None:
@@ -46,3 +53,21 @@ def test_check_badge_unlocks_finds_expected_badges() -> None:
     assert "Sentence Builder" in unlocked
     assert "B and D Master" in unlocked
     assert "Great Learner" in unlocked
+
+
+def test_letter_milestone_badges_unlock_at_j_t_and_z() -> None:
+    learner = LearnerModel(profile_data={"badges": [], "child_name": "Test"})
+
+    assert check_letter_milestone_badges(learner, "J") == ["Badge A"]
+    assert "Badge A" in learner.badges
+
+    assert check_letter_milestone_badges(learner, "J") == []
+    assert check_letter_milestone_badges(learner, "T") == ["Badge B"]
+    assert check_letter_milestone_badges(learner, "Z") == ["Badge C"]
+    assert learner.badges == ["Badge A", "Badge B", "Badge C"]
+
+
+def test_letter_milestone_badges_ignore_review_rounds() -> None:
+    learner = LearnerModel(profile_data={"badges": [], "child_name": "Test"})
+    assert check_letter_milestone_badges(learner, "J", curriculum=False) == []
+    assert learner.badges == []

@@ -16,6 +16,19 @@ class Hitbox:
     def contains(self, position: tuple[int, int]) -> bool:
         return self.rect.collidepoint(position)
 
+    @property
+    def area(self) -> int:
+        return max(0, self.rect.width) * max(0, self.rect.height)
+
+    @classmethod
+    def pick_at(cls, hitboxes: list["Hitbox"], position: tuple[int, int]) -> "Hitbox | None":
+        matches = [box for box in hitboxes if box.contains(position)]
+        if not matches:
+            return None
+        if len(matches) == 1:
+            return matches[0]
+        return min(matches, key=lambda box: box.area)
+
     def draw(self, surface: pygame.Surface, debug: bool = False) -> None:
         if not debug:
             return

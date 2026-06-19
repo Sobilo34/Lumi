@@ -1,0 +1,18 @@
+{
+  "child_name": "Player 1",
+  "stars_earned": 3,
+  "accuracy_percent": 33,
+  "strong_skill": "Sentence building",
+  "needs_practice": "Sentence order",
+  "weak_letters": {},
+  "weak_words": {},
+  "sentence_errors": {
+    "word_order": 2
+  },
+  "recommended_next_activity": "Sentence Castle",
+  "recommended_screen_id": "17_sentence_castle_gameplay",
+  "generated_at": "2026-06-19T03:46:22+00:00",
+  "attempts": 3,
+  "correct_answers": 1,
+  "difficulty": 1
+}

@@ -99,6 +99,27 @@ def test_letter_island_next_round_syncs_target_and_slots(engine: GameEngine) -> 
         assert next_slots != first_slots
 
 
+def test_mastering_j_unlocks_badge_a_and_returns_to_success_screen(engine: GameEngine) -> None:
+    engine.learner.current_letter_index = ALPHABET.index("J")
+    engine.learner.weak_letters = {}
+    engine.learner.badges = []
+    engine.learner.save_profile()
+    engine._configure_letter_island_task()
+    assert engine.state.current_task_target == "J"
+
+    slot_index = _slot_for_target(engine, "J")
+    engine.set_screen("letter_island_game")
+    engine._handle_letter_island_action(f"select_letter_slot_{slot_index}")
+
+    assert engine.state.current_screen_id == "badge_unlock"
+    assert engine.state.last_unlocked_badges == ["Badge A"]
+    assert "Badge A" in engine.learner.badges
+
+    engine._handle_action("continue_from_badge")
+    assert engine.state.current_screen_id == "letter_correct_feedback"
+    assert engine.state.completed_letter_target == "J"
+
+
 def test_letter_island_correct_increments_attempts(engine: GameEngine) -> None:
     engine._configure_letter_island_task()
     target = engine.state.current_task_target or "A"
