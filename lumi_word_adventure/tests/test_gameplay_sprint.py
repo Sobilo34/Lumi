@@ -171,6 +171,8 @@ def test_word_garden_selects_visible_target(engine: GameEngine) -> None:
     engine._configure_word_garden_task()
 
     assert engine.state.current_task_target == "sun"
+    assert engine.state.current_task_prompt == "Touch the sun."
+    assert engine._word_garden_voice_prompt() == "Touch the sun."
 
 
 def test_word_garden_dog_wrong_for_cat_target(engine: GameEngine) -> None:

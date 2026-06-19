@@ -39,9 +39,14 @@ from engine.personal_tutor import (
     build_letter_choices,
     build_letter_round,
     build_sentence_round,
-    build_word_round,
 )
 from engine.offline_fallback import offline_prompt_text, resolve_offline_message
+from engine.word_garden import (
+    WORD_GARDEN_WORDS,
+    WORD_SLOT_COUNT,
+    build_word_garden_round,
+    build_word_garden_round_for_target,
+)
 from engine.world_progression import (
     WORLD_LETTER_ISLAND,
     WORLD_SENTENCE_CASTLE,
@@ -70,7 +75,6 @@ from engine.scoring import (
 from data_loader import load_letters, load_sentences, load_vocabulary
 from engine.asset_manager import AssetManager
 from reports.report_generator import generate_report, resolve_engine_screen_id
-from ui.gameplay_overlay import draw_word_garden_overlay
 from ui.microphone_overlay import draw_microphone_check_overlay
 from ui.offline_overlay import draw_offline_overlay
 from ui.report_overlay import draw_teacher_report_overlays
@@ -80,7 +84,7 @@ from ui.world_map_overlay import draw_world_map_overlay
 from ui.screen_factory import create_game_screen
 from ui.scene_view import SceneView
 from ui.chunk_preload import EARLY_SCREEN_IDS, collect_chunk_files
-from ui.chunk_manifest import get_screen_spec, row_tile_slots
+from ui.chunk_manifest import card_slot_rects, get_screen_spec, row_tile_slots
 from ui.chunk_screen import ChunkScreen
 from ui.hitboxes import Hitbox
 from voice.text_to_speech import TextToSpeech
@@ -90,7 +94,7 @@ from voice.voice_checker import check_spoken_answer
 
 LETTER_SLOT_COUNT = 4
 LETTER_ISLAND_ENTRY_SCREENS = frozenset({"world_map", "main_menu", "how_to_play"})
-WORD_GARDEN_VISIBLE = ("cat", "dog", "sun", "ball")
+WORD_GARDEN_VISIBLE = WORD_GARDEN_WORDS
 LEGACY_WORD_ACTIONS = {
     "select_word_cat": "cat",
     "select_word_dog": "dog",
@@ -371,6 +375,19 @@ class GameEngine:
                             action=f"select_letter_slot_{index}",
                         )
                     )
+        if screen_id == "word_garden_game":
+            hitboxes = [box for box in hitboxes if not box.action.startswith("select_word_slot_")]
+            spec = get_screen_spec(screen_id, fallback_image=self.registry.get_image_filename(screen_id))
+            cards = spec.dynamic.get("word_cards") or {}
+            if isinstance(cards, dict):
+                for index, (x, y, w, h) in enumerate(card_slot_rects(cards)):
+                    hitboxes.append(
+                        Hitbox(
+                            name=f"Word slot {index + 1}",
+                            rect=pygame.Rect(x, y, w, h),
+                            action=f"select_word_slot_{index}",
+                        )
+                    )
         if screen_id != "settings":
             return hitboxes
         if DEBUG_HITBOXES or bool(self.settings.load_settings().get("debug_hitboxes")):
@@ -428,6 +445,9 @@ class GameEngine:
                     self.state.preserve_word_garden_task = False
                 else:
                     self._configure_word_garden_task()
+                self._refresh_screen_hitboxes("word_garden_game")
+                if hasattr(self.current_screen, "hitboxes"):
+                    self.current_screen.hitboxes = self._hitboxes_for_screen("word_garden_game")
                 if self.state.gameplay_refresh_pending:
                     self.state.gameplay_refresh_pending = False
             if screen_id == "letter_island_game":
@@ -766,18 +786,37 @@ class GameEngine:
         self.state.current_task_prompt = f"Find the letter {target_letter}."
         self.state.current_hint_level = 0
 
-    def _configure_word_garden_task(self) -> None:
-        round_data = build_word_round(self.learner, self.word_questions, WORD_GARDEN_VISIBLE)
-        target_word = str(round_data.get("target") or "cat").lower()
+    def _apply_word_garden_round(self, round_data: dict) -> None:
+        """Keep voice, prompt text, and card images on the same target word."""
+        target_word = str(round_data.get("target") or "cat").strip().lower()
+        choices = [str(word).strip().lower() for word in round_data.get("choices") or [] if str(word).strip()]
+        if len(choices) < WORD_SLOT_COUNT:
+            round_data = build_word_garden_round_for_target(self.learner, target_word)
+            target_word = str(round_data.get("target") or target_word).lower()
+            choices = [str(word).strip().lower() for word in round_data.get("choices") or []]
+        if target_word not in choices:
+            choices = [target_word, *[word for word in choices if word != target_word]]
+            choices = choices[:WORD_SLOT_COUNT]
+            while len(choices) < WORD_SLOT_COUNT:
+                for filler in WORD_GARDEN_WORDS:
+                    if filler not in choices:
+                        choices.append(filler)
+                    if len(choices) >= WORD_SLOT_COUNT:
+                        break
+        prompt = f"Touch the {target_word}."
         self.state.current_task_target = target_word
-        self.state.current_task_prompt = str(round_data.get("prompt") or f"Touch the {target_word}.")
-        self.state.word_choice_slots = list(round_data.get("choices") or list(WORD_GARDEN_VISIBLE))
+        self.state.current_task_prompt = prompt
+        self.state.word_choice_slots = choices[:WORD_SLOT_COUNT]
         self.state.current_hint_level = 0
         self.state.current_word_mode = str(round_data.get("reason") or "")
         self.state.word_garden_support = ""
         self.state.word_garden_option_count = len(self.state.word_choice_slots)
         self.state.last_word_selected = ""
         self.state.last_word_feedback_message = ""
+        self.asset_manager.invalidate_word_garden_assets("word_garden_game")
+
+    def _configure_word_garden_task(self) -> None:
+        self._apply_word_garden_round(build_word_garden_round(self.learner))
 
     def _configure_voice_challenge_task(self) -> None:
         target = str(self.state.current_task_target or "apple").lower()
@@ -1002,14 +1041,8 @@ class GameEngine:
         self.set_screen("word_mistake_hint")
 
     def _start_word_practice(self, word: str) -> None:
-        # configure a targeted word practice without overriding recommendation flow
         self.state.preserve_word_garden_task = True
-        self.state.current_task_target = word
-        prompt = f"Touch the {word}."
-        if not prompt.endswith(('.', '!', '?')):
-            prompt = prompt + "."
-        self.state.current_task_prompt = prompt
-        self.state.current_hint_level = 0
+        self._apply_word_garden_round(build_word_garden_round_for_target(self.learner, word))
         self.set_screen("word_garden_game")
 
     def _configure_teacher_report(self) -> None:
@@ -1102,6 +1135,10 @@ class GameEngine:
         self.learner.record_weak_word(target_word)
         self.voice.speak("Good try! Open your mouth wide: a-pple. Say apple.")
         self.set_screen("voice_challenge")
+
+    def _word_garden_voice_prompt(self) -> str:
+        target_word = str(self.state.current_task_target or "cat").strip().lower()
+        return f"Touch the {target_word}."
 
     def _word_garden_hint_message(self) -> str:
         target_word = self.state.current_task_target or "cat"
@@ -1262,7 +1299,7 @@ class GameEngine:
                 return
         if self.state.current_screen_id == "word_garden_game":
             if action == "repeat_prompt":
-                self.voice.speak(self.state.current_task_prompt or "Touch the cat.")
+                self.voice.speak(self._word_garden_voice_prompt())
                 return
             if action == "show_hint":
                 self.state.current_hint_level += 1
@@ -1294,7 +1331,7 @@ class GameEngine:
                 self.set_screen("word_garden_game")
                 return
             if action == "repeat_prompt":
-                self.voice.speak(self.state.current_task_prompt or "Touch the cat.")
+                self.voice.speak(self._word_garden_voice_prompt())
                 return
             if action == "show_next_hint":
                 self.state.current_hint_level += 1
@@ -1696,7 +1733,7 @@ class GameEngine:
             return
 
         if screen_id == "word_garden_game":
-            self.voice.speak(self.state.current_task_prompt or "Touch the cat.")
+            self.voice.speak(self._word_garden_voice_prompt())
             return
 
         if screen_id == "sentence_castle_game":
@@ -1865,16 +1902,6 @@ class GameEngine:
                 draw_badge_unlock_overlay(
                     self.screen,
                     badge_names=tuple(str(name) for name in (self.state.last_unlocked_badges or [])),
-                )
-            except Exception:
-                pass
-        if screen_id == "word_garden_game":
-            try:
-                draw_word_garden_overlay(
-                    self.screen,
-                    target_word=self.state.current_task_target or "cat",
-                    slot_words=self.state.word_choice_slots,
-                    progress_text=self._word_progress_text(),
                 )
             except Exception:
                 pass

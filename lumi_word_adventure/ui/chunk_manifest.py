@@ -138,3 +138,11 @@ def row_tile_slots(spec: dict[str, Any]) -> list[tuple[int, int, int, int]]:
     top = cy - tile_h // 2
     step = tile_w + gap
     return [(left + index * step, top, tile_w, tile_h) for index in range(count)]
+
+
+def card_slot_rects(spec: dict[str, Any]) -> list[tuple[int, int, int, int]]:
+    """Explicit card slots from manifest, or computed row layout."""
+    slots: list[dict[str, Any]] = list(spec.get("slots") or [])
+    if slots:
+        return [slot_rect(slot) for slot in slots[:4]]
+    return row_tile_slots(spec)

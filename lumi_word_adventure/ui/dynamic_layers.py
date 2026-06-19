@@ -21,7 +21,7 @@ from ui.components.primitives import (
     fit_font_size,
     font,
 )
-from ui.chunk_manifest import _horizontal_center_px, row_tile_slots, slot_rect
+from ui.chunk_manifest import _horizontal_center_px, card_slot_rects, row_tile_slots, slot_rect
 from ui.scene_view import SceneView
 
 if TYPE_CHECKING:
@@ -305,8 +305,98 @@ def _draw_touch_word(surface: pygame.Surface, spec: dict[str, Any], view: SceneV
     word = _field(view, str(spec.get("field") or "target_word"), "cat").lower()
     cx = int(SCREEN_WIDTH * (float(spec.get("x_pct") or 0.34) + 0.16))
     cy = int(SCREEN_HEIGHT * (float(spec.get("y_pct") or 0.22) + 0.03))
-    text = f"Touch {word}"
+    text = f"Touch the {word}"
     blit_outlined_text(surface, text, (cx, cy), 42, PROMPT_BROWN, outline=(255, 255, 255), outline_width=2)
+
+
+def _draw_touch_word_png(
+    surface: pygame.Surface,
+    spec: dict[str, Any],
+    view: SceneView,
+    assets: AssetManager | None,
+    asset_root: str,
+) -> None:
+    """Place only the target-word art beside the baked-in 'Touch the' on the background."""
+    word = _field(view, str(spec.get("field") or "target_word"), "cat").lower()
+    x, y, w, h = slot_rect(spec)
+    if assets is not None and asset_root:
+        word_surface = assets.scaled_word_prompt(
+            asset_root,
+            word,
+            w,
+            h,
+            fit=str(spec.get("fit") or "contain"),
+        )
+        if word_surface is not None:
+            draw_x = x + (w - word_surface.get_width()) // 2
+            draw_y = y + (h - word_surface.get_height()) // 2
+            surface.blit(word_surface, (draw_x, draw_y))
+            return
+    blit_outlined_text(
+        surface,
+        word,
+        (x + w // 2, y + h // 2 - 4),
+        fit_font_size(word, pygame.Rect(0, 0, w, h), fill_height_ratio=0.75),
+        PROMPT_ACCENT,
+        outline=(255, 255, 255),
+        outline_width=2,
+    )
+
+
+def _word_object_uses_selected(
+    *,
+    screen_id: str,
+    tile_variant: str,
+    slot_word: str,
+    target_word: str,
+) -> bool:
+    if str(screen_id or "").strip() == "word_garden_game" or str(tile_variant or "normal").lower() == "normal":
+        return False
+    slot = str(slot_word or "").strip().lower()
+    target = str(target_word or "").strip().lower()
+    return bool(slot) and slot == target
+
+
+def _draw_word_object_cards(
+    surface: pygame.Surface,
+    spec: dict[str, Any],
+    view: SceneView,
+    assets: AssetManager | None,
+    asset_root: str,
+) -> None:
+    words = tuple(str(item or "").lower() for item in (view.slot_words or ()))
+    slot_rects = card_slot_rects(spec)
+    target_word = _field(view, "target_word", "").lower()
+    tile_variant = str(spec.get("tile_variant") or "normal")
+    screen_id = str(view.screen_id or "")
+    fit = str(spec.get("fit") or "fill")
+    pad_x = int(SCREEN_WIDTH * float(spec.get("pad_x_pct") or 0))
+    pad_y = int(SCREEN_HEIGHT * float(spec.get("pad_y_pct") or 0))
+    for index, (x, y, w, h) in enumerate(slot_rects[:4]):
+        if index >= len(words):
+            break
+        selected = _word_object_uses_selected(
+            screen_id=screen_id,
+            tile_variant=tile_variant,
+            slot_word=words[index],
+            target_word=target_word,
+        )
+        inner = pygame.Rect(x + pad_x, y + pad_y, max(1, w - pad_x * 2), max(1, h - pad_y * 2))
+        if assets is not None and asset_root:
+            selected_scale = float(spec.get("selected_scale") or 1.08)
+            tile = assets.scaled_word_object(
+                asset_root,
+                words[index],
+                inner.width,
+                inner.height,
+                selected=selected,
+                selected_scale=selected_scale if selected else 1.0,
+                fit=fit,
+            )
+            if tile is not None:
+                draw_x = inner.x + (inner.width - tile.get_width()) // 2
+                draw_y = inner.y + (inner.height - tile.get_height()) // 2
+                surface.blit(tile, (draw_x, draw_y))
 
 
 def _draw_speech_bubble(surface: pygame.Surface, spec: dict[str, Any], view: SceneView) -> None:
@@ -507,8 +597,12 @@ def draw_dynamic_layers(
             _draw_bd_hint_panel(surface, spec, view)
         elif layer_type == "word_cards":
             _draw_word_cards(surface, spec, view)
+        elif layer_type == "word_object_cards":
+            _draw_word_object_cards(surface, spec, view, assets, active_screen)
         elif layer_type == "touch_word":
             _draw_touch_word(surface, spec, view)
+        elif layer_type == "touch_word_png":
+            _draw_touch_word_png(surface, spec, view, assets, active_screen)
         elif layer_type == "speech_bubble":
             _draw_speech_bubble(surface, spec, view)
         elif layer_type == "welcome_speech":

@@ -405,7 +405,7 @@ def render_word_garden_game(surface: pygame.Surface, view: SceneView) -> None:
     )
     outer = pct_rect(0.18, 0.18, 0.66, 0.50)
     inner = draw_stitched_panel(surface, outer, border_color=BOARD_BORDER)
-    prompt_text = f"Touch {str(view.target_word or 'cat').lower()}"
+    prompt_text = f"Touch the {str(view.target_word or 'cat').lower()}"
     _text(surface, prompt_text, 48, (inner.centerx, inner.y + 56), PROMPT_BROWN)
     slot_words = _safe_word_slots(view.slot_words)
     card_rects = (

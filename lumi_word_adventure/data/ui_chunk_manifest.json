@@ -145,13 +145,36 @@
       "dynamic": {}
     },
     "word_garden_game": {
+      "asset_root": "word_garden_game",
       "fallback_image": "11_word_garden_gameplay.png",
       "layers": [
-        { "id": "background", "file": "background.png", "z": 0, "x_pct": 0, "y_pct": 0, "w_pct": 1, "h_pct": 1 },
-        { "id": "board", "file": "board.png", "z": 10, "x_pct": 0.18, "y_pct": 0.18, "w_pct": 0.66, "h_pct": 0.5 },
-        { "id": "hud", "file": "hud.png", "z": 20, "x_pct": 0, "y_pct": 0, "w_pct": 1, "h_pct": 0.12 }
+        { "id": "background", "file": "background.png", "z": 0, "x_pct": 0, "y_pct": 0, "w_pct": 1, "h_pct": 1 }
       ],
-      "dynamic": {}
+      "dynamic": {
+        "touch_prompt": {
+          "type": "touch_word_png",
+          "field": "target_word",
+          "anchor": "topleft",
+          "x_pct": 0.505,
+          "y_pct": 0.249,
+          "w_pct": 0.17,
+          "h_pct": 0.068,
+          "fit": "contain"
+        },
+        "word_cards": {
+          "type": "word_object_cards",
+          "tile_variant": "normal",
+          "fit": "contain",
+          "pad_x_pct": 0.008,
+          "pad_y_pct": 0.01,
+          "slots": [
+            { "x_pct": 0.24, "y_pct": 0.39, "w_pct": 0.14, "h_pct": 0.27 },
+            { "x_pct": 0.4, "y_pct": 0.39, "w_pct": 0.14, "h_pct": 0.27 },
+            { "x_pct": 0.56, "y_pct": 0.39, "w_pct": 0.14, "h_pct": 0.27 },
+            { "x_pct": 0.72, "y_pct": 0.39, "w_pct": 0.14, "h_pct": 0.27 }
+          ]
+        }
+      }
     }
   }
 }
