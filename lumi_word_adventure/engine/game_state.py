@@ -67,3 +67,4 @@ class GameState:
     end_session_pending: bool = False
     session_end_report_path: str = ""
     last_completed_world_id: str = ""
+    current_round_wrong_count: int = 0

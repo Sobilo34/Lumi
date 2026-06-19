@@ -4,7 +4,7 @@ from __future__ import annotations
 from copy import deepcopy
 from typing import Any
 
-from engine.personal_tutor import ALPHABET
+from engine.adaptive_ai import ALPHABET, all_letters_mastered
 
 WORLD_LETTER_ISLAND = "letter_island"
 WORLD_WORD_GARDEN = "word_garden"
@@ -71,15 +71,25 @@ def mark_world_complete(profile: Any, world_id: str) -> bool:
     return False
 
 
-def letter_island_complete(profile: Any) -> bool:
-    if WORLD_LETTER_ISLAND in _completed_worlds(profile):
-        return True
+def letter_island_curriculum_complete(profile: Any) -> bool:
+    """Finished the A–Z curriculum (reached Z), even if review letters remain."""
     data = _profile_dict(profile)
     mastered = {str(item).upper() for item in data.get("mastered_letters", [])}
     index = int(data.get("current_letter_index", 0) or 0)
+    badges = {str(item).strip() for item in data.get("badges", [])}
+    if "Badge C" in badges:
+        return True
     if "Z" in mastered and index >= len(ALPHABET) - 1:
         return True
-    return len(mastered) >= len(ALPHABET)
+    return False
+
+
+def letter_island_complete(profile: Any) -> bool:
+    if WORLD_LETTER_ISLAND in _completed_worlds(profile):
+        return True
+    if all_letters_mastered(profile):
+        return True
+    return letter_island_curriculum_complete(profile)
 
 
 def word_garden_complete(profile: Any) -> bool:
@@ -136,8 +146,9 @@ def sync_world_completion(profile: Any) -> list[str]:
 
 
 def maybe_complete_letter_island(profile: Any, *, letter: str, curriculum: bool = True) -> bool:
-    if not curriculum or str(letter or "").upper() != "Z":
-        return False
+    key = str(letter or "").strip().upper()
+    if curriculum and key == "Z":
+        return mark_world_complete(profile, WORLD_LETTER_ISLAND)
     if not letter_island_complete(profile):
         return False
     return mark_world_complete(profile, WORLD_LETTER_ISLAND)

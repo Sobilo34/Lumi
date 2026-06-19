@@ -5,6 +5,8 @@ import random
 from copy import deepcopy
 from typing import Any
 
+from engine.adaptive_ai import pick_letter_round_target, reset_review_spacing
+
 ALPHABET = tuple("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
 LETTER_SLOT_COUNT = 4
 WORD_SLOT_COUNT = 4
@@ -33,30 +35,6 @@ def _next_curriculum_letter(profile: dict[str, Any]) -> str:
     index = int(profile.get("current_letter_index", 0) or 0)
     index = max(0, min(index, len(ALPHABET) - 1))
     return ALPHABET[index]
-
-
-def _pick_review_letter(profile_data: dict[str, Any]) -> str | None:
-    weak = profile_data.get("weak_letters", {})
-    if not isinstance(weak, dict):
-        return None
-    mastered = {str(item).upper() for item in profile_data.get("mastered_letters", [])}
-    candidates = [
-        (letter.upper(), int(count))
-        for letter, count in weak.items()
-        if int(count or 0) >= 2 and letter.upper() not in mastered
-    ]
-    if not candidates:
-        return None
-    candidates.sort(key=lambda item: (-item[1], item[0]))
-    return candidates[0][0]
-
-
-def _pick_letter_target(profile_data: dict[str, Any]) -> tuple[str, bool]:
-    """Pick the next A–Z curriculum letter, or revisit a weak letter."""
-    review = _pick_review_letter(profile_data)
-    if review:
-        return review, True
-    return _next_curriculum_letter(profile_data).upper(), False
 
 
 def build_letter_choices(target: str, letter_bank: list[dict[str, Any]], rng: random.Random | None = None) -> list[str]:
@@ -90,7 +68,9 @@ def build_letter_round(
     letter_bank: list[dict[str, Any]],
 ) -> dict[str, Any]:
     profile_data = _profile_dict(profile)
-    target, review_mode = _pick_letter_target(profile_data)
+    target, review_mode, reason = pick_letter_round_target(profile)
+    if review_mode:
+        reset_review_spacing(profile)
     entry = _letter_entry(letter_bank, target)
     choices = build_letter_choices(target, letter_bank)
     curriculum = _next_curriculum_letter(profile_data)
@@ -105,7 +85,7 @@ def build_letter_round(
         "prompt": prompt,
         "curriculum_letter": curriculum,
         "review_mode": review_mode,
-        "reason": "letter_review" if review_mode else "letter_curriculum",
+        "reason": reason if review_mode else "letter_curriculum",
     }
 
 

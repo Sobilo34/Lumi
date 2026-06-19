@@ -4,6 +4,8 @@ from __future__ import annotations
 from copy import deepcopy
 from typing import Any, Callable
 
+from engine.adaptive_ai import all_letters_mastered
+
 # Letter Island curriculum milestones shown on 21_badge_unlock.png.
 LETTER_MILESTONE_BADGES: dict[str, str] = {
     "Badge A": "J",
@@ -11,15 +13,17 @@ LETTER_MILESTONE_BADGES: dict[str, str] = {
     "Badge C": "Z",
 }
 
+LETTER_ISLAND_COMPLETE_BADGE = "Letter Island Complete"
+
 BADGE_DISPLAY_SUBTITLES: dict[str, str] = {
     "Badge A": "Letters A–J Complete!",
     "Badge B": "Letter T Mastered!",
     "Badge C": "Letters U–Z Complete!",
+    "Letter Island Complete": "All letters A–Z mastered! Word Garden unlocked!",
 }
 
 
 BADGE_DEFINITIONS: dict[str, Callable[[dict[str, Any]], bool]] = {
-    "Letter Hero": lambda profile: len(profile.get("mastered_letters", [])) >= 5,
     "Word Explorer": lambda profile: len(profile.get("mastered_words", [])) >= 5,
     "Brave Speaker": lambda profile: "voice_challenge" in profile.get("completed_worlds", []),
     "Sentence Builder": lambda profile: "sentence_castle" in profile.get("completed_worlds", []),
@@ -102,6 +106,26 @@ def check_letter_milestone_badges(
 
     _persist_profile(profile)
     return [badge_name]
+
+
+def check_letter_island_complete_badge(profile: Any) -> list[str]:
+    """Award the finale badge when every letter A–Z has been perfected."""
+    profile_dict = _profile_dict(profile)
+    if LETTER_ISLAND_COMPLETE_BADGE in profile_dict.get("badges", []):
+        return []
+    if not all_letters_mastered(profile):
+        return []
+
+    if hasattr(profile, "add_badge") and callable(profile.add_badge):
+        profile.add_badge(LETTER_ISLAND_COMPLETE_BADGE)
+    elif isinstance(profile, dict):
+        badges = list(profile.get("badges", []))
+        if LETTER_ISLAND_COMPLETE_BADGE not in badges:
+            badges.append(LETTER_ISLAND_COMPLETE_BADGE)
+            profile["badges"] = badges
+
+    _persist_profile(profile)
+    return [LETTER_ISLAND_COMPLETE_BADGE]
 
 
 def badge_subtitle(badge_name: str) -> str:

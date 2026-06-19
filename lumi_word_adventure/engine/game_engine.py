@@ -24,6 +24,7 @@ from engine.adaptive_ai import (
     choose_next_question,
     diagnose_letter_mistake,
     diagnose_word_mistake,
+    note_curriculum_letter_completed,
     recommend_practice,
 )
 from engine.feedback import get_feedback, get_hint, get_lumi_speech
@@ -52,13 +53,20 @@ from engine.world_progression import (
     prepare_world_practice,
     screen_accessible,
     sync_world_completion,
+    word_garden_unlocked,
     world_map_progress_text,
 )
 from engine.screen_registry import ScreenRegistry
 from engine.settings_manager import SettingsManager, difficulty_mode_to_level
 from engine.sound_manager import SoundManager
 from engine.voice_guard import is_stt_ready, safe_listen_once, stt_status_message
-from engine.scoring import calculate_stars, check_badge_unlocks, check_letter_milestone_badges, update_score
+from engine.scoring import (
+    calculate_stars,
+    check_badge_unlocks,
+    check_letter_island_complete_badge,
+    check_letter_milestone_badges,
+    update_score,
+)
 from data_loader import load_letters, load_sentences, load_vocabulary
 from engine.asset_manager import AssetManager
 from reports.report_generator import generate_report, resolve_engine_screen_id
@@ -408,6 +416,8 @@ class GameEngine:
         screen.hitboxes = self._hitboxes_for_screen(screen_id)
 
     def change_screen(self, screen_id: str) -> None:
+        if screen_id in {"world_map", "progress_complete", "word_garden_game", "sentence_castle_game"}:
+            sync_world_completion(self.learner)
         if not screen_accessible(self.learner, screen_id):
             self._show_world_locked_feedback(screen_id)
             return
@@ -469,8 +479,10 @@ class GameEngine:
                     self.state.gameplay_refresh_pending = False
             if screen_id == "world_map":
                 sync_world_completion(self.learner)
-            if screen_id == "progress_complete" and not self.state.last_completed_world_id:
-                self.state.last_completed_world_id = latest_completed_world(self.learner)
+            if screen_id == "progress_complete":
+                sync_world_completion(self.learner)
+                if not self.state.last_completed_world_id:
+                    self.state.last_completed_world_id = latest_completed_world(self.learner)
             if screen_id == "settings":
                 self._refresh_screen_hitboxes("settings")
             if screen_id == "badge_unlock":
@@ -724,6 +736,7 @@ class GameEngine:
         self.state.last_selected_letter = ""
         self.state.completed_letter_target = ""
         self.state.completed_letter_choices = []
+        self.state.current_round_wrong_count = 0
         self._warm_letter_round_assets(letter, choices)
 
     def _warm_letter_round_assets(self, target: str, choices: list[str]) -> None:
@@ -822,6 +835,7 @@ class GameEngine:
         self.state.badge_return_screen = ""
         self.state.world_map_status_message = ""
         self.state.world_map_status_shown_at_ms = None
+        self.state.current_round_wrong_count = 0
         self.state.last_spoken_text = ""
         self.state.practice_recommendation = None
         self.state.teacher_report = None
@@ -1392,6 +1406,7 @@ class GameEngine:
             self.set_screen(previous)
             return
         if action == "view_badges":
+            sync_world_completion(self.learner)
             if not self.state.last_completed_world_id:
                 self.state.last_completed_world_id = latest_completed_world(self.learner)
             self.set_screen("progress_complete")
@@ -1451,6 +1466,10 @@ class GameEngine:
             return
         if self.state.current_screen_id == "progress_complete":
             if action == "next_world":
+                sync_world_completion(self.learner)
+                if word_garden_unlocked(self.learner):
+                    self.set_screen("word_garden_game")
+                    return
                 try:
                     current = int(self.learner.current_world or 1)
                 except Exception:
@@ -1537,7 +1556,13 @@ class GameEngine:
         if action == "show_hint":
             self.state.current_hint_level += 1
             self.learner.record_hint_usage(self.state.current_hint_level)
-            hint_message = get_hint("letter", self.state.current_hint_level, target_letter)
+            hint_message = get_hint(
+                "letter",
+                self.state.current_hint_level,
+                target_letter,
+                mistake_type=self.state.last_mistake_type,
+                selected=self.state.last_selected_letter,
+            )
             self._speak_tutor_line(hint_message)
             return
 
@@ -1550,14 +1575,21 @@ class GameEngine:
             return
 
         if selected_letter == target_letter:
+            first_try = int(self.state.current_round_wrong_count) <= 0
             stars_earned = calculate_stars(True, self.state.current_hint_level)
             self.learner.attempts = int(self.learner.attempts) + 1
             self.learner.correct_answers = int(self.learner.correct_answers) + 1
             self.learner.update_accuracy()
             self.learner.update_correct_streak()
             update_score(self.learner, stars_earned)
-            self.learner.mark_letter_mastered(target_letter)
+            self.learner.record_letter_mastery_attempt(
+                target_letter,
+                correct=True,
+                first_try=first_try,
+                hints_used=self.state.current_hint_level,
+            )
             if not self.state.letter_review_mode:
+                note_curriculum_letter_completed(self.learner)
                 self.state.pending_letter_curriculum_advance = True
             if maybe_complete_letter_island(
                 self.learner,
@@ -1566,13 +1598,30 @@ class GameEngine:
             ):
                 self._mark_world_completed(WORLD_LETTER_ISLAND)
                 self._notify_world_unlocked(WORLD_WORD_GARDEN)
+            island_complete_badge = check_letter_island_complete_badge(self.learner)
+            if island_complete_badge:
+                self.state.current_hint_level = 0
+                self.state.bd_confusion_attempts = 0
+                self.state.last_mistake_type = ""
+                self.state.last_selected_letter = selected_letter
+                self.state.highlight_letter_slot = -1
+                self.state.completed_letter_target = target_letter
+                self.state.completed_letter_choices = [
+                    str(item).upper() for item in self.state.letter_choice_slots[:LETTER_SLOT_COUNT]
+                ]
+                correct_message = get_feedback(True)["message"]
+                self.state.last_letter_feedback_message = (
+                    f"{correct_message} You perfected every letter A–Z!"
+                )
+                self._play_feedback_sfx("badge", stars_earned=stars_earned)
+                self._handle_badges(island_complete_badge, return_screen="progress_complete")
+                return
             milestone_unlocked = check_letter_milestone_badges(
                 self.learner,
                 target_letter,
                 curriculum=not self.state.letter_review_mode,
             )
-            general_unlocked = check_badge_unlocks(self.learner)
-            unlocked = milestone_unlocked + [name for name in general_unlocked if name not in milestone_unlocked]
+            unlocked = milestone_unlocked
             self.state.current_hint_level = 0
             self.state.bd_confusion_attempts = 0
             self.state.last_mistake_type = ""
@@ -1594,10 +1643,18 @@ class GameEngine:
         self.learner.attempts = int(self.learner.attempts) + 1
         self.learner.update_accuracy()
         self.learner.update_wrong_streak()
+        self.state.current_round_wrong_count += 1
         self.state.last_selected_letter = selected_letter
         self.state.highlight_letter_slot = self._slot_index_for_letter(selected_letter) or -1
         self.state.last_mistake_type = diagnose_letter_mistake(target_letter, selected_letter)
-        self.learner.record_weak_letter(target_letter)
+        if not self.learner.letter_is_ai_mastered(target_letter):
+            self.learner.record_weak_letter(target_letter)
+        self.learner.record_letter_mastery_attempt(
+            target_letter,
+            correct=False,
+            hints_used=self.state.current_hint_level,
+            confused_with=selected_letter,
+        )
         feedback = get_feedback(
             False,
             mistake_type=self.state.last_mistake_type,

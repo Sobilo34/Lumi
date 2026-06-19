@@ -120,6 +120,35 @@ def test_mastering_j_unlocks_badge_a_and_returns_to_success_screen(engine: GameE
     assert engine.state.completed_letter_target == "J"
 
 
+def test_all_letters_perfected_shows_completion_badge_and_word_garden_path(engine: GameEngine) -> None:
+    from engine.scoring import LETTER_ISLAND_COMPLETE_BADGE
+
+    for letter in ALPHABET:
+        engine.learner.letter_mastery[letter]["mastery_score"] = 1.0
+        engine.learner.letter_mastery[letter]["consecutive_correct"] = 2
+        engine.learner.mark_letter_mastered(letter)
+    engine.learner.current_letter_index = len(ALPHABET) - 1
+    engine.learner.badges = []
+    engine.learner.save_profile()
+    engine._configure_letter_island_task()
+    target = str(engine.state.current_task_target or "Z").upper()
+    slot_index = _slot_for_target(engine, target)
+    engine.set_screen("letter_island_game")
+
+    engine._handle_letter_island_action(f"select_letter_slot_{slot_index}")
+
+    assert engine.state.current_screen_id == "badge_unlock"
+    assert engine.state.last_unlocked_badges == [LETTER_ISLAND_COMPLETE_BADGE]
+    assert LETTER_ISLAND_COMPLETE_BADGE in engine.learner.badges
+    assert engine.state.badge_return_screen == "progress_complete"
+
+    engine._handle_action("continue_from_badge")
+    assert engine.state.current_screen_id == "progress_complete"
+
+    engine._handle_action("next_world")
+    assert engine.state.current_screen_id == "word_garden_game"
+
+
 def test_letter_island_correct_increments_attempts(engine: GameEngine) -> None:
     engine._configure_letter_island_task()
     target = engine.state.current_task_target or "A"
@@ -145,6 +174,8 @@ def test_word_garden_selects_visible_target(engine: GameEngine) -> None:
 
 
 def test_word_garden_dog_wrong_for_cat_target(engine: GameEngine) -> None:
+    engine.learner.completed_worlds = ["letter_island"]
+    engine.learner.save_profile()
     engine.state.current_task_target = "cat"
     engine.state.current_task_prompt = "Touch the cat."
     engine.set_screen("word_garden_game")

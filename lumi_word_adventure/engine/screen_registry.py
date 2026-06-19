@@ -228,6 +228,9 @@ class ScreenRegistry:
                 "progress_complete",
                 "22_progress_level_complete.png",
                 (
+                    HitboxDefinition("Letter Island", 0.12, 0.4, 0.22, 0.33, target="letter_island_game"),
+                    HitboxDefinition("Word Garden", 0.39, 0.38, 0.22, 0.35, target="word_garden_game"),
+                    HitboxDefinition("Sentence Castle", 0.68, 0.38, 0.24, 0.36, target="sentence_castle_game"),
                     HitboxDefinition("Next World", 0.36, 0.73, 0.25, 0.13, action="next_world"),
                     HitboxDefinition("Practice Again", 0.63, 0.73, 0.25, 0.13, action="practice_again"),
                     HitboxDefinition("View Report", 0.9, 0.05, 0.16, 0.12, action="view_report"),

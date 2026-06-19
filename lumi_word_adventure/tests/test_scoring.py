@@ -47,7 +47,7 @@ def test_check_badge_unlocks_finds_expected_badges() -> None:
 
     unlocked = check_badge_unlocks(profile)
 
-    assert "Letter Hero" in unlocked
+    assert "Letter Hero" not in unlocked
     assert "Word Explorer" in unlocked
     assert "Brave Speaker" in unlocked
     assert "Sentence Builder" in unlocked
@@ -71,3 +71,15 @@ def test_letter_milestone_badges_ignore_review_rounds() -> None:
     learner = LearnerModel(profile_data={"badges": [], "child_name": "Test"})
     assert check_letter_milestone_badges(learner, "J", curriculum=False) == []
     assert learner.badges == []
+
+
+def test_letter_hero_badge_not_awarded_at_five_letters() -> None:
+    learner = LearnerModel(
+        profile_data={
+            "badges": [],
+            "child_name": "Test",
+            "mastered_letters": ["A", "B", "C", "D", "E"],
+        }
+    )
+    unlocked = check_badge_unlocks(learner)
+    assert "Letter Hero" not in unlocked

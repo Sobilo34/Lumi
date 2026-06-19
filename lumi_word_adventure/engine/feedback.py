@@ -4,6 +4,32 @@ from __future__ import annotations
 from typing import Any
 
 
+_VISUAL_CONFUSION_HINTS: dict[tuple[str, str], str] = {
+    ("B", "D"): "B has a belly. D has a drum.",
+    ("D", "B"): "D has a drum. B has a belly.",
+    ("B", "P"): "B has two bumps on one side. P has one long line.",
+    ("B", "R"): "B has a belly bump. R has a little leg.",
+    ("M", "W"): "M says mmm. W looks like two hills.",
+    ("W", "M"): "W has two pointy tops. M has two soft bumps.",
+    ("M", "N"): "M has two bumps. N has one slant.",
+    ("N", "M"): "N has one slant. M has two bumps.",
+    ("C", "G"): "C is open like a cup. G has a little tail.",
+    ("G", "C"): "G has a tail inside. C is open like a cup.",
+    ("C", "O"): "C is open on the side. O is a full circle.",
+    ("O", "C"): "O is round all the way. C has an open side.",
+    ("E", "F"): "E has three lines. F has two lines.",
+    ("F", "E"): "F has two lines. E has three lines.",
+    ("I", "L"): "I is a straight stick. L has a foot.",
+    ("L", "I"): "L has a foot at the bottom. I is straight.",
+    ("I", "T"): "I is one straight line. T has a top bar.",
+    ("T", "I"): "T has a top bar. I is one straight line.",
+    ("O", "Q"): "O is a circle. Q has a little tail.",
+    ("Q", "O"): "Q has a tail. O is a circle.",
+    ("O", "D"): "O is round. D has a straight back.",
+    ("D", "O"): "D has a straight back. O is round.",
+}
+
+
 def _feedback_payload(feedback_type: str, message: str) -> dict[str, str]:
     return {"type": feedback_type, "message": message}
 
@@ -31,6 +57,18 @@ def get_feedback(
 
     if mistake_type == "bd_confusion":
         return _feedback_payload("incorrect", "Good try! B has a belly.")
+
+    if mistake_type == "visual_confusion":
+        if target and selected:
+            pair_hint = _VISUAL_CONFUSION_HINTS.get((target.upper(), selected.upper()))
+            if pair_hint:
+                return _feedback_payload("incorrect", f"Good try! {pair_hint}")
+            return _feedback_payload(
+                "incorrect",
+                f"This is {selected.upper()}. Look closely for {target.upper()}.",
+            )
+        if target:
+            return _feedback_payload("incorrect", f"Look closely for {target.upper()}.")
 
     if mistake_type == "letter_confusion":
         if target and selected:
@@ -63,12 +101,53 @@ def get_feedback(
     return _feedback_payload("incorrect", "Good try! Let’s look again.")
 
 
-def get_hint(activity_type: str, hint_level: int | str, target: str) -> str:
+def get_letter_mistake_hint(
+    mistake_type: str,
+    *,
+    target: str = "",
+    selected: str = "",
+    hint_level: int | str = 1,
+) -> str:
+    """Targeted, child-friendly hints after a diagnosed letter mistake."""
+    mistake = mistake_type.strip().lower()
+    target_letter = target.strip().upper()
+    selected_letter = selected.strip().upper()
+    level = str(hint_level).strip()
+
+    if mistake == "bd_confusion":
+        return "B has a belly. D has a drum."
+    if mistake == "visual_confusion" and target_letter and selected_letter:
+        pair_hint = _VISUAL_CONFUSION_HINTS.get((target_letter, selected_letter))
+        if pair_hint:
+            return pair_hint
+        return f"Look closely. {target_letter} is not the same as {selected_letter}."
+    if level in {"2", "level_2"} and target_letter:
+        return f"The letter {target_letter} has its own special shape."
+    if target_letter:
+        return f"Look for the letter {target_letter}."
+    return "Look for the letter again."
+
+
+def get_hint(
+    activity_type: str,
+    hint_level: int | str,
+    target: str,
+    *,
+    mistake_type: str = "",
+    selected: str = "",
+) -> str:
     activity = activity_type.strip().lower()
     target_text = target.strip() if target else ""
     level = str(hint_level).strip()
 
     if activity == "letter":
+        if mistake_type:
+            return get_letter_mistake_hint(
+                mistake_type,
+                target=target_text,
+                selected=selected,
+                hint_level=level,
+            )
         if level in {"1", "level_1"}:
             return f"Look for the letter {target_text}."
         if level in {"2", "level_2"}:

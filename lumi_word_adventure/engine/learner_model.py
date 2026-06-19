@@ -8,6 +8,15 @@ import json
 
 from config import PROFILES_DIR
 from data_loader import load_default_profile, load_json_file
+from engine.adaptive_ai import (
+    default_letter_mastery_map,
+    ensure_letter_mastery,
+    is_letter_mastered,
+    record_letter_confusion,
+    reset_review_spacing,
+    sync_mastered_letters_from_mastery,
+    update_letter_mastery,
+)
 
 
 class LearnerModel:
@@ -35,6 +44,8 @@ class LearnerModel:
         "current_letter_index",
         "current_word_length",
         "sentence_level",
+        "letter_mastery",
+        "curriculum_letters_since_review",
     )
 
     def __init__(
@@ -71,6 +82,8 @@ class LearnerModel:
         profile.setdefault("current_letter_index", 0)
         profile.setdefault("current_word_length", 3)
         profile.setdefault("sentence_level", 0)
+        profile.setdefault("letter_mastery", default_letter_mastery_map())
+        profile.setdefault("curriculum_letters_since_review", 0)
         return profile
 
     def _load_or_create_profile(self) -> tuple[dict[str, Any], bool]:
@@ -97,6 +110,7 @@ class LearnerModel:
         for field_name in cls._PROFILE_FIELDS:
             value = legacy_profile.get(field_name, defaults.get(field_name))
             normalized[field_name] = deepcopy(value)
+        ensure_letter_mastery(normalized)
         return normalized
 
     def _write_profile(self, profile: dict[str, Any]) -> None:
@@ -175,11 +189,48 @@ class LearnerModel:
 
     def mark_letter_mastered(self, letter: str) -> list[str]:
         key = letter.strip().upper()
-        if key and key not in self.mastered_letters:
+        if not key:
+            return list(self.mastered_letters)
+        self.weak_letters.pop(key, None)
+        if key not in self.mastered_letters:
             self.mastered_letters.append(key)
-            self.weak_letters.pop(key, None)
-            self.save_profile()
+        self.save_profile()
         return list(self.mastered_letters)
+
+    def record_letter_mastery_attempt(
+        self,
+        letter: str,
+        *,
+        correct: bool,
+        first_try: bool = False,
+        hints_used: int = 0,
+        confused_with: str | None = None,
+    ) -> dict[str, Any]:
+        key = letter.strip().upper()
+        if confused_with:
+            record_letter_confusion(self, key, confused_with)
+        record = update_letter_mastery(
+            self,
+            key,
+            correct=correct,
+            first_try=first_try,
+            hints_used=hints_used,
+        )
+        if correct:
+            sync_mastered_letters_from_mastery(self)
+        return record
+
+    def get_letter_mastery_record(self, letter: str) -> dict[str, Any]:
+        from engine.adaptive_ai import get_letter_mastery_record
+
+        return get_letter_mastery_record(self, letter)
+
+    def letter_is_ai_mastered(self, letter: str) -> bool:
+        return is_letter_mastered(self, letter)
+
+    def reset_letter_review_spacing(self) -> None:
+        reset_review_spacing(self)
+        self.save_profile()
 
     def mark_word_mastered(self, word: str) -> list[str]:
         key = word.strip().lower()
