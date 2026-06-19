@@ -26,6 +26,8 @@ IDLE_PRELOAD_SCREEN_IDS = frozenset({
     "main_menu",
     "how_to_play",
     "world_map",
+    "settings",
+    "progress_complete",
 })
 
 
@@ -53,16 +55,54 @@ def collect_chunk_files(spec: ScreenChunkSpec) -> tuple[str, ...]:
 
 
 def build_gameplay_chunk_queue() -> list[tuple[str, str]]:
-    """Chunk paths for Word Garden and Letter Island — warmed in the background."""
+    """Chunk paths for Word Garden and Letter Island — cheap assets first."""
     queue: list[tuple[str, str]] = [("word_garden_game", "background.png")]
     for word in WORD_GARDEN_WORDS:
-        queue.append(("word_garden_game", f"objects/{word}.png"))
         queue.append(("word_garden_game", f"prompts/{word}.png"))
     for letter in ascii_lowercase:
+        queue.append(("letter_island_game", f"find/{letter}.png"))
         queue.append(("letter_island_game", f"letters/{letter}.png"))
         queue.append(("letter_island_game", f"letters/{letter}_selected.png"))
-        queue.append(("letter_island_game", f"find/{letter}.png"))
+    for word in WORD_GARDEN_WORDS:
+        queue.append(("word_garden_game", f"objects/{word}.png"))
     return queue
+
+
+def preload_item_cost(filename: str) -> int:
+    """Relative load cost for spreading heavy work across frames."""
+    if filename.startswith("objects/"):
+        return 8
+    if filename == "background.png":
+        return 2
+    return 1
+
+
+# Word Garden card draw sizes (matches ui_chunk_manifest slot + scale cache).
+WORD_GARDEN_OBJECT_W = 182
+WORD_GARDEN_OBJECT_H = 227
+WORD_GARDEN_PROMPT_W = 109
+WORD_GARDEN_PROMPT_H = 26
+
+
+def warm_word_garden_draw_cache(asset_manager: AssetManager, word: str) -> None:
+    """Pre-scale a word's prompt/object after its PNG chunk is loaded."""
+    key = str(word or "").strip().lower()
+    if not key:
+        return
+    asset_manager.scaled_word_prompt(
+        "word_garden_game",
+        key,
+        WORD_GARDEN_PROMPT_W,
+        WORD_GARDEN_PROMPT_H,
+        fit="contain",
+    )
+    asset_manager.scaled_word_object(
+        "word_garden_game",
+        key,
+        WORD_GARDEN_OBJECT_W,
+        WORD_GARDEN_OBJECT_H,
+        fit="contain",
+    )
 
 
 def preload_early_screens(

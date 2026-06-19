@@ -19,6 +19,7 @@ from config import (
 import csv
 import os
 from datetime import datetime
+from pathlib import Path
 from engine.adaptive_ai import (
     choose_hint,
     choose_next_question,
@@ -89,6 +90,8 @@ from ui.chunk_preload import (
     IDLE_PRELOAD_SCREEN_IDS,
     build_gameplay_chunk_queue,
     collect_chunk_files,
+    preload_item_cost,
+    warm_word_garden_draw_cache,
 )
 from ui.chunk_manifest import card_slot_rects, get_screen_spec, row_tile_slots
 from ui.chunk_screen import ChunkScreen
@@ -172,20 +175,27 @@ class GameEngine:
         screen._composer.warm_static(spec)
         self._static_warmed.add(screen_id)
 
-    def _drain_preload_queue(self, *, max_items: int = 6) -> None:
-        if self._image_preload_queue:
+    def _drain_preload_queue(self, *, budget: int = 6) -> None:
+        remaining = budget
+        if remaining > 0 and self._image_preload_queue:
             filename = self._image_preload_queue.pop(0)
             self.asset_manager.load_image(filename)
-            max_items -= 1
-            if max_items <= 0:
-                return
+            remaining -= 1
         touched: set[str] = set()
-        for _ in range(max_items):
-            if not self._preload_queue:
+        while remaining > 0 and self._preload_queue:
+            screen_id, filename = self._preload_queue[0]
+            cost = preload_item_cost(filename)
+            if cost > remaining and touched:
                 break
-            screen_id, filename = self._preload_queue.pop(0)
+            self._preload_queue.pop(0)
             self.asset_manager.load_chunk(screen_id, filename)
             touched.add(screen_id)
+            remaining -= cost
+            if screen_id == "word_garden_game" and filename == "background.png":
+                self._warm_screen_static("word_garden_game")
+            if screen_id == "word_garden_game" and filename.startswith("objects/"):
+                word = Path(filename).stem
+                warm_word_garden_draw_cache(self.asset_manager, word)
         for screen_id in touched:
             if not self._preload_queue or not any(item[0] == screen_id for item in self._preload_queue):
                 self._warm_screen_static(screen_id)
@@ -1848,9 +1858,9 @@ class GameEngine:
     def update(self) -> None:
         self.current_screen.update()
         if self.state.current_screen_id in IDLE_PRELOAD_SCREEN_IDS:
-            budget = 10 if self.state.current_screen_id == "splash_loading" else 4
+            budget = 14 if self.state.current_screen_id == "splash_loading" else 8
             if self._preload_queue or self._image_preload_queue:
-                self._drain_preload_queue(max_items=budget)
+                self._drain_preload_queue(budget=budget)
         if self.state.current_screen_id == "splash_loading":
             elapsed = pygame.time.get_ticks() - self.state.splash_started_at
             if elapsed >= SPLASH_DURATION_MS:

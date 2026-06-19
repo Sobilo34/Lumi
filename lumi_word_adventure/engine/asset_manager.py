@@ -70,11 +70,20 @@ def _knock_out_export_padding(image: pygame.Surface) -> pygame.Surface:
     """Turn export checkerboard/white into transparency; keep card frames and art."""
     surface = image.convert_alpha()
     width, height = surface.get_size()
-    for y in range(height):
-        for x in range(width):
+    step = 1 if width * height <= 250_000 else 2
+    for y in range(0, height, step):
+        for x in range(0, width, step):
             color = surface.get_at((x, y))
-            if _is_export_padding(color.r, color.g, color.b, color.a):
+            if not _is_export_padding(color.r, color.g, color.b, color.a):
+                continue
+            if step == 1:
                 surface.set_at((x, y), (0, 0, 0, 0))
+            else:
+                for dy in range(step):
+                    for dx in range(step):
+                        px, py = x + dx, y + dy
+                        if px < width and py < height:
+                            surface.set_at((px, py), (0, 0, 0, 0))
     return surface
 
 
@@ -224,31 +233,81 @@ def _bbox_matching(
     return pygame.Rect(min_x, min_y, max_x - min_x + 1, max_y - min_y + 1)
 
 
+_OBJECT_WORK_MAX = 512
+
+
+_OBJECT_PROBE_MAX = 384
+
+
+def _downscale_for_probe(surface: pygame.Surface, max_dim: int = _OBJECT_PROBE_MAX) -> tuple[pygame.Surface, float]:
+    width, height = surface.get_size()
+    if max(width, height) <= max_dim:
+        return surface, 1.0
+    scale = max_dim / max(width, height)
+    probe = pygame.transform.smoothscale(
+        surface,
+        (max(1, int(width * scale)), max(1, int(height * scale))),
+    )
+    return probe, scale
+
+
+def _scale_probe_rect(rect: pygame.Rect, scale: float, bounds: pygame.Rect) -> pygame.Rect:
+    if scale >= 1.0:
+        return rect.clip(bounds)
+    inv = 1.0 / scale
+    scaled = pygame.Rect(
+        int(rect.x * inv),
+        int(rect.y * inv),
+        max(1, int(rect.width * inv)),
+        max(1, int(rect.height * inv)),
+    )
+    return scaled.clip(bounds)
+
+
 def _knock_out_word_card_pixels(surface: pygame.Surface) -> pygame.Surface:
     """Make card frame / cream fill transparent so only the illustration remains."""
     result = surface.convert_alpha()
     width, height = result.get_size()
-    for y in range(height):
-        for x in range(width):
+    step = 1 if width * height <= 180_000 else 2
+    for y in range(0, height, step):
+        for x in range(0, width, step):
             color = result.get_at((x, y))
-            if _is_word_object_border(color.r, color.g, color.b, color.a):
+            if not _is_word_object_border(color.r, color.g, color.b, color.a):
+                continue
+            if step == 1:
                 result.set_at((x, y), (0, 0, 0, 0))
+            else:
+                for dy in range(step):
+                    for dx in range(step):
+                        px, py = x + dx, y + dy
+                        if px < width and py < height:
+                            result.set_at((px, py), (0, 0, 0, 0))
     return result
 
 
 def _process_word_garden_object(image: pygame.Surface) -> pygame.Surface:
     """Strip export padding and baked-in card art from object PNGs."""
-    surface = _crop_to_opaque_bbox(_knock_out_export_padding(image))
-    surface = _strip_word_object_borders(surface)
-    surface = _knock_out_word_card_pixels(surface)
+    source = image.convert_alpha()
+    width, height = source.get_size()
+    work_scale = min(1.0, _OBJECT_WORK_MAX / max(width, height))
+    if work_scale < 1.0:
+        work = pygame.transform.smoothscale(
+            source,
+            (max(1, int(width * work_scale)), max(1, int(height * work_scale))),
+        )
+    else:
+        work = source
+    work = _crop_to_opaque_bbox(_knock_out_export_padding(work))
+    work = _strip_word_object_borders(work)
+    work = _knock_out_word_card_pixels(work)
     illustration = _bbox_matching(
-        surface,
+        work,
         lambda r, g, b, a: a > 12 and not _is_word_object_border(r, g, b, a),
         step=1,
     )
     if illustration is not None and illustration.width >= 20 and illustration.height >= 20:
-        return surface.subsurface(illustration).copy()
-    return _crop_to_opaque_bbox(surface)
+        work = work.subsurface(illustration).copy()
+    return _crop_to_opaque_bbox(work)
 
 
 def _extract_word_object_illustration(image: pygame.Surface) -> pygame.Surface:
@@ -279,7 +338,7 @@ def _process_word_garden_chunk(image: pygame.Surface, *, crop: bool = False) -> 
     return _crop_to_opaque_bbox(surface)
 
 
-WORD_GARDEN_TRIM_CACHE_VERSION = "v6"
+WORD_GARDEN_TRIM_CACHE_VERSION = "v7"
 
 
 def _word_garden_trim_cache_stale(filename: str, surface: pygame.Surface, source: pygame.Surface) -> bool:
