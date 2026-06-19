@@ -6,7 +6,7 @@ from collections.abc import Callable
 import pygame
 
 from ui.chunk_composer import ChunkComposer
-from ui.chunk_manifest import ScreenChunkSpec
+from ui.chunk_manifest import ScreenChunkSpec, get_screen_spec
 from ui.hitboxes import Hitbox
 from ui.scene_view import SceneView
 
@@ -26,8 +26,9 @@ class ChunkScreen:
 
     def draw(self, screen: pygame.Surface, debug_hitboxes: bool = False) -> None:
         view = self._view_fn()
-        view.screen_id = self.spec.screen_id
-        self._composer.compose(screen, self.spec, view)
+        spec = get_screen_spec(self.spec.screen_id, fallback_image=self.spec.fallback_image)
+        view.screen_id = spec.screen_id
+        self._composer.compose(screen, spec, view)
         for hitbox in self.hitboxes:
             hitbox.draw(screen, debug_hitboxes)
 

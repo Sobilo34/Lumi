@@ -1,12 +1,32 @@
 """Preload and warm caches for early menu screens during splash."""
 from __future__ import annotations
 
+from string import ascii_lowercase
+
 from engine.asset_manager import AssetManager
 from engine.screen_registry import ScreenRegistry
+from engine.word_garden import WORD_GARDEN_WORDS
 from ui.chunk_manifest import ScreenChunkSpec, get_screen_spec
 from ui.chunk_screen import ChunkScreen
 
 EARLY_SCREEN_IDS = ("profile_selection",)
+
+# Full reference PNGs for gameplay screens (loaded via AssetManager.load_image).
+GAMEPLAY_REFERENCE_IMAGES: tuple[str, ...] = (
+    "07_letter_island_gameplay.png",
+    "08_letter_correct_feedback.png",
+    "11_word_garden_gameplay.png",
+)
+
+# Screens where leftover preload work can continue without blocking input.
+IDLE_PRELOAD_SCREEN_IDS = frozenset({
+    "splash_loading",
+    "welcome",
+    "profile_selection",
+    "main_menu",
+    "how_to_play",
+    "world_map",
+})
 
 
 def collect_chunk_files(spec: ScreenChunkSpec) -> tuple[str, ...]:
@@ -30,6 +50,19 @@ def collect_chunk_files(spec: ScreenChunkSpec) -> tuple[str, ...]:
         if frame:
             files.add(frame)
     return tuple(sorted(files))
+
+
+def build_gameplay_chunk_queue() -> list[tuple[str, str]]:
+    """Chunk paths for Word Garden and Letter Island — warmed in the background."""
+    queue: list[tuple[str, str]] = [("word_garden_game", "background.png")]
+    for word in WORD_GARDEN_WORDS:
+        queue.append(("word_garden_game", f"objects/{word}.png"))
+        queue.append(("word_garden_game", f"prompts/{word}.png"))
+    for letter in ascii_lowercase:
+        queue.append(("letter_island_game", f"letters/{letter}.png"))
+        queue.append(("letter_island_game", f"letters/{letter}_selected.png"))
+        queue.append(("letter_island_game", f"find/{letter}.png"))
+    return queue
 
 
 def preload_early_screens(

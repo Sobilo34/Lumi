@@ -1,6 +1,9 @@
 {
   "version": 1,
-  "target_size": { "width": 1280, "height": 720 },
+  "target_size": {
+    "width": 1280,
+    "height": 720
+  },
   "notes": "Drop PNG chunks under assets/ui_chunks/<screen_id>/. Missing layer files are skipped. If no chunks exist for a screen, the fallback_image from reference_interfaces/ is used. Dynamic slots render live game data on top.",
   "screens": {
     "splash_loading": {
@@ -27,15 +30,92 @@
     "profile_selection": {
       "fallback_image": "03_profile_selection.png",
       "layers": [
-        { "id": "background", "file": "background.png", "z": 0, "x_pct": 0, "y_pct": 0, "w_pct": 1, "h_pct": 1, "fit": "fill" },
-        { "id": "title_banner", "file": "title_banner.png", "z": 10, "anchor": "center", "x_pct": 0.5, "y_pct": 0.115, "w_pct": 0.55, "h_pct": 0.105 },
-        { "id": "letter_a", "file": "letter_a.png", "z": 12, "anchor": "center", "x_pct": 0.11, "y_pct": 0.21, "w_pct": 0.075, "h_pct": 0.11 },
-        { "id": "letter_c", "file": "letter_c.png", "z": 12, "anchor": "center", "x_pct": 0.875, "y_pct": 0.30, "w_pct": 0.075, "h_pct": 0.11 },
-        { "id": "letter_b", "file": "letter_b.png", "z": 12, "anchor": "center", "x_pct": 0.855, "y_pct": 0.52, "w_pct": 0.075, "h_pct": 0.11 },
-        { "id": "mascot_decor", "file": "mascot_decor.png", "z": 14, "anchor": "center", "x_pct": 0.17, "y_pct": 0.78, "w_pct": 0.22, "h_pct": 0.34 },
-        { "id": "profile_frames", "file": "profile_card_frame.png", "z": 16, "repeat": "profile_slots" },
-        { "id": "btn_back", "file": "btn_back.png", "z": 28, "anchor": "center", "x_pct": 0.05, "y_pct": 0.09, "w_pct": 0.065, "h_pct": 0.11 },
-        { "id": "btn_settings", "file": "btn_settings.png", "z": 28, "anchor": "center", "x_pct": 0.945, "y_pct": 0.09, "w_pct": 0.065, "h_pct": 0.11 }
+        {
+          "id": "background",
+          "file": "background.png",
+          "z": 0,
+          "x_pct": 0,
+          "y_pct": 0,
+          "w_pct": 1,
+          "h_pct": 1,
+          "fit": "fill"
+        },
+        {
+          "id": "title_banner",
+          "file": "title_banner.png",
+          "z": 10,
+          "anchor": "center",
+          "x_pct": 0.5,
+          "y_pct": 0.115,
+          "w_pct": 0.55,
+          "h_pct": 0.105
+        },
+        {
+          "id": "letter_a",
+          "file": "letter_a.png",
+          "z": 12,
+          "anchor": "center",
+          "x_pct": 0.11,
+          "y_pct": 0.21,
+          "w_pct": 0.075,
+          "h_pct": 0.11
+        },
+        {
+          "id": "letter_c",
+          "file": "letter_c.png",
+          "z": 12,
+          "anchor": "center",
+          "x_pct": 0.875,
+          "y_pct": 0.3,
+          "w_pct": 0.075,
+          "h_pct": 0.11
+        },
+        {
+          "id": "letter_b",
+          "file": "letter_b.png",
+          "z": 12,
+          "anchor": "center",
+          "x_pct": 0.855,
+          "y_pct": 0.52,
+          "w_pct": 0.075,
+          "h_pct": 0.11
+        },
+        {
+          "id": "mascot_decor",
+          "file": "mascot_decor.png",
+          "z": 14,
+          "anchor": "center",
+          "x_pct": 0.17,
+          "y_pct": 0.78,
+          "w_pct": 0.22,
+          "h_pct": 0.34
+        },
+        {
+          "id": "profile_frames",
+          "file": "profile_card_frame.png",
+          "z": 16,
+          "repeat": "profile_slots"
+        },
+        {
+          "id": "btn_back",
+          "file": "btn_back.png",
+          "z": 28,
+          "anchor": "center",
+          "x_pct": 0.05,
+          "y_pct": 0.09,
+          "w_pct": 0.065,
+          "h_pct": 0.11
+        },
+        {
+          "id": "btn_settings",
+          "file": "btn_settings.png",
+          "z": 28,
+          "anchor": "center",
+          "x_pct": 0.945,
+          "y_pct": 0.09,
+          "w_pct": 0.065,
+          "h_pct": 0.11
+        }
       ],
       "dynamic": {
         "profile_cards": {
@@ -50,7 +130,11 @@
               "h_pct": 0.45,
               "avatar": "avatar_player1.png",
               "name": "Player 1",
-              "name_color": [235, 95, 135],
+              "name_color": [
+                235,
+                95,
+                135
+              ],
               "stars": 2
             },
             {
@@ -61,7 +145,11 @@
               "h_pct": 0.45,
               "avatar": "avatar_player2.png",
               "name": "Player 2",
-              "name_color": [155, 95, 195],
+              "name_color": [
+                155,
+                95,
+                195
+              ],
               "stars": 2
             },
             {
@@ -72,7 +160,11 @@
               "h_pct": 0.45,
               "avatar": "avatar_new.png",
               "name": "New Player",
-              "name_color": [235, 95, 135],
+              "name_color": [
+                235,
+                95,
+                135
+              ],
               "stars": 0
             }
           ]
@@ -148,30 +240,61 @@
       "asset_root": "word_garden_game",
       "fallback_image": "11_word_garden_gameplay.png",
       "layers": [
-        { "id": "background", "file": "background.png", "z": 0, "x_pct": 0, "y_pct": 0, "w_pct": 1, "h_pct": 1 }
+        {
+          "id": "background",
+          "file": "background.png",
+          "z": 0,
+          "x_pct": 0,
+          "y_pct": 0,
+          "w_pct": 1,
+          "h_pct": 1
+        }
       ],
       "dynamic": {
         "touch_prompt": {
           "type": "touch_word_png",
           "field": "target_word",
           "anchor": "topleft",
-          "x_pct": 0.505,
-          "y_pct": 0.249,
-          "w_pct": 0.17,
-          "h_pct": 0.068,
-          "fit": "contain"
+          "x_pct": 0.612,
+          "y_pct": 0.291,
+          "w_pct": 0.085,
+          "h_pct": 0.037,
+          "fit": "contain",
+          "valign": "middle",
+          "halign": "left"
         },
         "word_cards": {
           "type": "word_object_cards",
           "tile_variant": "normal",
           "fit": "contain",
-          "pad_x_pct": 0.008,
-          "pad_y_pct": 0.01,
+          "pad_x_pct": 0.0,
+          "pad_y_pct": 0.0,
+          "offset_x_px": [59, 54, 49, 24],
           "slots": [
-            { "x_pct": 0.24, "y_pct": 0.39, "w_pct": 0.14, "h_pct": 0.27 },
-            { "x_pct": 0.4, "y_pct": 0.39, "w_pct": 0.14, "h_pct": 0.27 },
-            { "x_pct": 0.56, "y_pct": 0.39, "w_pct": 0.14, "h_pct": 0.27 },
-            { "x_pct": 0.72, "y_pct": 0.39, "w_pct": 0.14, "h_pct": 0.27 }
+            {
+              "x_pct": 0.176,
+              "y_pct": 0.385,
+              "w_pct": 0.142,
+              "h_pct": 0.315
+            },
+            {
+              "x_pct": 0.31,
+              "y_pct": 0.385,
+              "w_pct": 0.142,
+              "h_pct": 0.315
+            },
+            {
+              "x_pct": 0.482,
+              "y_pct": 0.385,
+              "w_pct": 0.128,
+              "h_pct": 0.315
+            },
+            {
+              "x_pct": 0.652,
+              "y_pct": 0.385,
+              "w_pct": 0.108,
+              "h_pct": 0.315
+            }
           ]
         }
       }

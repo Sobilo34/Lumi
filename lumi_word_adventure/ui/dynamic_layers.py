@@ -319,6 +319,8 @@ def _draw_touch_word_png(
     """Place only the target-word art beside the baked-in 'Touch the' on the background."""
     word = _field(view, str(spec.get("field") or "target_word"), "cat").lower()
     x, y, w, h = slot_rect(spec)
+    valign = str(spec.get("valign") or "middle").lower()
+    halign = str(spec.get("halign") or "left").lower()
     if assets is not None and asset_root:
         word_surface = assets.scaled_word_prompt(
             asset_root,
@@ -328,8 +330,18 @@ def _draw_touch_word_png(
             fit=str(spec.get("fit") or "contain"),
         )
         if word_surface is not None:
-            draw_x = x + (w - word_surface.get_width()) // 2
-            draw_y = y + (h - word_surface.get_height()) // 2
+            if halign == "center":
+                draw_x = x + (w - word_surface.get_width()) // 2
+            elif halign == "right":
+                draw_x = x + w - word_surface.get_width()
+            else:
+                draw_x = x
+            if valign == "bottom":
+                draw_y = y + h - word_surface.get_height()
+            elif valign == "top":
+                draw_y = y
+            else:
+                draw_y = y + (h - word_surface.get_height()) // 2
             surface.blit(word_surface, (draw_x, draw_y))
             return
     blit_outlined_text(
@@ -372,9 +384,14 @@ def _draw_word_object_cards(
     fit = str(spec.get("fit") or "fill")
     pad_x = int(SCREEN_WIDTH * float(spec.get("pad_x_pct") or 0))
     pad_y = int(SCREEN_HEIGHT * float(spec.get("pad_y_pct") or 0))
+    raw_offset = spec.get("offset_x_px") or 0
     for index, (x, y, w, h) in enumerate(slot_rects[:4]):
         if index >= len(words):
             break
+        if isinstance(raw_offset, list):
+            offset_x = int(raw_offset[index] if index < len(raw_offset) else (raw_offset[-1] if raw_offset else 0))
+        else:
+            offset_x = int(raw_offset or 0)
         selected = _word_object_uses_selected(
             screen_id=screen_id,
             tile_variant=tile_variant,
@@ -394,7 +411,7 @@ def _draw_word_object_cards(
                 fit=fit,
             )
             if tile is not None:
-                draw_x = inner.x + (inner.width - tile.get_width()) // 2
+                draw_x = inner.x + (inner.width - tile.get_width()) // 2 + offset_x
                 draw_y = inner.y + (inner.height - tile.get_height()) // 2
                 surface.blit(tile, (draw_x, draw_y))
 

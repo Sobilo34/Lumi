@@ -124,12 +124,154 @@ def _crop_to_opaque_bbox(surface: pygame.Surface) -> pygame.Surface:
     return image.subsurface(rect).copy()
 
 
+def _is_word_object_border(r: int, g: int, b: int, a: int) -> bool:
+    """Card frame, cream fill, and export padding around Word Garden object art."""
+    if a < 12:
+        return True
+    if _is_export_padding(r, g, b, a):
+        return True
+    if _is_flat_backdrop(r, g, b, a):
+        return True
+    if r > 248 and g > 240 and b > 230:
+        return True
+    if r > 232 and g > 228 and b > 222 and max(r, g, b) - min(r, g, b) < 18:
+        return True
+    if r > 185 and g > 85 and b > 95 and r > g and r > b + 15:
+        return True
+    return False
+
+
+def _edge_border_ratio(surface: pygame.Surface, *, edge: str) -> float:
+    width, height = surface.get_size()
+    if width <= 0 or height <= 0:
+        return 1.0
+    step = 2
+    if edge == "top":
+        samples = [surface.get_at((x, 0)) for x in range(0, width, step)]
+    elif edge == "bottom":
+        samples = [surface.get_at((x, height - 1)) for x in range(0, width, step)]
+    elif edge == "left":
+        samples = [surface.get_at((0, y)) for y in range(0, height, step)]
+    else:
+        samples = [surface.get_at((width - 1, y)) for y in range(0, height, step)]
+    if not samples:
+        return 1.0
+    border = sum(
+        1 for color in samples if _is_word_object_border(color.r, color.g, color.b, color.a)
+    )
+    return border / len(samples)
+
+
+def _strip_word_object_borders(surface: pygame.Surface) -> pygame.Surface:
+    """Peel card-frame rows/columns until only the illustration remains."""
+    trimmed = surface
+    for _ in range(120):
+        width, height = trimmed.get_size()
+        if width < 24 or height < 24:
+            break
+        changed = False
+        if _edge_border_ratio(trimmed, edge="top") > 0.8:
+            trimmed = trimmed.subsurface((0, 1, width, height - 1)).copy()
+            changed = True
+        if _edge_border_ratio(trimmed, edge="bottom") > 0.8:
+            width, height = trimmed.get_size()
+            trimmed = trimmed.subsurface((0, 0, width, height - 1)).copy()
+            changed = True
+        if _edge_border_ratio(trimmed, edge="left") > 0.8:
+            width, height = trimmed.get_size()
+            trimmed = trimmed.subsurface((1, 0, width - 1, height)).copy()
+            changed = True
+        if _edge_border_ratio(trimmed, edge="right") > 0.8:
+            width, height = trimmed.get_size()
+            trimmed = trimmed.subsurface((0, 0, width - 1, height)).copy()
+            changed = True
+        if not changed:
+            break
+    return trimmed
+
+
+def _is_cream_card_face(r: int, g: int, b: int, a: int) -> bool:
+    return a > 12 and r > 244 and g > 234 and b > 224 and r - b < 35
+
+
+def _is_pink_card_frame(r: int, g: int, b: int, a: int) -> bool:
+    return a > 12 and r > 175 and g > 70 and b > 85 and r > g + 25 and r > b + 25
+
+
+def _bbox_matching(
+    surface: pygame.Surface,
+    predicate,
+    *,
+    step: int = 2,
+) -> pygame.Rect | None:
+    width, height = surface.get_size()
+    min_x, min_y, max_x, max_y = width, height, 0, 0
+    found = False
+    for y in range(0, height, step):
+        for x in range(0, width, step):
+            color = surface.get_at((x, y))
+            if not predicate(color.r, color.g, color.b, color.a):
+                continue
+            found = True
+            min_x = min(min_x, x)
+            min_y = min(min_y, y)
+            max_x = max(max_x, x)
+            max_y = max(max_y, y)
+    if not found:
+        return None
+    return pygame.Rect(min_x, min_y, max_x - min_x + 1, max_y - min_y + 1)
+
+
+def _extract_word_object_illustration(image: pygame.Surface) -> pygame.Surface:
+    """Keep only the painted object; drop baked-in card frame and export padding."""
+    surface = _crop_to_opaque_bbox(_knock_out_export_padding(image))
+    cream_rect = _bbox_matching(surface, _is_cream_card_face)
+    if cream_rect is not None:
+        card = surface.subsurface(cream_rect).copy()
+        illustration_rect = _bbox_matching(
+            card,
+            lambda r, g, b, a: a > 12
+            and not _is_cream_card_face(r, g, b, a)
+            and not _is_pink_card_frame(r, g, b, a)
+            and not _is_export_padding(r, g, b, a),
+            step=1,
+        )
+        if illustration_rect is not None and illustration_rect.width >= 24 and illustration_rect.height >= 24:
+            return card.subsurface(illustration_rect).copy()
+    return _strip_word_object_borders(surface)
+
+
+def _knock_out_light_backdrop(image: pygame.Surface) -> pygame.Surface:
+    """Remove near-white export backdrops from prompt PNGs."""
+    surface = image.convert_alpha()
+    width, height = surface.get_size()
+    for y in range(height):
+        for x in range(width):
+            color = surface.get_at((x, y))
+            if color.a < 12:
+                continue
+            r, g, b = color.r, color.g, color.b
+            if r > 235 and g > 230 and b > 230:
+                surface.set_at((x, y), (0, 0, 0, 0))
+    return surface
+
+
 def _process_word_garden_chunk(image: pygame.Surface, *, crop: bool = False) -> pygame.Surface:
     """Remove export padding from Word Garden object/prompt PNGs."""
-    surface = _knock_out_export_padding(image)
     if crop:
-        surface = _crop_to_opaque_bbox(surface)
-    return surface
+        return _extract_word_object_illustration(image)
+    surface = _knock_out_export_padding(_knock_out_light_backdrop(image))
+    return _crop_to_opaque_bbox(surface)
+
+
+WORD_GARDEN_TRIM_CACHE_VERSION = "v4"
+
+
+def _word_garden_trim_cache_stale(filename: str, surface: pygame.Surface, source: pygame.Surface) -> bool:
+    """Ignore old caches from previous processing pipelines."""
+    if filename.startswith("prompts/"):
+        return surface.get_width() >= min(850, source.get_width() - 40)
+    return False
 
 
 class AssetManager:
@@ -191,13 +333,19 @@ class AssetManager:
         if fit == "fill":
             if source_w == width and source_h == height:
                 return image
-            return pygame.transform.smoothscale(image, (width, height))
+            scaler = pygame.transform.scale
+            if max(width, height) > 320:
+                scaler = pygame.transform.smoothscale
+            return scaler(image, (width, height))
         scale = min(width / source_w, height / source_h)
         target_w = max(1, int(source_w * scale))
         target_h = max(1, int(source_h * scale))
         if target_w == source_w and target_h == source_h:
             return image
-        return pygame.transform.smoothscale(image, (target_w, target_h))
+        scaler = pygame.transform.scale
+        if max(target_w, target_h) > 320:
+            scaler = pygame.transform.smoothscale
+        return scaler(image, (target_w, target_h))
 
     def load_image(self, filename: str) -> pygame.Surface:
         if filename not in self._image_cache:
@@ -231,28 +379,38 @@ class AssetManager:
                 self._chunk_cache[cache_key] = None
             else:
                 try:
-                    trimmed_path = self.chunks_dir / ".trim_cache" / screen_id / filename
-                    use_trim_cache = _should_trim_chunk(filename)
+                    trimmed_path = (
+                        self.chunks_dir
+                        / ".trim_cache"
+                        / WORD_GARDEN_TRIM_CACHE_VERSION
+                        / screen_id
+                        / filename
+                    )
+                    use_trim_cache = _should_trim_chunk(filename) or filename.startswith(
+                        ("objects/", "prompts/")
+                    )
                     if (
                         use_trim_cache
                         and trimmed_path.is_file()
                         and trimmed_path.stat().st_mtime >= image_path.stat().st_mtime
                     ):
-                        image = pygame.image.load(str(trimmed_path))
-                        self._chunk_cache[cache_key] = self._prepare_surface(image)
-                    else:
-                        image = pygame.image.load(str(image_path))
-                        image = self._prepare_surface(image)
-                        if filename.startswith("objects/") or filename.startswith("prompts/"):
-                            image = _process_word_garden_chunk(
-                                image,
-                                crop=filename.startswith("objects/"),
-                            )
-                        elif use_trim_cache:
-                            image = _trim_flat_backdrop(image)
-                            trimmed_path.parent.mkdir(parents=True, exist_ok=True)
-                            pygame.image.save(image, str(trimmed_path))
-                        self._chunk_cache[cache_key] = image
+                        source_probe = pygame.image.load(str(image_path))
+                        cached_trim = pygame.image.load(str(trimmed_path))
+                        if not _word_garden_trim_cache_stale(filename, cached_trim, source_probe):
+                            self._chunk_cache[cache_key] = self._prepare_surface(cached_trim)
+                            return self._chunk_cache[cache_key]
+                    image = pygame.image.load(str(image_path))
+                    image = self._prepare_surface(image)
+                    if filename.startswith("objects/"):
+                        image = _crop_to_opaque_bbox(_knock_out_export_padding(image))
+                    elif filename.startswith("prompts/"):
+                        image = _process_word_garden_chunk(image, crop=False)
+                    elif use_trim_cache:
+                        image = _trim_flat_backdrop(image)
+                    if use_trim_cache or filename.startswith(("objects/", "prompts/")):
+                        trimmed_path.parent.mkdir(parents=True, exist_ok=True)
+                        pygame.image.save(image, str(trimmed_path))
+                    self._chunk_cache[cache_key] = image
                 except (pygame.error, FileNotFoundError, OSError) as error:
                     print(f"[Lumi Assets] Failed to load chunk '{cache_key}': {error}")
                     self._chunk_cache[cache_key] = None
@@ -273,11 +431,35 @@ class AssetManager:
             for key in list(cache.keys()):
                 if key.startswith(needle):
                     del cache[key]
-        trim_root = self.chunks_dir / ".trim_cache" / asset_root
+        trim_root = self.chunks_dir / ".trim_cache" / WORD_GARDEN_TRIM_CACHE_VERSION / asset_root
         if trim_root.is_dir():
             import shutil
 
             shutil.rmtree(trim_root, ignore_errors=True)
+
+    def warm_word_garden_round(
+        self,
+        words: tuple[str, ...],
+        *,
+        asset_root: str = "word_garden_game",
+        prompt_w: int = 109,
+        prompt_h: int = 26,
+        object_w: int = 182,
+        object_h: int = 227,
+    ) -> None:
+        """Pre-scale assets for the active Word Garden round."""
+        for word in words:
+            key = str(word or "").strip().lower()
+            if not key:
+                continue
+            self.scaled_word_prompt(asset_root, key, prompt_w, prompt_h, fit="contain")
+            self.scaled_word_object(
+                asset_root,
+                key,
+                object_w,
+                object_h,
+                fit="contain",
+            )
 
     def chunk_exists(self, screen_id: str, filename: str) -> bool:
         return (self.chunks_dir / screen_id / filename).is_file()

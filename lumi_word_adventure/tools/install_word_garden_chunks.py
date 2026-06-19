@@ -15,7 +15,12 @@ os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
 
 import pygame
 
-from engine.asset_manager import _crop_to_opaque_bbox, _knock_out_export_padding
+from engine.asset_manager import (
+    _crop_to_opaque_bbox,
+    _extract_word_object_illustration,
+    _knock_out_export_padding,
+    _knock_out_light_backdrop,
+)
 
 ASSETS = Path("/home/bilal/.cursor/projects/home-bilal-bilal-projects-Learning-AIU-python-Lumi/assets")
 DEST = PROJECT / "assets" / "ui_chunks" / "word_garden_game"
@@ -71,7 +76,11 @@ def _copy(src_name: str, dest: Path, *, process: bool = False, crop: bool = Fals
             image = image.convert()
         image = _knock_out_export_padding(image)
         if crop:
+            image = _extract_word_object_illustration(image)
+        elif "objects" in dest.as_posix().replace("\\", "/"):
             image = _crop_to_opaque_bbox(image)
+        else:
+            image = _crop_to_opaque_bbox(_knock_out_light_backdrop(image))
         pygame.image.save(image, str(dest))
     else:
         shutil.copy2(src, dest)
@@ -82,7 +91,7 @@ def main() -> None:
     print(f"Installing Word Garden chunks to {DEST}")
     _copy(BACKGROUND_FILE, DEST / "background.png")
     for word, filename in OBJECT_FILES.items():
-        _copy(filename, DEST / "objects" / f"{word}.png", process=True, crop=True)
+        _copy(filename, DEST / "objects" / f"{word}.png", process=True, crop=False)
     for word, filename in PROMPT_FILES.items():
         _copy(filename, DEST / "prompts" / f"{word}.png", process=True)
     trim_cache = DEST.parent / ".trim_cache" / "word_garden_game"

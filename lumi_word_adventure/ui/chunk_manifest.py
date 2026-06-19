@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass, field
-from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
@@ -45,8 +44,16 @@ def _default_screen_spec(screen_id: str, fallback_image: str) -> ScreenChunkSpec
     return ScreenChunkSpec(screen_id=screen_id, fallback_image=fallback_image, layers=(), dynamic={})
 
 
-@lru_cache(maxsize=1)
+_manifest_cache: dict[str, ScreenChunkSpec] | None = None
+_manifest_mtime: float = -1.0
+
+
 def load_manifest() -> dict[str, ScreenChunkSpec]:
+    global _manifest_cache, _manifest_mtime
+    mtime = MANIFEST_PATH.stat().st_mtime if MANIFEST_PATH.is_file() else 0.0
+    if _manifest_cache is not None and mtime == _manifest_mtime:
+        return _manifest_cache
+
     raw: dict[str, Any] = {}
     if MANIFEST_PATH.is_file():
         with MANIFEST_PATH.open(encoding="utf-8") as handle:
@@ -83,6 +90,8 @@ def load_manifest() -> dict[str, ScreenChunkSpec]:
             dynamic=dict(entry.get("dynamic") or {}),
             asset_root=str(entry.get("asset_root") or screen_id),
         )
+    _manifest_cache = specs
+    _manifest_mtime = mtime
     return specs
 
 

@@ -83,7 +83,13 @@ from ui.badge_overlay import draw_badge_unlock_overlay
 from ui.world_map_overlay import draw_world_map_overlay
 from ui.screen_factory import create_game_screen
 from ui.scene_view import SceneView
-from ui.chunk_preload import EARLY_SCREEN_IDS, collect_chunk_files
+from ui.chunk_preload import (
+    EARLY_SCREEN_IDS,
+    GAMEPLAY_REFERENCE_IMAGES,
+    IDLE_PRELOAD_SCREEN_IDS,
+    build_gameplay_chunk_queue,
+    collect_chunk_files,
+)
 from ui.chunk_manifest import card_slot_rects, get_screen_spec, row_tile_slots
 from ui.chunk_screen import ChunkScreen
 from ui.hitboxes import Hitbox
@@ -128,6 +134,7 @@ class GameEngine:
         self._log_voice_startup_status()
         self.screens = self._build_screens()
         self._preload_queue: list[tuple[str, str]] = self._build_preload_queue()
+        self._image_preload_queue: list[str] = list(GAMEPLAY_REFERENCE_IMAGES)
         self._static_warmed: set[str] = set()
         self.state.current_screen_id = self.registry.screen_ids[0]
         self.current_screen = self.screens[self.state.current_screen_id]
@@ -151,6 +158,7 @@ class GameEngine:
             spec = get_screen_spec(screen_id, fallback_image=self.registry.get_image_filename(screen_id))
             for filename in collect_chunk_files(spec):
                 queue.append((screen_id, filename))
+        queue.extend(build_gameplay_chunk_queue())
         return queue
 
     def _warm_screen_static(self, screen_id: str) -> None:
@@ -165,6 +173,12 @@ class GameEngine:
         self._static_warmed.add(screen_id)
 
     def _drain_preload_queue(self, *, max_items: int = 6) -> None:
+        if self._image_preload_queue:
+            filename = self._image_preload_queue.pop(0)
+            self.asset_manager.load_image(filename)
+            max_items -= 1
+            if max_items <= 0:
+                return
         touched: set[str] = set()
         for _ in range(max_items):
             if not self._preload_queue:
@@ -463,10 +477,6 @@ class GameEngine:
                 ):
                     self._configure_letter_island_task()
                     self.state.gameplay_refresh_pending = False
-                if not getattr(self, "_letter_island_preloaded", False):
-                    self.asset_manager.load_image("07_letter_island_gameplay.png")
-                    self.asset_manager.load_image("08_letter_correct_feedback.png")
-                    self._letter_island_preloaded = True
             if screen_id == "microphone_check":
                 self.state.microphone_status_message = ""
                 self.state.microphone_test_mode = False
@@ -740,7 +750,6 @@ class GameEngine:
             advance_letter_curriculum(self.learner, mastered=True, letter=mastered_letter)
             self.state.pending_letter_curriculum_advance = False
 
-        self.asset_manager.invalidate_letter_tiles("letter_island_game")
         round_data = build_letter_round(self.learner, self.letter_questions)
         letter = str(round_data.get("target") or "A").upper()
         choices = build_letter_choices(letter, self.letter_questions)
@@ -813,7 +822,12 @@ class GameEngine:
         self.state.word_garden_option_count = len(self.state.word_choice_slots)
         self.state.last_word_selected = ""
         self.state.last_word_feedback_message = ""
-        self.asset_manager.invalidate_word_garden_assets("word_garden_game")
+        self._warm_word_garden_round_assets(target_word, choices[:WORD_SLOT_COUNT])
+
+    def _warm_word_garden_round_assets(self, target: str, choices: list[str]) -> None:
+        words = {str(target).strip().lower()}
+        words.update(str(word).strip().lower() for word in choices[:WORD_SLOT_COUNT])
+        self.asset_manager.warm_word_garden_round(tuple(sorted(words)))
 
     def _configure_word_garden_task(self) -> None:
         self._apply_word_garden_round(build_word_garden_round(self.learner))
@@ -1833,8 +1847,11 @@ class GameEngine:
 
     def update(self) -> None:
         self.current_screen.update()
+        if self.state.current_screen_id in IDLE_PRELOAD_SCREEN_IDS:
+            budget = 10 if self.state.current_screen_id == "splash_loading" else 4
+            if self._preload_queue or self._image_preload_queue:
+                self._drain_preload_queue(max_items=budget)
         if self.state.current_screen_id == "splash_loading":
-            self._drain_preload_queue(max_items=8)
             elapsed = pygame.time.get_ticks() - self.state.splash_started_at
             if elapsed >= SPLASH_DURATION_MS:
                 self.set_screen("welcome")
