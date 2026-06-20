@@ -30,6 +30,36 @@ _VISUAL_CONFUSION_HINTS: dict[tuple[str, str], str] = {
 }
 
 
+_LETTER_VOICE_CHARACTER_HINTS: dict[str, str] = {
+    "A": "A has a point at the top and a line across the middle.",
+    "B": "B has a belly bump on one side.",
+    "C": "C is open like a cup.",
+    "D": "D has a straight back like a drum.",
+    "E": "E has three lines across.",
+    "F": "F has two lines across.",
+    "G": "G has a little tail inside.",
+    "H": "H has two tall posts with a bridge.",
+    "I": "I is one straight stick.",
+    "J": "J has a hook at the bottom.",
+    "K": "K has a slant and a leg.",
+    "L": "L has a foot at the bottom.",
+    "M": "M has two soft bumps.",
+    "N": "N has one slant between two posts.",
+    "O": "O is round like a circle.",
+    "P": "P has a round head on a stick.",
+    "Q": "Q is a circle with a little tail.",
+    "R": "R has a round head and a leg.",
+    "S": "S curves like a snake.",
+    "T": "T has a top bar on a stick.",
+    "U": "U is open at the top like a cup.",
+    "V": "V has two slants that meet at the bottom.",
+    "W": "W has two pointy hills.",
+    "X": "X has two crossing lines.",
+    "Y": "Y splits into two arms at the bottom.",
+    "Z": "Z has a top line, a slant, and a bottom line.",
+}
+
+
 def _feedback_payload(feedback_type: str, message: str) -> dict[str, str]:
     return {"type": feedback_type, "message": message}
 
@@ -128,6 +158,22 @@ def get_letter_mistake_hint(
     return "Look for the letter again."
 
 
+def get_letter_voice_character_hint(letter: str, hint_level: int = 1) -> str:
+    """Shape or sound hints for spoken letter challenges without revealing the answer."""
+    target_letter = letter.strip().upper()
+    if not target_letter:
+        return "Look at the letter shape again."
+
+    if hint_level <= 1:
+        return _LETTER_VOICE_CHARACTER_HINTS.get(
+            target_letter,
+            f"Look closely at the shape of {target_letter}.",
+        )
+    if hint_level == 2:
+        return f"The letter {target_letter} has its own special sound."
+    return f"Listen for the {target_letter} sound and try again."
+
+
 def get_hint(
     activity_type: str,
     hint_level: int | str,
@@ -170,10 +216,10 @@ def get_hint(
 
     if activity == "voice":
         if level in {"1", "level_1"}:
-            return f"Listen carefully and say {target_text}."
+            return "Listen carefully to the word."
         if level in {"2", "level_2"}:
-            return f"Try saying {target_text} a little slower."
-        return f"You’re doing well. Say {target_text} again."
+            return "Try saying the word a little slower."
+        return "Take your time and try again."
 
     return f"Try {target_text} again."
 
@@ -201,9 +247,9 @@ def get_lumi_speech(screen_id: str, current_task: str | None = None) -> str:
     if screen == "sentence_castle_game":
         return f"Put the sentence together, {task}." if task else "Put the sentence together."
     if screen == "voice_challenge":
-        return f"Say the word with me, {task}." if task else "Say the word with me."
+        return "What word is this?"
     if screen == "letter_voice_challenge":
-        return f"Say the letter {task}." if task else "Say the letter."
+        return "What letter is this?"
     if screen == "letter_listening_state":
         return "I'm listening carefully."
     if screen == "listening_state":

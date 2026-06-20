@@ -44,6 +44,7 @@ def test_letter_island_speak_uses_letter_voice_screen(
 
     assert engine.state.current_screen_id == "letter_voice_challenge"
     assert engine.state.current_task_target == "M"
+    assert engine.state.current_task_prompt == "What letter is this?"
 
 
 def test_letter_voice_manifest_uses_island_background_and_letter_focus() -> None:

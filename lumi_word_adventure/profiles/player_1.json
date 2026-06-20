@@ -1,20 +1,20 @@
 {
   "child_name": "Test",
-  "total_stars": 126,
+  "total_stars": 155,
   "lumi_energy": 100,
   "current_world": "main_menu",
-  "difficulty": 1,
+  "difficulty": 3,
   "correct_streak": 0,
-  "wrong_streak": 1,
+  "wrong_streak": 3,
   "weak_letters": {},
   "weak_words": {
     "apple": 2,
     "fish": 1,
-    "dog": 1
+    "frog": 3
   },
   "sentence_errors": {},
   "hint_usage": {
-    "level_1": 1,
+    "level_1": 11,
     "level_2": 0,
     "level_3": 0
   },
@@ -26,7 +26,10 @@
     "E",
     "P",
     "F",
-    "W"
+    "W",
+    "G",
+    "Z",
+    "H"
   ],
   "mastered_words": [
     "ball",
@@ -35,7 +38,8 @@
     "cat",
     "duck",
     "hat",
-    "cup"
+    "cup",
+    "star"
   ],
   "word_mastery": {
     "apple": {
@@ -50,14 +54,14 @@
       "confused_with": {}
     },
     "ball": {
-      "attempts": 3,
-      "correct": 2,
+      "attempts": 4,
+      "correct": 3,
       "wrong": 1,
-      "first_try_correct": 1,
+      "first_try_correct": 2,
       "hints_used": 1,
-      "mastery_score": 0.43,
-      "last_seen": 1781947576,
-      "consecutive_correct": 2,
+      "mastery_score": 0.73,
+      "last_seen": 1781948516,
+      "consecutive_correct": 3,
       "confused_with": {
         "dog": 1
       }
@@ -98,17 +102,18 @@
       "confused_with": {}
     },
     "dog": {
-      "attempts": 3,
+      "attempts": 4,
       "correct": 1,
-      "wrong": 2,
+      "wrong": 3,
       "first_try_correct": 0,
       "hints_used": 1,
       "mastery_score": 0.0,
-      "last_seen": 1781948117,
+      "last_seen": 1781950189,
       "consecutive_correct": 0,
       "confused_with": {
         "cat": 1,
-        "duck": 1
+        "duck": 1,
+        "star": 1
       }
     },
     "duck": {
@@ -158,14 +163,14 @@
       "confused_with": {}
     },
     "star": {
-      "attempts": 0,
-      "correct": 0,
+      "attempts": 2,
+      "correct": 2,
       "wrong": 0,
-      "first_try_correct": 0,
-      "hints_used": 0,
-      "mastery_score": 0.0,
-      "last_seen": 0,
-      "consecutive_correct": 0,
+      "first_try_correct": 1,
+      "hints_used": 1,
+      "mastery_score": 0.43,
+      "last_seen": 1781948528,
+      "consecutive_correct": 2,
       "confused_with": {}
     },
     "sun": {
@@ -191,10 +196,11 @@
       "confused_with": {}
     }
   },
-  "last_word_garden_target": "dog",
+  "last_word_garden_target": "frog",
   "completed_worlds": [
     "letter_island",
-    "word_garden"
+    "word_garden",
+    "voice_challenge"
   ],
   "badges": [
     "B and D Master",
@@ -202,12 +208,13 @@
     "Badge B",
     "Badge C",
     "Great Learner",
-    "Word Explorer"
+    "Word Explorer",
+    "Brave Speaker"
   ],
   "debug_persistent": false,
-  "attempts": 53,
-  "correct_answers": 43,
-  "accuracy": 81.13,
+  "attempts": 77,
+  "correct_answers": 53,
+  "accuracy": 68.83,
   "current_letter_index": 25,
   "current_word_length": 3,
   "sentence_level": 0,
@@ -279,25 +286,25 @@
       "confused_with": {}
     },
     "G": {
-      "attempts": 1,
-      "correct": 1,
+      "attempts": 2,
+      "correct": 2,
       "wrong": 0,
-      "first_try_correct": 1,
+      "first_try_correct": 2,
       "hints_used": 0,
-      "mastery_score": 0.25,
-      "last_seen": 1781936923,
-      "consecutive_correct": 1,
+      "mastery_score": 0.5,
+      "last_seen": 1781949933,
+      "consecutive_correct": 2,
       "confused_with": {}
     },
     "H": {
-      "attempts": 1,
-      "correct": 1,
+      "attempts": 2,
+      "correct": 2,
       "wrong": 0,
-      "first_try_correct": 1,
+      "first_try_correct": 2,
       "hints_used": 0,
-      "mastery_score": 0.25,
-      "last_seen": 1781936926,
-      "consecutive_correct": 1,
+      "mastery_score": 0.5,
+      "last_seen": 1781950019,
+      "consecutive_correct": 2,
       "confused_with": {}
     },
     "I": {
@@ -492,16 +499,16 @@
       "confused_with": {}
     },
     "Z": {
-      "attempts": 1,
-      "correct": 1,
+      "attempts": 5,
+      "correct": 5,
       "wrong": 0,
-      "first_try_correct": 1,
+      "first_try_correct": 5,
       "hints_used": 0,
-      "mastery_score": 0.25,
-      "last_seen": 1781946070,
-      "consecutive_correct": 1,
+      "mastery_score": 1.0,
+      "last_seen": 1781950032,
+      "consecutive_correct": 5,
       "confused_with": {}
     }
   },
-  "curriculum_letters_since_review": 3
+  "curriculum_letters_since_review": 1
 }

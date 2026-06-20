@@ -70,3 +70,11 @@ class GameState:
     session_end_report_path: str = ""
     last_completed_world_id: str = ""
     current_round_wrong_count: int = 0
+    voice_listen_pending: bool = False
+    voice_listen_scheduled_at_ms: int = 0
+    suppress_screen_speech_once: bool = False
+    voice_pronunciation_feedback: str = ""
+    voice_pronunciation_feedback_at_ms: int = 0
+    voice_round_advance_pending: str = ""
+    voice_round_advance_at_ms: int = 0
+    voice_mic_prompt_at_ms: int = 0
