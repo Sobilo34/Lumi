@@ -80,8 +80,8 @@ def preload_item_cost(filename: str) -> int:
 # Word Garden card draw sizes (matches ui_chunk_manifest slot + scale cache).
 WORD_GARDEN_OBJECT_W = 182
 WORD_GARDEN_OBJECT_H = 227
-WORD_GARDEN_PROMPT_W = 109
-WORD_GARDEN_PROMPT_H = 26
+WORD_GARDEN_PROMPT_W = 112
+WORD_GARDEN_PROMPT_H = 29
 
 
 def warm_word_garden_draw_cache(asset_manager: AssetManager, word: str) -> None:

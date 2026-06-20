@@ -84,11 +84,11 @@ def test_word_garden_prompt_and_object_fit_inside_layout_slots() -> None:
         pytest.skip("Word Garden object assets are not installed")
 
     manager = AssetManager()
-    prompt = manager.scaled_word_prompt("word_garden_game", "cat", 109, 26, fit="contain")
+    prompt = manager.scaled_word_prompt("word_garden_game", "cat", 112, 29, fit="contain")
     obj = manager.scaled_word_object("word_garden_game", "cat", 182, 227, fit="contain")
     assert prompt is not None
     assert obj is not None
-    assert prompt.get_width() <= 109
-    assert prompt.get_height() <= 26
+    assert prompt.get_width() <= 112
+    assert prompt.get_height() <= 29
     assert obj.get_width() <= 182
     assert obj.get_height() <= 227

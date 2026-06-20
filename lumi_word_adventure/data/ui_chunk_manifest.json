@@ -257,8 +257,8 @@
           "anchor": "topleft",
           "x_pct": 0.612,
           "y_pct": 0.291,
-          "w_pct": 0.085,
-          "h_pct": 0.037,
+          "w_pct": 0.0867,
+          "h_pct": 0.0403,
           "fit": "contain",
           "valign": "middle",
           "halign": "left"
@@ -269,7 +269,7 @@
           "fit": "contain",
           "pad_x_pct": 0.0,
           "pad_y_pct": 0.0,
-          "offset_x_px": [59, 54, 49, 24],
+          "offset_x_px": [84, 64, 64, 24],
           "slots": [
             {
               "x_pct": 0.176,
