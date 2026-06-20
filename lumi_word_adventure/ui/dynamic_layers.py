@@ -424,6 +424,11 @@ def _draw_letter_focus_png(
     surface.blit(tile, (draw_x, draw_y))
 
 
+def _word_object_fit_size(inner: pygame.Rect, spec: dict[str, Any]) -> tuple[int, int]:
+    shrink = int(spec.get("shrink_px") or 0)
+    return max(1, inner.width - shrink), max(1, inner.height - shrink)
+
+
 def _draw_word_object_focus(
     surface: pygame.Surface,
     spec: dict[str, Any],
@@ -442,8 +447,9 @@ def _draw_word_object_focus(
     offset_y = int(spec.get("offset_y_px") or 0)
     inner = pygame.Rect(x + pad_x, y + pad_y, max(1, w - pad_x * 2), max(1, h - pad_y * 2))
     fit = str(spec.get("fit") or "contain")
+    fit_w, fit_h = _word_object_fit_size(inner, spec)
     if assets is not None and asset_root:
-        tile = assets.scaled_word_object(asset_root, word, inner.width, inner.height, fit=fit)
+        tile = assets.scaled_word_object(asset_root, word, fit_w, fit_h, fit=fit)
         if tile is not None:
             draw_x = inner.x + (inner.width - tile.get_width()) // 2 + offset_x
             draw_y = inner.y + (inner.height - tile.get_height()) // 2 + offset_y
@@ -527,11 +533,12 @@ def _draw_word_object_cards(
         inner = pygame.Rect(x + pad_x, y + pad_y, max(1, w - pad_x * 2), max(1, h - pad_y * 2))
         if assets is not None and asset_root:
             selected_scale = float(spec.get("selected_scale") or 1.08)
+            fit_w, fit_h = _word_object_fit_size(inner, spec)
             tile = assets.scaled_word_object(
                 asset_root,
                 words[index],
-                inner.width,
-                inner.height,
+                fit_w,
+                fit_h,
                 selected=selected,
                 selected_scale=selected_scale if selected else 1.0,
                 fit=fit,

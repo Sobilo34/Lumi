@@ -335,6 +335,7 @@
           "fit": "contain",
           "pad_x_pct": 0.0,
           "pad_y_pct": 0.0,
+          "shrink_px": 5,
           "offset_x_px": [84, 64, 64, 24],
           "slots": [
             {
@@ -400,6 +401,7 @@
           "fit": "contain",
           "pad_x_pct": 0.012,
           "pad_y_pct": 0.018,
+          "shrink_px": 5,
           "offset_x_px": [275, 290, 280, 260],
           "offset_y_px": -50,
           "selected_scale": 1.06,
@@ -447,6 +449,7 @@
           "fit": "contain",
           "pad_x_pct": 0.012,
           "pad_y_pct": 0.018,
+          "shrink_px": 5,
           "offset_x_px": [135, 145, 155, 105],
           "offset_y_px": 15,
           "slots": [

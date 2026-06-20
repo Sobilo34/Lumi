@@ -1,14 +1,16 @@
 {
   "child_name": "Test",
-  "total_stars": 109,
+  "total_stars": 126,
   "lumi_energy": 100,
   "current_world": "main_menu",
   "difficulty": 1,
   "correct_streak": 0,
-  "wrong_streak": 2,
+  "wrong_streak": 1,
   "weak_letters": {},
   "weak_words": {
-    "apple": 2
+    "apple": 2,
+    "fish": 1,
+    "dog": 1
   },
   "sentence_errors": {},
   "hint_usage": {
@@ -29,7 +31,11 @@
   "mastered_words": [
     "ball",
     "dog",
-    "sun"
+    "sun",
+    "cat",
+    "duck",
+    "hat",
+    "cup"
   ],
   "word_mastery": {
     "apple": {
@@ -44,14 +50,14 @@
       "confused_with": {}
     },
     "ball": {
-      "attempts": 2,
-      "correct": 1,
+      "attempts": 3,
+      "correct": 2,
       "wrong": 1,
-      "first_try_correct": 0,
+      "first_try_correct": 1,
       "hints_used": 1,
-      "mastery_score": 0.13,
-      "last_seen": 1781946099,
-      "consecutive_correct": 1,
+      "mastery_score": 0.43,
+      "last_seen": 1781947576,
+      "consecutive_correct": 2,
       "confused_with": {
         "dog": 1
       }
@@ -68,61 +74,66 @@
       "confused_with": {}
     },
     "cat": {
-      "attempts": 0,
-      "correct": 0,
-      "wrong": 0,
-      "first_try_correct": 0,
-      "hints_used": 0,
-      "mastery_score": 0.0,
-      "last_seen": 0,
-      "consecutive_correct": 0,
-      "confused_with": {}
-    },
-    "cup": {
-      "attempts": 0,
-      "correct": 0,
-      "wrong": 0,
-      "first_try_correct": 0,
-      "hints_used": 0,
-      "mastery_score": 0.0,
-      "last_seen": 0,
-      "consecutive_correct": 0,
-      "confused_with": {}
-    },
-    "dog": {
       "attempts": 2,
       "correct": 1,
       "wrong": 1,
       "first_try_correct": 0,
       "hints_used": 1,
       "mastery_score": 0.13,
-      "last_seen": 1781946116,
+      "last_seen": 1781947571,
       "consecutive_correct": 1,
       "confused_with": {
-        "cat": 1
+        "frog": 1
+      }
+    },
+    "cup": {
+      "attempts": 1,
+      "correct": 1,
+      "wrong": 0,
+      "first_try_correct": 1,
+      "hints_used": 0,
+      "mastery_score": 0.3,
+      "last_seen": 1781947965,
+      "consecutive_correct": 1,
+      "confused_with": {}
+    },
+    "dog": {
+      "attempts": 3,
+      "correct": 1,
+      "wrong": 2,
+      "first_try_correct": 0,
+      "hints_used": 1,
+      "mastery_score": 0.0,
+      "last_seen": 1781948117,
+      "consecutive_correct": 0,
+      "confused_with": {
+        "cat": 1,
+        "duck": 1
       }
     },
     "duck": {
-      "attempts": 0,
-      "correct": 0,
+      "attempts": 1,
+      "correct": 1,
       "wrong": 0,
-      "first_try_correct": 0,
+      "first_try_correct": 1,
       "hints_used": 0,
-      "mastery_score": 0.0,
-      "last_seen": 0,
-      "consecutive_correct": 0,
+      "mastery_score": 0.3,
+      "last_seen": 1781947942,
+      "consecutive_correct": 1,
       "confused_with": {}
     },
     "fish": {
-      "attempts": 0,
+      "attempts": 1,
       "correct": 0,
-      "wrong": 0,
+      "wrong": 1,
       "first_try_correct": 0,
       "hints_used": 0,
       "mastery_score": 0.0,
-      "last_seen": 0,
+      "last_seen": 1781947585,
       "consecutive_correct": 0,
-      "confused_with": {}
+      "confused_with": {
+        "duck": 1
+      }
     },
     "frog": {
       "attempts": 0,
@@ -136,14 +147,14 @@
       "confused_with": {}
     },
     "hat": {
-      "attempts": 0,
-      "correct": 0,
+      "attempts": 1,
+      "correct": 1,
       "wrong": 0,
-      "first_try_correct": 0,
+      "first_try_correct": 1,
       "hints_used": 0,
-      "mastery_score": 0.0,
-      "last_seen": 0,
-      "consecutive_correct": 0,
+      "mastery_score": 0.3,
+      "last_seen": 1781947954,
+      "consecutive_correct": 1,
       "confused_with": {}
     },
     "star": {
@@ -158,14 +169,14 @@
       "confused_with": {}
     },
     "sun": {
-      "attempts": 1,
-      "correct": 1,
+      "attempts": 2,
+      "correct": 2,
       "wrong": 0,
-      "first_try_correct": 1,
+      "first_try_correct": 2,
       "hints_used": 0,
-      "mastery_score": 0.3,
-      "last_seen": 1781946122,
-      "consecutive_correct": 1,
+      "mastery_score": 0.6,
+      "last_seen": 1781947580,
+      "consecutive_correct": 2,
       "confused_with": {}
     },
     "tree": {
@@ -180,21 +191,23 @@
       "confused_with": {}
     }
   },
-  "last_word_garden_target": "bird",
+  "last_word_garden_target": "dog",
   "completed_worlds": [
-    "letter_island"
+    "letter_island",
+    "word_garden"
   ],
   "badges": [
     "B and D Master",
     "Badge A",
     "Badge B",
     "Badge C",
-    "Great Learner"
+    "Great Learner",
+    "Word Explorer"
   ],
   "debug_persistent": false,
-  "attempts": 44,
-  "correct_answers": 37,
-  "accuracy": 84.09,
+  "attempts": 53,
+  "correct_answers": 43,
+  "accuracy": 81.13,
   "current_letter_index": 25,
   "current_word_length": 3,
   "sentence_level": 0,
