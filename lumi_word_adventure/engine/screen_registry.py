@@ -122,6 +122,28 @@ class ScreenRegistry:
                 ),
             ),
             ScreenDefinition(
+                "letter_voice_challenge",
+                "14_voice_say_apple.png",
+                (
+                    HitboxDefinition("Home", 0.01, 0.02, 0.06, 0.1, target="world_map"),
+                    HitboxDefinition("Settings", 0.92, 0.02, 0.06, 0.1, target="settings"),
+                    HitboxDefinition("Repeat", 0.29, 0.79, 0.09, 0.17, action="repeat_letter"),
+                    HitboxDefinition("Microphone", 0.43, 0.77, 0.16, 0.18, action="start_letter_listening"),
+                    HitboxDefinition("Skip", 0.61, 0.79, 0.09, 0.17, action="skip_letter_voice"),
+                    HitboxDefinition("Help", 0.72, 0.79, 0.09, 0.17, action="letter_voice_help"),
+                ),
+            ),
+            ScreenDefinition(
+                "letter_listening_state",
+                "15_voice_listening.png",
+                (
+                    HitboxDefinition("Home", 0.01, 0.02, 0.06, 0.1, target="world_map"),
+                    HitboxDefinition("Settings", 0.92, 0.02, 0.06, 0.1, target="settings"),
+                    HitboxDefinition("Stop", 0.35, 0.77, 0.27, 0.15, action="stop_letter_listening"),
+                    HitboxDefinition("Repeat letter", 0.67, 0.8, 0.15, 0.1, action="repeat_letter"),
+                ),
+            ),
+            ScreenDefinition(
                 "word_garden_game",
                 "11_word_garden_gameplay.png",
                 (

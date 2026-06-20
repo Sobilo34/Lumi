@@ -236,6 +236,70 @@
       "layers": [],
       "dynamic": {}
     },
+    "letter_voice_challenge": {
+      "asset_root": "letter_island_game",
+      "fallback_image": "14_voice_say_apple.png",
+      "layers": [
+        {
+          "id": "background",
+          "file": "speak_background.png",
+          "z": 0,
+          "x_pct": 0,
+          "y_pct": 0,
+          "w_pct": 1,
+          "h_pct": 1,
+          "fit": "fill"
+        }
+      ],
+      "dynamic": {
+        "say_letter": {
+          "type": "letter_focus_png",
+          "field": "target_letter",
+          "anchor": "center",
+          "x_pct": 0.5,
+          "y_pct": 0.415,
+          "w_pct": 0.24,
+          "h_pct": 0.32,
+          "fit": "contain"
+        }
+      }
+    },
+    "letter_listening_state": {
+      "asset_root": "letter_island_game",
+      "fallback_image": "15_voice_listening.png",
+      "layers": [
+        {
+          "id": "background",
+          "file": "speak_background.png",
+          "z": 0,
+          "x_pct": 0,
+          "y_pct": 0,
+          "w_pct": 1,
+          "h_pct": 1,
+          "fit": "fill"
+        }
+      ],
+      "dynamic": {
+        "say_letter": {
+          "type": "letter_focus_png",
+          "field": "target_letter",
+          "anchor": "center",
+          "x_pct": 0.5,
+          "y_pct": 0.415,
+          "w_pct": 0.24,
+          "h_pct": 0.32,
+          "fit": "contain"
+        },
+        "listening_overlay": {
+          "type": "listening_overlay",
+          "anchor": "center",
+          "x_pct": 0.5,
+          "y_pct": 0.78,
+          "w_pct": 0.2,
+          "h_pct": 0.2
+        }
+      }
+    },
     "word_garden_game": {
       "asset_root": "word_garden_game",
       "fallback_image": "11_word_garden_gameplay.png",
@@ -483,6 +547,34 @@
           "y_pct": 0.78,
           "w_pct": 0.2,
           "h_pct": 0.2
+        }
+      }
+    },
+    "badge_unlock": {
+      "asset_root": "badge_unlock",
+      "fallback_image": "21_badge_unlock.png",
+      "layers": [
+        {
+          "id": "background",
+          "file": "background.png",
+          "z": 0,
+          "x_pct": 0,
+          "y_pct": 0,
+          "w_pct": 1,
+          "h_pct": 1,
+          "fit": "fill"
+        }
+      ],
+      "dynamic": {
+        "badge_icon": {
+          "type": "badge_icon_png",
+          "field": "badge_names",
+          "anchor": "center",
+          "x_pct": 0.5,
+          "y_pct": 0.335,
+          "w_pct": 0.32,
+          "h_pct": 0.42,
+          "fit": "contain"
         }
       }
     }

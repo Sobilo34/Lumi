@@ -21,6 +21,7 @@ REF = PROJECT.parent / "reference_interfaces"
 # Static gameplay background (empty board — no find text or letter options).
 BACKGROUND_UUID = "86df1731-ec95-463f-83f0-3d3b42c202ca"
 SUCCESS_BACKGROUND_UUID = "c459dc81-ba6f-43ca-9a18-6cb76b0fcfab"
+SPEAK_BACKGROUND_UUID = "d2ebea18-ab45-4c3c-ba87-bd48f9fcbd1a"
 
 # "Find X" prompt PNGs (verified letter → uuid).
 FIND_PROMPTS: dict[str, str] = {
@@ -147,6 +148,7 @@ def main() -> None:
 
     _copy_uuid(BACKGROUND_UUID, REF / "07_letter_island_gameplay.png")
     _copy_uuid(SUCCESS_BACKGROUND_UUID, REF / "08_letter_correct_feedback.png")
+    _copy_uuid(SPEAK_BACKGROUND_UUID, DEST / "speak_background.png")
 
     for letter, uuid in FIND_PROMPTS.items():
         _copy_uuid(uuid, find_dir / f"{letter.lower()}.png")

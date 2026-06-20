@@ -20,6 +20,23 @@ BADGE_DISPLAY_SUBTITLES: dict[str, str] = {
     "Badge B": "Letter T Mastered!",
     "Badge C": "Letters U–Z Complete!",
     "Letter Island Complete": "All letters A–Z mastered! Word Garden unlocked!",
+    "B and D Master": "You mastered B and D!",
+    "Word Explorer": "You mastered 5 words!",
+    "Brave Speaker": "You finished the voice challenge!",
+    "Sentence Builder": "You built sentences in the castle!",
+    "Great Learner": "You earned 20 stars!",
+}
+
+BADGE_ICON_FILES: dict[str, str] = {
+    "Badge A": "badge_a.png",
+    "Badge B": "badge_b.png",
+    "Badge C": "badge_c.png",
+    "Letter Island Complete": "letter_island_complete.png",
+    "B and D Master": "b_and_d_master.png",
+    "Word Explorer": "word_explorer.png",
+    "Brave Speaker": "brave_speaker.png",
+    "Sentence Builder": "sentence_builder.png",
+    "Great Learner": "great_learner.png",
 }
 
 
@@ -130,6 +147,10 @@ def check_letter_island_complete_badge(profile: Any) -> list[str]:
 
 def badge_subtitle(badge_name: str) -> str:
     return BADGE_DISPLAY_SUBTITLES.get(badge_name.strip(), "Great work!")
+
+
+def badge_icon_filename(badge_name: str) -> str:
+    return BADGE_ICON_FILES.get(badge_name.strip(), "great_learner.png")
 
 
 def check_badge_unlocks(profile: Any) -> list[str]:

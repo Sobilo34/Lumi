@@ -69,6 +69,7 @@ def build_gameplay_chunk_queue() -> list[tuple[str, str]]:
         queue.append(("letter_island_game", f"find/{letter}.png"))
         queue.append(("letter_island_game", f"letters/{letter}.png"))
         queue.append(("letter_island_game", f"letters/{letter}_selected.png"))
+    queue.append(("letter_island_game", "speak_background.png"))
     for word in word_pool:
         queue.append(("word_garden_game", f"objects/{word}.png"))
     return queue

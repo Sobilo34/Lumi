@@ -117,7 +117,7 @@ def _should_trim_chunk(filename: str) -> bool:
         "speak_background.png",
     }:
         return False
-    if filename.startswith("objects/") or filename.startswith("prompts/"):
+    if filename.startswith("objects/") or filename.startswith("prompts/") or filename.startswith("badges/"):
         return False
     return True
 
@@ -601,6 +601,16 @@ class AssetManager:
                 selected=True,
                 selected_scale=1.22,
             )
+        from engine.scoring import BADGE_ICON_FILES
+
+        badge_root = "badge_unlock"
+        self.load_chunk(badge_root, "background.png")
+        badge_w = int(SCREEN_WIDTH * 0.32)
+        badge_h = int(SCREEN_HEIGHT * 0.42)
+        for filename in set(BADGE_ICON_FILES.values()):
+            self.load_chunk(badge_root, f"badges/{filename}")
+            self.scaled_chunk(badge_root, f"badges/{filename}", badge_w, badge_h, fit="contain")
+        self.load_chunk(letter_root, "speak_background.png")
 
     def warm_word_garden_round(
         self,

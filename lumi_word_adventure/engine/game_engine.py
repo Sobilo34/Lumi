@@ -11,6 +11,8 @@ from config import (
     END_SESSION_MESSAGE,
     MICROPHONE_CHECK_DEFAULT_PROMPT,
     OFFLINE_WINDOW_CAPTION,
+    SCREEN_HEIGHT,
+    SCREEN_WIDTH,
     SETTINGS_DEV_ACTIONS,
     SETTINGS_STATUS_DISPLAY_MS,
     SPLASH_DURATION_MS,
@@ -169,6 +171,8 @@ class GameEngine:
                 "word_mistake_hint",
                 "voice_challenge",
                 "listening_state",
+                "letter_voice_challenge",
+                "letter_listening_state",
                 "letter_island_game",
                 "letter_correct_feedback",
             ):
@@ -237,6 +241,9 @@ class GameEngine:
             if screen_id == "word_garden_game" and filename == "speak_background.png":
                 self._warm_screen_static("voice_challenge")
                 self._warm_screen_static("listening_state")
+            if screen_id == "letter_island_game" and filename == "speak_background.png":
+                self._warm_screen_static("letter_voice_challenge")
+                self._warm_screen_static("letter_listening_state")
             if screen_id == "word_garden_game" and filename.startswith("objects/"):
                 word = Path(filename).stem
                 warm_word_garden_draw_cache(self.asset_manager, word)
@@ -369,7 +376,9 @@ class GameEngine:
             highlight_letter_slot = -1
 
         voice_target = self._voice_challenge_target()
-        if screen_id not in {"voice_challenge", "listening_state", "voice_correct_feedback"}:
+        if screen_id in {"letter_voice_challenge", "letter_listening_state"}:
+            voice_target = self._letter_voice_target().lower()
+        elif screen_id not in {"voice_challenge", "listening_state", "voice_correct_feedback"}:
             voice_target = str(self.state.current_task_target or "cat").lower()
 
         teacher_report = dict(self.state.teacher_report or {})
@@ -390,7 +399,7 @@ class GameEngine:
             target_word=str(self.state.current_task_target or "cat").lower(),
             slot_words=tuple(str(word).lower() for word in self.state.word_choice_slots[:4]),
             voice_target=voice_target,
-            voice_listening=screen_id == "listening_state",
+            voice_listening=screen_id in {"listening_state", "letter_listening_state"},
             sentence_prompt=str(self.state.current_task_prompt or "Build the sentence."),
             sentence_words=tuple(str(word) for word in self.state.sentence_target_words[:4]),
             sentence_slots=tuple(str(slot) for slot in self.state.sentence_slots[:4]),
@@ -647,6 +656,14 @@ class GameEngine:
             return
         self.set_screen("voice_challenge")
 
+    def _begin_letter_voice_challenge(self) -> None:
+        self._configure_letter_voice_task()
+        if not is_stt_ready():
+            print(f"[Lumi Voice] {stt_status_message()}")
+            self._show_offline_fallback(stt_status_message())
+            return
+        self.set_screen("letter_voice_challenge")
+
     def _start_voice_listening(self) -> None:
         self._configure_voice_challenge_task()
         if not is_stt_ready():
@@ -656,6 +673,16 @@ class GameEngine:
         self.set_screen("listening_state")
         spoken = safe_listen_once(timeout=5)
         self._process_voice_capture_result(spoken)
+
+    def _start_letter_voice_listening(self) -> None:
+        self._configure_letter_voice_task()
+        if not is_stt_ready():
+            print(f"[Lumi Voice] {stt_status_message()}")
+            self._show_offline_fallback(stt_status_message())
+            return
+        self.set_screen("letter_listening_state")
+        spoken = safe_listen_once(timeout=5)
+        self._process_letter_voice_capture_result(spoken)
 
     def _run_microphone_check(self) -> str:
         """Run a short microphone readiness test from the microphone check screen."""
@@ -950,6 +977,29 @@ class GameEngine:
         self.state.current_task_prompt = f"Say {target}."
         self.state.current_hint_level = 0
         self.asset_manager.warm_word_garden_round((target,))
+
+    def _configure_letter_voice_task(self) -> None:
+        target = self._letter_voice_target()
+        self.state.current_task_target = target
+        self.state.current_task_prompt = f"Say {target}."
+        self.state.current_hint_level = 0
+        self.asset_manager.scaled_letter_tile(
+            "letter_island_game",
+            target,
+            int(SCREEN_WIDTH * 0.24),
+            int(SCREEN_HEIGHT * 0.32),
+            selected=False,
+        )
+
+    def _letter_voice_target(self) -> str:
+        candidate = str(self.state.current_task_target or "").strip().upper()
+        if len(candidate) == 1 and candidate.isalpha():
+            return candidate
+        slots = [str(item).strip().upper() for item in self.state.letter_choice_slots[:LETTER_SLOT_COUNT]]
+        for letter in slots:
+            if len(letter) == 1 and letter.isalpha():
+                return letter
+        return "A"
 
     def _voice_challenge_target(self) -> str:
         candidate = str(self.state.current_task_target or "").strip().lower()
@@ -1294,6 +1344,35 @@ class GameEngine:
         self.voice.speak(self._voice_help_line(target_word))
         self.set_screen("voice_challenge")
 
+    def _process_letter_voice_capture_result(self, spoken: str | None) -> None:
+        target_letter = self._letter_voice_target()
+        spoken_text = (spoken or "").strip()
+        self.state.last_spoken_text = spoken_text.lower()
+        result = check_spoken_answer(spoken_text, target_letter)
+
+        if result == "correct":
+            self._award_letter_round_success(target_letter)
+            return
+
+        self.learner.update_wrong_streak()
+        self.learner.attempts = int(self.learner.attempts) + 1
+        self.learner.update_accuracy()
+        self._play_feedback_sfx("wrong")
+
+        if result == "close":
+            self.voice.speak(f"Almost! I heard something close. Try again.")
+            self.set_screen("letter_voice_challenge")
+            return
+
+        if not self.learner.letter_is_ai_mastered(target_letter):
+            self.learner.record_weak_letter(target_letter)
+        self.voice.speak(self._letter_voice_help_line(target_letter))
+        self.set_screen("letter_voice_challenge")
+
+    def _letter_voice_help_line(self, target_letter: str | None = None) -> str:
+        letter = str(target_letter or self._letter_voice_target() or "A").strip().upper()
+        return f"Good try! This letter is {letter}. Say {letter}."
+
     def _voice_help_line(self, target_word: str | None = None) -> str:
         word = str(target_word or self._voice_challenge_target() or "cat").strip().lower()
         phonics = {
@@ -1544,6 +1623,21 @@ class GameEngine:
             if action == "start_listening":
                 self._start_voice_listening()
                 return
+        if self.state.current_screen_id == "letter_voice_challenge":
+            target = self._letter_voice_target()
+            if action == "repeat_letter":
+                self.voice.speak(f"Say {target}.")
+                return
+            if action == "letter_voice_help":
+                self.voice.speak(self._letter_voice_help_line(target))
+                return
+            if action == "skip_letter_voice":
+                self.state.preserve_letter_island_task = True
+                self.set_screen("letter_island_game")
+                return
+            if action == "start_letter_listening":
+                self._start_letter_voice_listening()
+                return
         if self.state.current_screen_id == "bd_practice":
             if action == "repeat_bd_prompt":
                 target_letter = self.state.bd_practice_target or "B"
@@ -1595,6 +1689,15 @@ class GameEngine:
                     return
                 self.voice.speak(f"Listening stopped. Say {target} when you are ready.")
                 self.set_screen("voice_challenge")
+                return
+        if self.state.current_screen_id == "letter_listening_state":
+            target = self._letter_voice_target()
+            if action == "repeat_letter":
+                self.voice.speak(f"Say {target}.")
+                return
+            if action in {"stop_letter_listening", "stop_listening", "stop_and_process"}:
+                self.voice.speak(f"Listening stopped. Say {target} when you are ready.")
+                self.set_screen("letter_voice_challenge")
                 return
         if self.state.current_screen_id == "voice_correct_feedback":
             if action == "say_again":
@@ -1775,6 +1878,72 @@ class GameEngine:
         if action in {"repeat_bd_prompt", "bd_hint", "answer_B", "answer_D", "next_hint_or_bd_practice", "try_again"}:
             return
 
+    def _award_letter_round_success(self, target_letter: str) -> None:
+        target_letter = str(target_letter or "A").strip().upper()
+        first_try = int(self.state.current_round_wrong_count) <= 0
+        stars_earned = calculate_stars(True, self.state.current_hint_level)
+        self.learner.attempts = int(self.learner.attempts) + 1
+        self.learner.correct_answers = int(self.learner.correct_answers) + 1
+        self.learner.update_accuracy()
+        self.learner.update_correct_streak()
+        update_score(self.learner, stars_earned)
+        self.learner.record_letter_mastery_attempt(
+            target_letter,
+            correct=True,
+            first_try=first_try,
+            hints_used=self.state.current_hint_level,
+        )
+        if not self.state.letter_review_mode:
+            note_curriculum_letter_completed(self.learner)
+            self.state.pending_letter_curriculum_advance = True
+        if maybe_complete_letter_island(
+            self.learner,
+            letter=target_letter,
+            curriculum=not self.state.letter_review_mode,
+        ):
+            self._mark_world_completed(WORLD_LETTER_ISLAND)
+            self._notify_world_unlocked(WORLD_WORD_GARDEN)
+        island_complete_badge = check_letter_island_complete_badge(self.learner)
+        if island_complete_badge:
+            self.state.current_hint_level = 0
+            self.state.bd_confusion_attempts = 0
+            self.state.last_mistake_type = ""
+            self.state.last_selected_letter = target_letter
+            self.state.highlight_letter_slot = -1
+            self.state.completed_letter_target = target_letter
+            self.state.completed_letter_choices = [
+                str(item).upper() for item in self.state.letter_choice_slots[:LETTER_SLOT_COUNT]
+            ]
+            correct_message = get_feedback(True)["message"]
+            self.state.last_letter_feedback_message = (
+                f"{correct_message} You perfected every letter A–Z!"
+            )
+            self._play_feedback_sfx("badge", stars_earned=stars_earned)
+            self._handle_badges(island_complete_badge, return_screen="progress_complete")
+            return
+        milestone_unlocked = check_letter_milestone_badges(
+            self.learner,
+            target_letter,
+            curriculum=not self.state.letter_review_mode,
+        )
+        unlocked = milestone_unlocked
+        self.state.current_hint_level = 0
+        self.state.bd_confusion_attempts = 0
+        self.state.last_mistake_type = ""
+        self.state.last_selected_letter = target_letter
+        self.state.highlight_letter_slot = -1
+        self.state.completed_letter_target = target_letter
+        self.state.completed_letter_choices = [
+            str(item).upper() for item in self.state.letter_choice_slots[:LETTER_SLOT_COUNT]
+        ]
+        correct_message = get_feedback(True)["message"]
+        self.state.last_letter_feedback_message = f"{correct_message} This is {target_letter}."
+        self._play_feedback_sfx("correct", stars_earned=stars_earned)
+        if unlocked:
+            self._handle_badges(unlocked, return_screen="letter_correct_feedback")
+            return
+        self.set_screen("letter_correct_feedback")
+
     def _handle_letter_island_action(self, action: str) -> None:
         target_letter = (self.state.current_task_target or "A").upper()
 
@@ -1796,7 +1965,7 @@ class GameEngine:
             return
 
         if action == "voice_or_speak_mode":
-            self._begin_voice_challenge()
+            self._begin_letter_voice_challenge()
             return
 
         selected_letter = self._resolve_letter_from_action(action)
@@ -1804,69 +1973,7 @@ class GameEngine:
             return
 
         if selected_letter == target_letter:
-            first_try = int(self.state.current_round_wrong_count) <= 0
-            stars_earned = calculate_stars(True, self.state.current_hint_level)
-            self.learner.attempts = int(self.learner.attempts) + 1
-            self.learner.correct_answers = int(self.learner.correct_answers) + 1
-            self.learner.update_accuracy()
-            self.learner.update_correct_streak()
-            update_score(self.learner, stars_earned)
-            self.learner.record_letter_mastery_attempt(
-                target_letter,
-                correct=True,
-                first_try=first_try,
-                hints_used=self.state.current_hint_level,
-            )
-            if not self.state.letter_review_mode:
-                note_curriculum_letter_completed(self.learner)
-                self.state.pending_letter_curriculum_advance = True
-            if maybe_complete_letter_island(
-                self.learner,
-                letter=target_letter,
-                curriculum=not self.state.letter_review_mode,
-            ):
-                self._mark_world_completed(WORLD_LETTER_ISLAND)
-                self._notify_world_unlocked(WORLD_WORD_GARDEN)
-            island_complete_badge = check_letter_island_complete_badge(self.learner)
-            if island_complete_badge:
-                self.state.current_hint_level = 0
-                self.state.bd_confusion_attempts = 0
-                self.state.last_mistake_type = ""
-                self.state.last_selected_letter = selected_letter
-                self.state.highlight_letter_slot = -1
-                self.state.completed_letter_target = target_letter
-                self.state.completed_letter_choices = [
-                    str(item).upper() for item in self.state.letter_choice_slots[:LETTER_SLOT_COUNT]
-                ]
-                correct_message = get_feedback(True)["message"]
-                self.state.last_letter_feedback_message = (
-                    f"{correct_message} You perfected every letter A–Z!"
-                )
-                self._play_feedback_sfx("badge", stars_earned=stars_earned)
-                self._handle_badges(island_complete_badge, return_screen="progress_complete")
-                return
-            milestone_unlocked = check_letter_milestone_badges(
-                self.learner,
-                target_letter,
-                curriculum=not self.state.letter_review_mode,
-            )
-            unlocked = milestone_unlocked
-            self.state.current_hint_level = 0
-            self.state.bd_confusion_attempts = 0
-            self.state.last_mistake_type = ""
-            self.state.last_selected_letter = selected_letter
-            self.state.highlight_letter_slot = -1
-            self.state.completed_letter_target = target_letter
-            self.state.completed_letter_choices = [
-                str(item).upper() for item in self.state.letter_choice_slots[:LETTER_SLOT_COUNT]
-            ]
-            correct_message = get_feedback(True)["message"]
-            self.state.last_letter_feedback_message = f"{correct_message} This is {target_letter}."
-            self._play_feedback_sfx("correct", stars_earned=stars_earned)
-            if unlocked:
-                self._handle_badges(unlocked, return_screen="letter_correct_feedback")
-                return
-            self.set_screen("letter_correct_feedback")
+            self._award_letter_round_success(target_letter)
             return
 
         self.learner.attempts = int(self.learner.attempts) + 1
@@ -1949,12 +2056,22 @@ class GameEngine:
             self.voice.speak(f"Say {target}.")
             return
 
+        if screen_id == "letter_voice_challenge":
+            target = self._letter_voice_target()
+            self.voice.speak(f"Say {target}.")
+            return
+
         if screen_id == "listening_state":
             if self.state.microphone_test_mode:
                 self.voice.speak(self.state.microphone_status_message or "Microphone is ready.")
             else:
                 target = self._voice_challenge_target()
                 self.voice.speak(f"I am listening. Say {target}.")
+            return
+
+        if screen_id == "letter_listening_state":
+            target = self._letter_voice_target()
+            self.voice.speak(f"I am listening. Say {target}.")
             return
 
         if screen_id == "microphone_check":

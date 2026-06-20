@@ -128,7 +128,7 @@ def letter_tile_uses_selected(
     """Challenge tiles are always normal; success highlights only the correct letter."""
     screen = str(screen_id or "").strip()
     variant = str(tile_variant or "normal").strip().lower()
-    if screen == "letter_island_game" or variant == "normal":
+    if screen in {"letter_island_game", "letter_voice_challenge", "letter_listening_state"} or variant == "normal":
         return False
     if screen == "letter_correct_feedback" or variant == "success":
         slot = str(slot_letter or "").strip().upper()
@@ -355,6 +355,72 @@ def _draw_touch_word_png(
         outline=(255, 255, 255),
         outline_width=2,
     )
+
+
+def _draw_badge_icon_png(
+    surface: pygame.Surface,
+    spec: dict[str, Any],
+    view: SceneView,
+    assets: AssetManager | None,
+    asset_root: str,
+) -> None:
+    """Draw the unlocked badge icon in the spotlight above the purple banner."""
+    from engine.scoring import badge_icon_filename
+
+    names = getattr(view, "badge_names", ()) or ()
+    if not names:
+        return
+    badge_name = str(names[0]).strip()
+    if not badge_name or assets is None or not asset_root:
+        return
+
+    filename = badge_icon_filename(badge_name)
+    x, y, w, h = slot_rect(spec)
+    offset_x = int(spec.get("offset_x_px") or 0)
+    offset_y = int(spec.get("offset_y_px") or 0)
+    fit = str(spec.get("fit") or "contain")
+    tile = assets.scaled_chunk(asset_root, f"badges/{filename}", w, h, fit=fit)
+    if tile is None:
+        return
+    draw_x = x + (w - tile.get_width()) // 2 + offset_x
+    draw_y = y + (h - tile.get_height()) // 2 + offset_y
+    surface.blit(tile, (draw_x, draw_y))
+
+
+def _draw_letter_focus_png(
+    surface: pygame.Surface,
+    spec: dict[str, Any],
+    view: SceneView,
+    assets: AssetManager | None,
+    asset_root: str,
+) -> None:
+    """Draw a single normal letter tile inside the speak container."""
+    letter = _field(view, str(spec.get("field") or "target_letter"), "A").upper()
+    if not letter or assets is None or not asset_root:
+        return
+    x, y, w, h = slot_rect(spec)
+    offset_x = int(spec.get("offset_x_px") or 0)
+    offset_y = int(spec.get("offset_y_px") or 0)
+    fit = str(spec.get("fit") or "contain")
+    tile = assets.scaled_letter_tile(asset_root, letter, w, h, selected=False)
+    if tile is None:
+        blit_fitted_text(
+            surface,
+            pygame.Rect(x, y, w, h),
+            letter,
+            PROMPT_ACCENT,
+            padding=8,
+            fill_height_ratio=0.72,
+        )
+        return
+    if fit == "fill":
+        draw_x = x + offset_x
+        draw_y = y + offset_y
+        surface.blit(pygame.transform.smoothscale(tile, (w, h)), (draw_x, draw_y))
+        return
+    draw_x = x + (w - tile.get_width()) // 2 + offset_x
+    draw_y = y + (h - tile.get_height()) // 2 + offset_y
+    surface.blit(tile, (draw_x, draw_y))
 
 
 def _draw_word_object_focus(
@@ -679,6 +745,10 @@ def draw_dynamic_layers(
             _draw_touch_word(surface, spec, view)
         elif layer_type == "touch_word_png":
             _draw_touch_word_png(surface, spec, view, assets, active_screen)
+        elif layer_type == "badge_icon_png":
+            _draw_badge_icon_png(surface, spec, view, assets, active_screen)
+        elif layer_type == "letter_focus_png":
+            _draw_letter_focus_png(surface, spec, view, assets, active_screen)
         elif layer_type == "word_object_focus":
             _draw_word_object_focus(surface, spec, view, assets, active_screen)
         elif layer_type == "listening_overlay":
