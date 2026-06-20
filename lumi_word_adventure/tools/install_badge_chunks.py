@@ -15,7 +15,7 @@ os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
 
 import pygame
 
-from engine.asset_manager import _crop_to_opaque_bbox, _knock_out_export_padding
+from engine.asset_manager import _process_badge_icon
 
 ASSETS = Path("/home/bilal/.cursor/projects/home-bilal-bilal-projects-Learning-AIU-python-Lumi/assets")
 DEST = PROJECT / "assets" / "ui_chunks" / "badge_unlock"
@@ -59,8 +59,7 @@ def _process_badge(src_name: str, dest: Path) -> None:
         image = image.convert_alpha()
     else:
         image = image.convert()
-    image = _knock_out_export_padding(image)
-    image = _crop_to_opaque_bbox(image)
+    image = _process_badge_icon(image)
     pygame.image.save(image, str(dest))
     print(f"  -> {dest.relative_to(PROJECT)}")
 

@@ -37,6 +37,23 @@ def test_badge_overlay_uses_subtitle_without_background_box() -> None:
     assert sample[0] > 100 or sample[1] > 60
 
 
+def test_process_badge_icon_removes_white_export_square() -> None:
+    from engine.asset_manager import _process_badge_icon
+
+    pygame.init()
+    if pygame.display.get_surface() is None:
+        pygame.display.set_mode((1, 1))
+    size = 120
+    surface = pygame.Surface((size, size), pygame.SRCALPHA)
+    surface.fill((255, 255, 255, 255))
+    pygame.draw.circle(surface, (255, 80, 120, 255), (size // 2, size // 2), 36)
+    processed = _process_badge_icon(surface)
+    pw, ph = processed.get_size()
+    assert pw < size
+    assert ph < size
+    assert processed.get_at((pw // 2, ph // 2)).a > 200
+
+
 def test_badge_unlock_manifest_has_background_and_icon_layer() -> None:
     spec = get_screen_spec("badge_unlock", fallback_image="21_badge_unlock.png")
     assert spec.asset_root == "badge_unlock"

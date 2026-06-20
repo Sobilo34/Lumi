@@ -57,6 +57,31 @@ def _find_content_bbox(surface: pygame.Surface) -> tuple[int, int, int, int] | N
     return min_x, min_y, max_x - min_x + 1, max_y - min_y + 1
 
 
+def _is_badge_backdrop(r: int, g: int, b: int, a: int) -> bool:
+    """Neutral export squares/checkerboard behind badge icons."""
+    if a < 12:
+        return True
+    if r > 248 and g > 248 and b > 248:
+        return True
+    peak = max(r, g, b)
+    low = min(r, g, b)
+    if peak - low <= 14 and peak >= 155:
+        return True
+    return _is_flat_backdrop(r, g, b, a)
+
+
+def _process_badge_icon(image: pygame.Surface) -> pygame.Surface:
+    """Remove baked-in white/checkerboard export frames from badge PNGs."""
+    surface = image.convert_alpha()
+    width, height = surface.get_size()
+    for y in range(height):
+        for x in range(width):
+            color = surface.get_at((x, y))
+            if _is_badge_backdrop(color.r, color.g, color.b, color.a):
+                surface.set_at((x, y), (0, 0, 0, 0))
+    return _crop_to_opaque_bbox(surface)
+
+
 def _is_export_padding(r: int, g: int, b: int, a: int) -> bool:
     """Checkerboard / pure-white export backdrops only — keep cream and pink card art."""
     if a < 10:
@@ -430,8 +455,7 @@ class AssetManager:
         elif filename.startswith("prompts/"):
             image = _process_word_garden_chunk(image, crop=False)
         elif filename.startswith("badges/"):
-            image = _knock_out_export_padding(image)
-            image = _crop_to_opaque_bbox(image)
+            image = _process_badge_icon(image)
         elif use_trim_cache:
             image = _trim_flat_backdrop(image)
         if use_trim_cache or filename.startswith(("objects/", "prompts/")):
