@@ -94,6 +94,8 @@ class ScreenRegistry:
                 "letter_correct_feedback",
                 "08_letter_correct_feedback.png",
                 (
+                    HitboxDefinition("Home", 0.01, 0.02, 0.06, 0.1, target="world_map"),
+                    HitboxDefinition("Settings", 0.92, 0.02, 0.06, 0.1, target="settings"),
                     HitboxDefinition("Next", 0.36, 0.79, 0.29, 0.15, action="next_activity"),
                 ),
             ),
@@ -101,6 +103,8 @@ class ScreenRegistry:
                 "letter_mistake_hint",
                 "09_letter_mistake_hint.png",
                 (
+                    HitboxDefinition("Home", 0.01, 0.02, 0.06, 0.1, target="world_map"),
+                    HitboxDefinition("Settings", 0.92, 0.02, 0.06, 0.1, target="settings"),
                     HitboxDefinition("Try Again", 0.26, 0.8, 0.17, 0.12, action="try_again"),
                     HitboxDefinition("Repeat", 0.45, 0.8, 0.17, 0.12, action="repeat_prompt"),
                     HitboxDefinition("Hint", 0.64, 0.8, 0.17, 0.12, action="next_hint_or_bd_practice"),
@@ -122,6 +126,7 @@ class ScreenRegistry:
                 "11_word_garden_gameplay.png",
                 (
                     HitboxDefinition("Home", 0.01, 0.02, 0.06, 0.1, target="world_map"),
+                    HitboxDefinition("Settings", 0.92, 0.02, 0.06, 0.1, target="settings"),
                     HitboxDefinition("Card cat", 0.24, 0.39, 0.14, 0.27, action="select_word_slot_0"),
                     HitboxDefinition("Card dog", 0.4, 0.39, 0.14, 0.27, action="select_word_slot_1"),
                     HitboxDefinition("Card sun", 0.56, 0.39, 0.14, 0.27, action="select_word_slot_2"),
@@ -135,24 +140,27 @@ class ScreenRegistry:
                 "word_correct_feedback",
                 "12_word_correct_feedback.png",
                 (
-                    HitboxDefinition("Next", 0.37, 0.82, 0.27, 0.13, action="next_voice_challenge"),
-                    HitboxDefinition("Home", 0.91, 0.03, 0.07, 0.1, target="world_map"),
+                    HitboxDefinition("Home", 0.01, 0.02, 0.06, 0.1, target="world_map"),
+                    HitboxDefinition("Settings", 0.92, 0.02, 0.06, 0.1, target="settings"),
+                    HitboxDefinition("Next", 0.37, 0.82, 0.27, 0.13, action="next_word_round"),
                 ),
             ),
             ScreenDefinition(
                 "word_mistake_hint",
                 "13_word_mistake_hint.png",
                 (
+                    HitboxDefinition("Home", 0.01, 0.02, 0.06, 0.1, target="world_map"),
+                    HitboxDefinition("Settings", 0.92, 0.02, 0.06, 0.1, target="settings"),
                     HitboxDefinition("Try Again", 0.25, 0.78, 0.2, 0.14, action="try_again"),
                     HitboxDefinition("Repeat", 0.48, 0.78, 0.2, 0.14, action="repeat_prompt"),
                     HitboxDefinition("Hint", 0.7, 0.78, 0.16, 0.14, action="show_next_hint"),
-                    HitboxDefinition("speaker on cat card", 0.28, 0.42, 0.07, 0.11, action="play_cat_sound"),
                 ),
             ),
             ScreenDefinition(
                 "voice_challenge",
                 "14_voice_say_apple.png",
                 (
+                    HitboxDefinition("Home", 0.91, 0.02, 0.07, 0.1, target="world_map"),
                     HitboxDefinition("Repeat", 0.29, 0.79, 0.09, 0.17, action="repeat_word"),
                     HitboxDefinition("Microphone", 0.43, 0.77, 0.16, 0.18, action="start_listening"),
                     HitboxDefinition("Skip", 0.61, 0.79, 0.09, 0.17, action="skip_voice"),

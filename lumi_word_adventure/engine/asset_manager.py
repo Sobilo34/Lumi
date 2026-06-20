@@ -114,6 +114,7 @@ def _should_trim_chunk(filename: str) -> bool:
         "background.png",
         "success_background.png",
         "failure_background.png",
+        "speak_background.png",
     }:
         return False
     if filename.startswith("objects/") or filename.startswith("prompts/"):
@@ -574,7 +575,7 @@ class AssetManager:
 
         from engine.word_garden import WORD_GARDEN_WORDS
 
-        for filename in ("background.png", "success_background.png", "failure_background.png"):
+        for filename in ("background.png", "success_background.png", "failure_background.png", "speak_background.png"):
             self.load_chunk(word_garden_root, filename)
         for word in WORD_GARDEN_WORDS:
             key = word.lower()

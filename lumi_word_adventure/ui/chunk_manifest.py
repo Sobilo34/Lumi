@@ -155,3 +155,18 @@ def card_slot_rects(spec: dict[str, Any]) -> list[tuple[int, int, int, int]]:
     if slots:
         return [slot_rect(slot) for slot in slots[:4]]
     return row_tile_slots(spec)
+
+
+def card_slot_offset_px(spec: dict[str, Any], index: int) -> tuple[int, int]:
+    """Per-slot pixel offset used when drawing word object cards."""
+    raw_x = spec.get("offset_x_px") or 0
+    raw_y = spec.get("offset_y_px") or 0
+    if isinstance(raw_x, list):
+        offset_x = int(raw_x[index] if index < len(raw_x) else (raw_x[-1] if raw_x else 0))
+    else:
+        offset_x = int(raw_x or 0)
+    if isinstance(raw_y, list):
+        offset_y = int(raw_y[index] if index < len(raw_y) else (raw_y[-1] if raw_y else 0))
+    else:
+        offset_y = int(raw_y or 0)
+    return offset_x, offset_y

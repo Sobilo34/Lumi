@@ -357,6 +357,54 @@ def _draw_touch_word_png(
     )
 
 
+def _draw_word_object_focus(
+    surface: pygame.Surface,
+    spec: dict[str, Any],
+    view: SceneView,
+    assets: AssetManager | None,
+    asset_root: str,
+) -> None:
+    """Draw a single centered object illustration inside a focus slot (voice challenge box)."""
+    word = _field(view, str(spec.get("field") or "voice_target"), "cat").lower()
+    if not word:
+        word = _field(view, "target_word", "cat").lower()
+    x, y, w, h = slot_rect(spec)
+    pad_x = int(SCREEN_WIDTH * float(spec.get("pad_x_pct") or 0))
+    pad_y = int(SCREEN_HEIGHT * float(spec.get("pad_y_pct") or 0))
+    offset_x = int(spec.get("offset_x_px") or 0)
+    offset_y = int(spec.get("offset_y_px") or 0)
+    inner = pygame.Rect(x + pad_x, y + pad_y, max(1, w - pad_x * 2), max(1, h - pad_y * 2))
+    fit = str(spec.get("fit") or "contain")
+    if assets is not None and asset_root:
+        tile = assets.scaled_word_object(asset_root, word, inner.width, inner.height, fit=fit)
+        if tile is not None:
+            draw_x = inner.x + (inner.width - tile.get_width()) // 2 + offset_x
+            draw_y = inner.y + (inner.height - tile.get_height()) // 2 + offset_y
+            surface.blit(tile, (draw_x, draw_y))
+            return
+    blit_fitted_text(
+        surface,
+        inner,
+        word,
+        PROMPT_ACCENT,
+        padding=8,
+        fill_height_ratio=0.72,
+    )
+
+
+def _draw_listening_overlay(surface: pygame.Surface, spec: dict[str, Any], view: SceneView) -> None:
+    if not bool(getattr(view, "voice_listening", False)):
+        return
+    x, y, w, h = slot_rect(spec)
+    center = (x + w // 2, y + h // 2)
+    for radius, alpha in ((86, 40), (102, 26), (118, 18)):
+        pulse = pygame.Surface((radius * 2 + 2, radius * 2 + 2), pygame.SRCALPHA)
+        pygame.draw.circle(pulse, (85, 189, 235, alpha), (radius + 1, radius + 1), radius, 6)
+        surface.blit(pulse, (center[0] - radius - 1, center[1] - radius - 1))
+    label = font(34, bold=True).render("Listening...", True, (58, 144, 204))
+    surface.blit(label, label.get_rect(center=(center[0], int(SCREEN_HEIGHT * 0.63))))
+
+
 def _word_object_uses_selected(
     *,
     screen_id: str,
@@ -631,6 +679,10 @@ def draw_dynamic_layers(
             _draw_touch_word(surface, spec, view)
         elif layer_type == "touch_word_png":
             _draw_touch_word_png(surface, spec, view, assets, active_screen)
+        elif layer_type == "word_object_focus":
+            _draw_word_object_focus(surface, spec, view, assets, active_screen)
+        elif layer_type == "listening_overlay":
+            _draw_listening_overlay(surface, spec, view)
         elif layer_type == "speech_bubble":
             _draw_speech_bubble(surface, spec, view)
         elif layer_type == "welcome_speech":

@@ -391,6 +391,100 @@
           ]
         }
       }
+    },
+    "voice_challenge": {
+      "asset_root": "word_garden_game",
+      "fallback_image": "14_voice_say_apple.png",
+      "layers": [
+        {
+          "id": "background",
+          "file": "speak_background.png",
+          "z": 0,
+          "x_pct": 0,
+          "y_pct": 0,
+          "w_pct": 1,
+          "h_pct": 1,
+          "fit": "fill"
+        }
+      ],
+      "dynamic": {
+        "say_prompt": {
+          "type": "touch_word_png",
+          "field": "voice_target",
+          "anchor": "topleft",
+          "x_pct": 0.535,
+          "y_pct": 0.162,
+          "w_pct": 0.155,
+          "h_pct": 0.048,
+          "fit": "contain",
+          "valign": "middle",
+          "halign": "left",
+          "offset_x_px": 0,
+          "offset_y_px": 2
+        },
+        "say_object": {
+          "type": "word_object_focus",
+          "field": "voice_target",
+          "x_pct": 0.402,
+          "y_pct": 0.318,
+          "w_pct": 0.196,
+          "h_pct": 0.288,
+          "fit": "contain",
+          "pad_x_pct": 0.018,
+          "pad_y_pct": 0.022
+        }
+      }
+    },
+    "listening_state": {
+      "asset_root": "word_garden_game",
+      "fallback_image": "15_voice_listening.png",
+      "layers": [
+        {
+          "id": "background",
+          "file": "speak_background.png",
+          "z": 0,
+          "x_pct": 0,
+          "y_pct": 0,
+          "w_pct": 1,
+          "h_pct": 1,
+          "fit": "fill"
+        }
+      ],
+      "dynamic": {
+        "say_prompt": {
+          "type": "touch_word_png",
+          "field": "voice_target",
+          "anchor": "topleft",
+          "x_pct": 0.535,
+          "y_pct": 0.162,
+          "w_pct": 0.155,
+          "h_pct": 0.048,
+          "fit": "contain",
+          "valign": "middle",
+          "halign": "left",
+          "offset_x_px": 0,
+          "offset_y_px": 2
+        },
+        "say_object": {
+          "type": "word_object_focus",
+          "field": "voice_target",
+          "x_pct": 0.402,
+          "y_pct": 0.318,
+          "w_pct": 0.196,
+          "h_pct": 0.288,
+          "fit": "contain",
+          "pad_x_pct": 0.018,
+          "pad_y_pct": 0.022
+        },
+        "listening_overlay": {
+          "type": "listening_overlay",
+          "anchor": "center",
+          "x_pct": 0.5,
+          "y_pct": 0.78,
+          "w_pct": 0.2,
+          "h_pct": 0.2
+        }
+      }
     }
   }
 }

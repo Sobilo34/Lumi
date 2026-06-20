@@ -1,10 +1,10 @@
 {
   "child_name": "Test",
-  "total_stars": 151,
+  "total_stars": 163,
   "lumi_energy": 100,
   "current_world": "main_menu",
   "difficulty": 1,
-  "correct_streak": 1,
+  "correct_streak": 5,
   "wrong_streak": 0,
   "weak_letters": {},
   "weak_words": {
@@ -25,7 +25,8 @@
     "E",
     "J",
     "F",
-    "G"
+    "G",
+    "Z"
   ],
   "mastered_words": [
     "cat",
@@ -42,9 +43,9 @@
     "Great Learner"
   ],
   "debug_persistent": false,
-  "attempts": 61,
-  "correct_answers": 51,
-  "accuracy": 83.61,
+  "attempts": 65,
+  "correct_answers": 55,
+  "accuracy": 84.62,
   "current_letter_index": 25,
   "current_word_length": 3,
   "sentence_level": 0,
@@ -327,16 +328,16 @@
       "confused_with": {}
     },
     "Z": {
-      "attempts": 1,
-      "correct": 1,
+      "attempts": 2,
+      "correct": 2,
       "wrong": 0,
-      "first_try_correct": 1,
+      "first_try_correct": 2,
       "hints_used": 0,
-      "mastery_score": 0.25,
-      "last_seen": 1781892833,
-      "consecutive_correct": 1,
+      "mastery_score": 0.5,
+      "last_seen": 1781928533,
+      "consecutive_correct": 2,
       "confused_with": {}
     }
   },
-  "curriculum_letters_since_review": 2
+  "curriculum_letters_since_review": 0
 }

@@ -60,6 +60,7 @@ def build_gameplay_chunk_queue() -> list[tuple[str, str]]:
         ("word_garden_game", "background.png"),
         ("word_garden_game", "success_background.png"),
         ("word_garden_game", "failure_background.png"),
+        ("word_garden_game", "speak_background.png"),
     ]
     for word in WORD_GARDEN_WORDS:
         queue.append(("word_garden_game", f"prompts/{word}.png"))
@@ -82,6 +83,8 @@ WORD_GARDEN_OBJECT_W = 182
 WORD_GARDEN_OBJECT_H = 227
 WORD_GARDEN_PROMPT_W = 112
 WORD_GARDEN_PROMPT_H = 29
+WORD_GARDEN_SPEAK_OBJECT_W = 237
+WORD_GARDEN_SPEAK_OBJECT_H = 194
 
 
 def warm_word_garden_draw_cache(asset_manager: AssetManager, word: str) -> None:
@@ -101,6 +104,13 @@ def warm_word_garden_draw_cache(asset_manager: AssetManager, word: str) -> None:
         key,
         WORD_GARDEN_OBJECT_W,
         WORD_GARDEN_OBJECT_H,
+        fit="contain",
+    )
+    asset_manager.scaled_word_object(
+        "word_garden_game",
+        key,
+        WORD_GARDEN_SPEAK_OBJECT_W,
+        WORD_GARDEN_SPEAK_OBJECT_H,
         fit="contain",
     )
 

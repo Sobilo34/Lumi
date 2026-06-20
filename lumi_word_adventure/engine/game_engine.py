@@ -95,7 +95,7 @@ from ui.chunk_preload import (
     preload_item_cost,
     warm_word_garden_draw_cache,
 )
-from ui.chunk_manifest import card_slot_rects, get_screen_spec, row_tile_slots
+from ui.chunk_manifest import card_slot_offset_px, card_slot_rects, get_screen_spec, row_tile_slots
 from ui.chunk_screen import ChunkScreen
 from ui.hitboxes import Hitbox
 from voice.text_to_speech import TextToSpeech
@@ -106,6 +106,22 @@ from voice.voice_checker import check_spoken_answer
 LETTER_SLOT_COUNT = 4
 LETTER_ISLAND_ENTRY_SCREENS = frozenset({"world_map", "main_menu", "how_to_play"})
 WORD_GARDEN_VISIBLE = WORD_GARDEN_WORDS
+GAMEPLAY_HITBOX_SCREEN_IDS = frozenset({
+    "letter_island_game",
+    "letter_correct_feedback",
+    "letter_mistake_hint",
+    "word_garden_game",
+    "word_correct_feedback",
+    "word_mistake_hint",
+})
+SCREEN_SPECIFIC_PROMPT_ACTIONS = frozenset({
+    "letter_island_game",
+    "letter_mistake_hint",
+    "word_garden_game",
+    "word_mistake_hint",
+    "word_correct_feedback",
+    "letter_correct_feedback",
+})
 LEGACY_WORD_ACTIONS = {
     "select_word_cat": "cat",
     "select_word_dog": "dog",
@@ -151,6 +167,8 @@ class GameEngine:
                 "word_garden_game",
                 "word_correct_feedback",
                 "word_mistake_hint",
+                "voice_challenge",
+                "listening_state",
                 "letter_island_game",
                 "letter_correct_feedback",
             ):
@@ -216,6 +234,9 @@ class GameEngine:
                 self._warm_screen_static("word_correct_feedback")
             if screen_id == "word_garden_game" and filename == "failure_background.png":
                 self._warm_screen_static("word_mistake_hint")
+            if screen_id == "word_garden_game" and filename == "speak_background.png":
+                self._warm_screen_static("voice_challenge")
+                self._warm_screen_static("listening_state")
             if screen_id == "word_garden_game" and filename.startswith("objects/"):
                 word = Path(filename).stem
                 warm_word_garden_draw_cache(self.asset_manager, word)
@@ -347,9 +368,9 @@ class GameEngine:
         elif screen_id == "letter_island_game":
             highlight_letter_slot = -1
 
-        voice_target = str(self.state.current_task_target or "apple").lower()
-        if len(voice_target) <= 1:
-            voice_target = "apple"
+        voice_target = self._voice_challenge_target()
+        if screen_id not in {"voice_challenge", "listening_state", "voice_correct_feedback"}:
+            voice_target = str(self.state.current_task_target or "cat").lower()
 
         teacher_report = dict(self.state.teacher_report or {})
         if screen_id == "teacher_report" and not teacher_report:
@@ -435,6 +456,31 @@ class GameEngine:
                             action=f"select_word_slot_{index}",
                         )
                     )
+        if screen_id == "word_mistake_hint":
+            hitboxes = [
+                box
+                for box in hitboxes
+                if box.action not in {"play_cat_sound", "play_target_word_sound"}
+            ]
+            spec = get_screen_spec(screen_id, fallback_image=self.registry.get_image_filename(screen_id))
+            cards = spec.dynamic.get("word_cards") or {}
+            if isinstance(cards, dict):
+                slot_rects = card_slot_rects(cards)
+                target_index = self._target_word_slot_index()
+                if target_index is not None and target_index < len(slot_rects):
+                    x, y, w, h = slot_rects[target_index]
+                    offset_x, offset_y = card_slot_offset_px(cards, target_index)
+                    speaker_w = max(28, int(w * 0.22))
+                    speaker_h = max(24, int(h * 0.16))
+                    speaker_x = x + 8 + offset_x
+                    speaker_y = y + 8 + offset_y
+                    hitboxes.append(
+                        Hitbox(
+                            name="Target word speaker",
+                            rect=pygame.Rect(speaker_x, speaker_y, speaker_w, speaker_h),
+                            action="play_target_word_sound",
+                        )
+                    )
         if screen_id != "settings":
             return hitboxes
         if DEBUG_HITBOXES or bool(self.settings.load_settings().get("debug_hitboxes")):
@@ -492,11 +538,10 @@ class GameEngine:
                     self.state.preserve_word_garden_task = False
                 else:
                     self._configure_word_garden_task()
-                self._refresh_screen_hitboxes("word_garden_game")
-                if hasattr(self.current_screen, "hitboxes"):
-                    self.current_screen.hitboxes = self._hitboxes_for_screen("word_garden_game")
                 if self.state.gameplay_refresh_pending:
                     self.state.gameplay_refresh_pending = False
+            if screen_id in GAMEPLAY_HITBOX_SCREEN_IDS:
+                self._refresh_screen_hitboxes(screen_id)
             if screen_id == "letter_island_game":
                 if self.state.preserve_letter_island_task:
                     self.state.preserve_letter_island_task = False
@@ -753,6 +798,15 @@ class GameEngine:
                 return index
         return None
 
+    def _target_word_slot_index(self) -> int | None:
+        target = str(self.state.current_task_target or "").strip().lower()
+        if not target:
+            return None
+        for index, word in enumerate(self.state.word_choice_slots):
+            if str(word).strip().lower() == target:
+                return index
+        return None
+
     def _resolve_word_from_action(self, action: str) -> str | None:
         if action.startswith("select_word_slot_"):
             try:
@@ -866,12 +920,21 @@ class GameEngine:
         self._apply_word_garden_round(build_word_garden_round(self.learner))
 
     def _configure_voice_challenge_task(self) -> None:
-        target = str(self.state.current_task_target or "apple").lower()
-        if len(target) <= 1:
-            target = "apple"
+        target = self._voice_challenge_target()
         self.state.current_task_target = target
         self.state.current_task_prompt = f"Say {target}."
         self.state.current_hint_level = 0
+        self.asset_manager.warm_word_garden_round((target,))
+
+    def _voice_challenge_target(self) -> str:
+        candidate = str(self.state.current_task_target or "").strip().lower()
+        if candidate in WORD_GARDEN_VISIBLE:
+            return candidate
+        if self.state.word_choice_slots:
+            first = str(self.state.word_choice_slots[0] or "").strip().lower()
+            if first in WORD_GARDEN_VISIBLE:
+                return first
+        return self._pick_visible_word(candidate or "cat")
 
     def _configure_sentence_castle_task(self) -> None:
         round_data = build_sentence_round(self.learner, self.sentence_questions)
@@ -1141,7 +1204,7 @@ class GameEngine:
         return False
 
     def _process_voice_capture_result(self, spoken: str | None) -> None:
-        target_word = "apple"
+        target_word = self._voice_challenge_target()
         spoken_text = (spoken or "").strip().lower()
         self.state.last_spoken_text = spoken_text
         result = check_spoken_answer(spoken_text, target_word)
@@ -1161,7 +1224,7 @@ class GameEngine:
                 self.learner.save_profile()
             unlocked = check_badge_unlocks(self.learner)
             self.state.current_hint_level = 0
-            self.state.last_word_feedback_message = "You said apple!"
+            self.state.last_word_feedback_message = f"You said {target_word}!"
             self._play_feedback_sfx("correct", stars_earned=stars_earned)
             if unlocked:
                 self._handle_badges(unlocked)
@@ -1175,13 +1238,45 @@ class GameEngine:
         self._play_feedback_sfx("wrong")
 
         if result == "close":
-            self.voice.speak("Almost! I heard something close. Try again.")
+            self.voice.speak(f"Almost! I heard something close. Try again.")
             self.set_screen("voice_challenge")
             return
 
         self.learner.record_weak_word(target_word)
-        self.voice.speak("Good try! Open your mouth wide: a-pple. Say apple.")
+        self.voice.speak(self._voice_help_line(target_word))
         self.set_screen("voice_challenge")
+
+    def _voice_help_line(self, target_word: str | None = None) -> str:
+        word = str(target_word or self._voice_challenge_target() or "cat").strip().lower()
+        phonics = {
+            "cat": "c-a-t",
+            "dog": "d-o-g",
+            "sun": "s-u-n",
+            "ball": "b-all",
+            "apple": "a-pple",
+            "hat": "h-a-t",
+            "fish": "f-i-sh",
+            "tree": "t-r-ee",
+            "bird": "b-ir-d",
+            "cup": "c-u-p",
+            "frog": "fr-o-g",
+            "star": "st-ar",
+            "duck": "d-u-ck",
+        }
+        spelled = phonics.get(word, word)
+        return f"Good try! Open your mouth wide: {spelled}. Say {word}."
+
+    def _word_target_sound_line(self) -> str:
+        target_word = str(self.state.current_task_target or "cat").strip().lower()
+        sound_lines = {
+            "cat": "Cat says meow.",
+            "dog": "Dog says woof.",
+            "duck": "Duck says quack.",
+            "bird": "Bird says tweet.",
+            "frog": "Frog says ribbit.",
+            "fish": "Fish says blub.",
+        }
+        return sound_lines.get(target_word, f"{target_word.capitalize()}.")
 
     def _word_garden_voice_prompt(self) -> str:
         target_word = str(self.state.current_task_target or "cat").strip().lower()
@@ -1361,16 +1456,14 @@ class GameEngine:
                 if selected:
                     self._handle_word_garden_selection(selected)
                 return
-            if action == "play_cat_sound":
-                self.voice.speak("Cat says meow.")
+            if action in {"play_cat_sound", "play_target_word_sound"}:
+                self.voice.speak(self._word_target_sound_line())
                 return
         if self.state.current_screen_id == "word_correct_feedback":
-            if action == "next_voice_challenge":
-                self._configure_voice_challenge_task()
-                self.set_screen("voice_challenge")
-                return
-            if action == "home":
-                self.set_screen("world_map")
+            if action in {"next_word_round", "next_voice_challenge", "next_activity"}:
+                self.state.current_hint_level = 0
+                self._configure_word_garden_task()
+                self.set_screen("word_garden_game")
                 return
         if self.state.current_screen_id == "word_mistake_hint":
             if action == "try_again":
@@ -1385,15 +1478,16 @@ class GameEngine:
                 self.state.last_word_feedback_message = self._word_garden_hint_message()
                 self.voice.speak(self.state.last_word_feedback_message)
                 return
-            if action == "play_cat_sound":
-                self.voice.speak("Cat says meow.")
+            if action in {"play_cat_sound", "play_target_word_sound"}:
+                self.voice.speak(self._word_target_sound_line())
                 return
         if self.state.current_screen_id == "voice_challenge":
+            target = self._voice_challenge_target()
             if action == "repeat_word":
-                self.voice.speak("Say apple.")
+                self.voice.speak(f"Say {target}.")
                 return
             if action == "voice_help":
-                self.voice.speak("Listen: ah-puhl. Say apple.")
+                self.voice.speak(self._voice_help_line(target))
                 return
             if action == "skip_voice":
                 self.state.preserve_word_garden_task = True
@@ -1440,17 +1534,18 @@ class GameEngine:
             if self._handle_sentence_action(action):
                 return
         if self.state.current_screen_id == "listening_state":
+            target = self._voice_challenge_target()
             if action == "repeat_word":
                 if self.state.microphone_test_mode:
                     self.voice.speak(self.state.microphone_status_message or "Microphone is ready.")
                 else:
-                    self.voice.speak("Say apple.")
+                    self.voice.speak(f"Say {target}.")
                 return
             if action in {"stop_listening", "stop_and_process"}:
                 if self.state.microphone_test_mode:
                     self._finish_microphone_test()
                     return
-                self.voice.speak("Listening stopped. Say apple when you are ready.")
+                self.voice.speak(f"Listening stopped. Say {target} when you are ready.")
                 self.set_screen("voice_challenge")
                 return
         if self.state.current_screen_id == "voice_correct_feedback":
@@ -1615,6 +1710,8 @@ class GameEngine:
                 self.voice.speak("Running hitbox smoke test")
             return
         if action == "show_profile" or action == "repeat_prompt" or action == "show_hint":
+            if self.state.current_screen_id in SCREEN_SPECIFIC_PROMPT_ACTIONS:
+                return
             if action == "show_hint":
                 self.voice.speak(get_feedback("hint")["message"])
             elif action == "repeat_prompt":
@@ -1800,7 +1897,7 @@ class GameEngine:
             return
 
         if screen_id == "voice_challenge":
-            target = self.state.current_task_target or "apple"
+            target = self._voice_challenge_target()
             self.voice.speak(f"Say {target}.")
             return
 
@@ -1808,7 +1905,7 @@ class GameEngine:
             if self.state.microphone_test_mode:
                 self.voice.speak(self.state.microphone_status_message or "Microphone is ready.")
             else:
-                target = self.state.current_task_target or "apple"
+                target = self._voice_challenge_target()
                 self.voice.speak(f"I am listening. Say {target}.")
             return
 

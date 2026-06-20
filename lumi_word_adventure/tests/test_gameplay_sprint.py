@@ -9,7 +9,9 @@ import pygame
 import pytest
 
 from config import PROJECT_DIR, SCREEN_HEIGHT, SCREEN_WIDTH
-from engine.game_engine import GameEngine, LEGACY_WORD_ACTIONS
+from engine.game_engine import GAMEPLAY_HITBOX_SCREEN_IDS, GameEngine, LEGACY_WORD_ACTIONS
+from engine.screen_registry import ScreenRegistry
+from ui.chunk_manifest import card_slot_offset_px, card_slot_rects, get_screen_spec
 from engine.learner_model import LearnerModel
 from engine.personal_tutor import ALPHABET
 from engine.sfx_generator import generate_default_sfx
@@ -261,6 +263,101 @@ def test_letter_bd_confusion_shows_hint_screen(engine: GameEngine) -> None:
     assert engine.state.last_mistake_type == "bd_confusion"
     assert engine.state.current_screen_id == "letter_mistake_hint"
     assert "belly" in engine.state.last_letter_feedback_message.lower()
+
+
+def test_word_garden_hud_hitboxes_include_settings() -> None:
+    registry = ScreenRegistry()
+    names = {box.name for box in registry.get_hitboxes("word_garden_game")}
+    assert {"Home", "Settings", "Repeat", "Hint", "Speak"}.issubset(names)
+
+
+def test_gameplay_screens_refresh_hitboxes_on_entry(engine: GameEngine) -> None:
+    engine.state.current_task_target = "cat"
+    engine.state.word_choice_slots = ["cat", "dog", "sun", "ball"]
+    engine.set_screen("word_mistake_hint")
+    hitboxes = engine.screens["word_mistake_hint"].hitboxes
+    assert any(box.action == "play_target_word_sound" for box in hitboxes)
+    assert GAMEPLAY_HITBOX_SCREEN_IDS >= {
+        "word_garden_game",
+        "word_mistake_hint",
+        "letter_island_game",
+    }
+
+
+def test_word_mistake_try_again_preserves_round(engine: GameEngine) -> None:
+    engine.state.current_task_target = "sun"
+    engine.state.word_choice_slots = ["sun", "cat", "dog", "ball"]
+    engine.state.current_screen_id = "word_mistake_hint"
+    engine._handle_action("try_again")
+    assert engine.state.current_screen_id == "word_garden_game"
+    assert engine.state.current_task_target == "sun"
+
+
+def test_word_correct_next_starts_new_round(engine: GameEngine) -> None:
+    engine.state.current_task_target = "cat"
+    engine.state.word_choice_slots = ["cat", "dog", "sun", "ball"]
+    engine.state.current_screen_id = "word_correct_feedback"
+    engine._handle_action("next_word_round")
+    assert engine.state.current_screen_id == "word_garden_game"
+    assert engine.state.current_hint_level == 0
+
+
+def test_word_mistake_dynamic_speaker_hitbox_follows_target(engine: GameEngine) -> None:
+    engine.state.current_task_target = "dog"
+    engine.state.word_choice_slots = ["cat", "dog", "sun", "ball"]
+    hitboxes = engine._hitboxes_for_screen("word_mistake_hint")
+    speaker = next(box for box in hitboxes if box.action == "play_target_word_sound")
+    dog_slot = next(
+        index
+        for index, word in enumerate(engine.state.word_choice_slots)
+        if word == "dog"
+    )
+    spec = get_screen_spec(
+        "word_mistake_hint",
+        fallback_image=engine.registry.get_image_filename("word_mistake_hint"),
+    )
+    cards = spec.dynamic.get("word_cards") or {}
+    x, y, w, h = card_slot_rects(cards)[dog_slot]
+    offset_x, offset_y = card_slot_offset_px(cards, dog_slot)
+    assert speaker.rect.x == x + 8 + offset_x
+    assert speaker.rect.y == y + 8 + offset_y
+
+
+def test_letter_mistake_try_again_preserves_task(engine: GameEngine) -> None:
+    engine.state.current_task_target = "F"
+    engine.state.letter_choice_slots = ["F", "E", "P", "T"]
+    engine.state.current_screen_id = "letter_mistake_hint"
+    engine._handle_action("try_again")
+    assert engine.state.current_screen_id == "letter_island_game"
+    assert engine.state.current_task_target == "F"
+
+
+def test_voice_challenge_renders_dynamic_say_object(engine: GameEngine) -> None:
+    from ui.chunk_composer import ChunkComposer
+    from ui.chunk_manifest import get_screen_spec
+
+    speak_bg = PROJECT_DIR / "assets" / "ui_chunks" / "word_garden_game" / "speak_background.png"
+    if not speak_bg.is_file():
+        pytest.skip("Word Garden speak background is not installed")
+
+    engine.state.current_task_target = "sun"
+    engine.state.word_choice_slots = ["sun", "cat", "dog", "ball"]
+    engine._configure_voice_challenge_task()
+    spec = get_screen_spec("voice_challenge", fallback_image=engine.registry.get_image_filename("voice_challenge"))
+    view = replace(engine._scene_view(), screen_id="voice_challenge", voice_target="sun", target_word="sun")
+    composer = ChunkComposer(engine.asset_manager)
+    surface = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+    composer.compose(surface, spec, view)
+    assert view.voice_target == "sun"
+    assert surface.get_at((640, 360)).a == 255
+
+
+def test_voice_help_uses_current_target(engine: GameEngine) -> None:
+    engine.state.current_task_target = "dog"
+    engine.state.word_choice_slots = ["dog", "cat", "sun", "ball"]
+    engine.state.current_screen_id = "voice_challenge"
+    line = engine._voice_help_line()
+    assert "dog" in line.lower()
 
 
 def test_alphabet_has_26_letters() -> None:

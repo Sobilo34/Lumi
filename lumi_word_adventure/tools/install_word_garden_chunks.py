@@ -30,6 +30,7 @@ DEST = PROJECT / "assets" / "ui_chunks" / "word_garden_game"
 BACKGROUND_FILE = "image-285d73a5-cb3c-481d-98d4-c5fcb4c1de98.png"
 SUCCESS_BACKGROUND_FILE = "image-af43328f-7c47-499d-911c-2dce660b3743.png"
 FAILURE_BACKGROUND_FILE = "image-04e89b03-c223-46a3-b1a2-3ca4886ce06c.png"
+SPEAK_BACKGROUND_FILE = "image-47d4bf35-7631-430f-bea0-e2f3963c25e2.png"
 
 OBJECT_FILES: dict[str, str] = {
     "cat": "image-c58d2e7e-4f4f-41e5-8da0-8739214352f3.png",
@@ -96,6 +97,7 @@ def main() -> None:
     _copy(BACKGROUND_FILE, DEST / "background.png")
     _copy(SUCCESS_BACKGROUND_FILE, DEST / "success_background.png")
     _copy(FAILURE_BACKGROUND_FILE, DEST / "failure_background.png")
+    _copy(SPEAK_BACKGROUND_FILE, DEST / "speak_background.png")
     for word, filename in OBJECT_FILES.items():
         _copy(filename, DEST / "objects" / f"{word}.png", process=True, crop=False)
     for word, filename in PROMPT_FILES.items():
