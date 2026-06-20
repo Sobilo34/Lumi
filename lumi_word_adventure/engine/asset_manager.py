@@ -429,6 +429,9 @@ class AssetManager:
             image = _process_word_garden_object(image)
         elif filename.startswith("prompts/"):
             image = _process_word_garden_chunk(image, crop=False)
+        elif filename.startswith("badges/"):
+            image = _knock_out_export_padding(image)
+            image = _crop_to_opaque_bbox(image)
         elif use_trim_cache:
             image = _trim_flat_backdrop(image)
         if use_trim_cache or filename.startswith(("objects/", "prompts/")):

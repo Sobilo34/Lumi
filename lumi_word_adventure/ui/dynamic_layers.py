@@ -404,9 +404,10 @@ def _draw_letter_focus_png(
     fit = str(spec.get("fit") or "contain")
     tile = assets.scaled_letter_tile(asset_root, letter, w, h, selected=False)
     if tile is None:
+        inner = pygame.Rect(x + offset_x, y + offset_y, w, h)
         blit_fitted_text(
             surface,
-            pygame.Rect(x, y, w, h),
+            inner,
             letter,
             PROMPT_ACCENT,
             padding=8,

@@ -59,7 +59,7 @@ def test_tts_missing_engine_does_not_crash() -> None:
     tts.set_rate(130)
 
 
-def test_letter_island_speak_routes_offline_when_stt_unavailable(
+def test_letter_island_speak_shows_page_when_stt_unavailable(
     engine: GameEngine,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -67,9 +67,28 @@ def test_letter_island_speak_routes_offline_when_stt_unavailable(
     monkeypatch.setattr("engine.game_engine.stt_status_message", lambda: "Voice is not ready. You can still tap answers.")
 
     engine.set_screen("letter_island_game")
+    engine.state.current_task_target = "B"
     engine._handle_letter_island_action("voice_or_speak_mode")
 
-    assert engine.state.current_screen_id == "offline_continue"
+    assert engine.state.current_screen_id == "letter_voice_challenge"
+    assert engine.state.current_task_target == "B"
+
+
+def test_letter_island_mic_stays_on_speak_page_when_stt_unavailable(
+    engine: GameEngine,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr("engine.game_engine.is_stt_ready", lambda: False)
+    monkeypatch.setattr(
+        "engine.game_engine.stt_status_message",
+        lambda: "Voice is not ready. You can still tap answers.",
+    )
+
+    engine.set_screen("letter_voice_challenge")
+    engine.state.current_task_target = "B"
+    engine._handle_action("start_letter_listening")
+
+    assert engine.state.current_screen_id == "letter_voice_challenge"
 
 
 def test_word_garden_speak_routes_offline_when_stt_unavailable(

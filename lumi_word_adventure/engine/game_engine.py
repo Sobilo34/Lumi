@@ -660,8 +660,6 @@ class GameEngine:
         self._configure_letter_voice_task()
         if not is_stt_ready():
             print(f"[Lumi Voice] {stt_status_message()}")
-            self._show_offline_fallback(stt_status_message())
-            return
         self.set_screen("letter_voice_challenge")
 
     def _start_voice_listening(self) -> None:
@@ -677,8 +675,12 @@ class GameEngine:
     def _start_letter_voice_listening(self) -> None:
         self._configure_letter_voice_task()
         if not is_stt_ready():
-            print(f"[Lumi Voice] {stt_status_message()}")
-            self._show_offline_fallback(stt_status_message())
+            message = stt_status_message()
+            print(f"[Lumi Voice] {message}")
+            self.state.microphone_status_message = message
+            if self.state.voice_enabled:
+                self.voice.speak(message)
+            self.set_screen("letter_voice_challenge")
             return
         self.set_screen("letter_listening_state")
         spoken = safe_listen_once(timeout=5)
@@ -1176,13 +1178,32 @@ class GameEngine:
 
         return False
 
+    def _badge_continue_screen(self) -> str:
+        """Resume gameplay after a badge unlock; level summary only for world finales."""
+        from engine.scoring import LETTER_ISLAND_COMPLETE_BADGE
+
+        names = [str(name).strip() for name in (self.state.last_unlocked_badges or [])]
+        if names and names[0] == LETTER_ISLAND_COMPLETE_BADGE:
+            return "progress_complete"
+        if self.state.completed_letter_target:
+            return "letter_correct_feedback"
+        if str(self.state.last_word_feedback_message or "").strip():
+            return "word_correct_feedback"
+        for screen_id in reversed(self.state.history):
+            if screen_id in {"letter_island_game", "letter_mistake_hint", "bd_practice", "letter_voice_challenge"}:
+                return "letter_correct_feedback"
+            if screen_id in {"word_garden_game", "word_mistake_hint"}:
+                return "word_correct_feedback"
+            if screen_id in {"voice_challenge", "listening_state", "letter_listening_state"}:
+                return "voice_correct_feedback"
+        return "letter_island_game"
+
     def _handle_badges(self, unlocked: list[str], *, return_screen: str = "") -> None:
         """Record unlocked badges and switch to the badge unlock screen."""
         if not unlocked:
             return
         self.state.last_unlocked_badges = unlocked
-        if return_screen:
-            self.state.badge_return_screen = return_screen
+        self.state.badge_return_screen = return_screen or self._badge_continue_screen()
         self._play_feedback_sfx("badge")
         self.set_screen("badge_unlock")
 
@@ -1213,7 +1234,7 @@ class GameEngine:
             self.state.last_word_feedback_message = self._word_garden_correct_message()
             self._play_feedback_sfx("correct", stars_earned=stars_earned)
             if unlocked:
-                self._handle_badges(unlocked)
+                self._handle_badges(unlocked, return_screen="word_correct_feedback")
                 return
             self.set_screen("word_correct_feedback")
             return
@@ -1325,7 +1346,7 @@ class GameEngine:
             self.state.last_word_feedback_message = f"You said {target_word}!"
             self._play_feedback_sfx("correct", stars_earned=stars_earned)
             if unlocked:
-                self._handle_badges(unlocked)
+                self._handle_badges(unlocked, return_screen="word_correct_feedback")
                 return
             self.set_screen("voice_correct_feedback")
             return
@@ -1348,6 +1369,19 @@ class GameEngine:
         target_letter = self._letter_voice_target()
         spoken_text = (spoken or "").strip()
         self.state.last_spoken_text = spoken_text.lower()
+
+        if not spoken_text:
+            message = (
+                stt_status_message()
+                if not is_stt_ready()
+                else "I didn't catch that. Try again."
+            )
+            self.state.microphone_status_message = message
+            if self.state.voice_enabled:
+                self.voice.speak(message)
+            self.set_screen("letter_voice_challenge")
+            return
+
         result = check_spoken_answer(spoken_text, target_letter)
 
         if result == "correct":
@@ -1456,7 +1490,7 @@ class GameEngine:
         self.state.current_task_prompt = "Find the letter B."
         self.voice.speak("Great job! You know B and D!")
         if "B and D Master" in unlocked_badges:
-            self.set_screen("badge_unlock")
+            self._handle_badges(["B and D Master"], return_screen="letter_correct_feedback")
         else:
             self.set_screen("letter_correct_feedback")
 

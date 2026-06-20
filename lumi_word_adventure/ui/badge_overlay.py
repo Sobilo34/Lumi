@@ -5,6 +5,7 @@ import pygame
 
 from config import SCREEN_HEIGHT, SCREEN_WIDTH
 from engine.scoring import badge_subtitle
+from ui.components.primitives import blit_outlined_text, fit_font_size
 
 
 def draw_badge_unlock_overlay(
@@ -19,31 +20,24 @@ def draw_badge_unlock_overlay(
     subtitle = badge_subtitle(badge_name)
 
     try:
-        badge_font = pygame.font.SysFont(None, 36, bold=True)
-        subtitle_font = pygame.font.SysFont(None, 24)
+        subtitle_font = pygame.font.SysFont(None, 32, bold=True)
     except Exception:
         return
 
-    # Purple ribbon on the stone pedestal — title sits on the banner art.
+    # Purple ribbon on the stone pedestal — white subtitle only, no extra box.
     ribbon = pygame.Rect(
-        int(SCREEN_WIDTH * 0.27),
-        int(SCREEN_HEIGHT * 0.528),
-        int(SCREEN_WIDTH * 0.46),
-        int(SCREEN_HEIGHT * 0.072),
+        int(SCREEN_WIDTH * 0.26),
+        int(SCREEN_HEIGHT * 0.532),
+        int(SCREEN_WIDTH * 0.48),
+        int(SCREEN_HEIGHT * 0.068),
     )
-
-    badge_label = badge_font.render(badge_name, True, (255, 255, 255))
-    badge_rect = badge_label.get_rect(center=ribbon.center)
-    screen.blit(badge_label, badge_rect)
-
-    subtitle_label = subtitle_font.render(subtitle, True, (255, 248, 255))
-    subtitle_rect = subtitle_label.get_rect(
-        center=(ribbon.centerx, ribbon.bottom + int(SCREEN_HEIGHT * 0.038)),
+    font_size = fit_font_size(subtitle, ribbon, fill_height_ratio=0.72)
+    blit_outlined_text(
+        screen,
+        subtitle,
+        ribbon.center,
+        font_size,
+        (255, 255, 255),
+        outline=(120, 70, 160),
+        outline_width=2,
     )
-    subtitle_bg = pygame.Surface(
-        (subtitle_label.get_width() + 24, subtitle_label.get_height() + 12),
-        pygame.SRCALPHA,
-    )
-    subtitle_bg.fill((255, 255, 255, 210))
-    screen.blit(subtitle_bg, (subtitle_rect.x - 12, subtitle_rect.y - 6))
-    screen.blit(subtitle_label, subtitle_rect)

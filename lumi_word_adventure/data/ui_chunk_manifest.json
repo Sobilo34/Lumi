@@ -260,7 +260,8 @@
           "y_pct": 0.415,
           "w_pct": 0.24,
           "h_pct": 0.32,
-          "fit": "contain"
+          "fit": "contain",
+          "offset_y_px": 100
         }
       }
     },
@@ -288,7 +289,8 @@
           "y_pct": 0.415,
           "w_pct": 0.24,
           "h_pct": 0.32,
-          "fit": "contain"
+          "fit": "contain",
+          "offset_y_px": 100
         },
         "listening_overlay": {
           "type": "listening_overlay",

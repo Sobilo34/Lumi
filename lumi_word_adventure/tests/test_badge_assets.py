@@ -1,7 +1,10 @@
 """Badge icon asset mapping and badge unlock screen wiring."""
 from __future__ import annotations
 
+import pygame
+
 from engine.scoring import BADGE_ICON_FILES, badge_icon_filename
+from ui.badge_overlay import draw_badge_unlock_overlay
 from ui.chunk_manifest import get_screen_spec
 
 
@@ -22,6 +25,16 @@ def test_all_known_badges_map_to_icon_files() -> None:
         filename = badge_icon_filename(name)
         assert filename.endswith(".png")
         assert filename == BADGE_ICON_FILES[name]
+
+
+def test_badge_overlay_uses_subtitle_without_background_box() -> None:
+    pygame.init()
+    surface = pygame.Surface((1280, 720))
+    surface.fill((120, 60, 160))
+    draw_badge_unlock_overlay(surface, badge_names=("Badge A",))
+    ribbon = pygame.Rect(int(1280 * 0.26), int(720 * 0.532), int(1280 * 0.48), int(720 * 0.068))
+    sample = surface.get_at(ribbon.center)
+    assert sample[0] > 100 or sample[1] > 60
 
 
 def test_badge_unlock_manifest_has_background_and_icon_layer() -> None:

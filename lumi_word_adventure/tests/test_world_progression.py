@@ -89,15 +89,16 @@ def test_next_world_after_badge_c_goes_to_word_garden(engine: GameEngine) -> Non
     assert engine.state.current_screen_id == "word_garden_game"
 
 
-def test_view_badges_unlocks_word_garden_navigation(engine: GameEngine) -> None:
+def test_continue_from_badge_unlocks_word_garden_navigation(engine: GameEngine) -> None:
     engine.learner.mastered_letters = ["A", "B", "C", "D", "E", "G", "M", "R", "F", "Z", "H", "I"]
     engine.learner.current_letter_index = len(ALPHABET) - 1
     engine.learner.badges = ["Badge A", "Badge B", "Badge C"]
     engine.learner.completed_worlds = []
     engine.learner.save_profile()
+    engine.state.badge_return_screen = "progress_complete"
     engine.set_screen("badge_unlock")
 
-    engine._handle_action("view_badges")
+    engine._handle_action("continue_from_badge")
     assert engine.state.current_screen_id == "progress_complete"
 
     engine._handle_action("word_garden_game")

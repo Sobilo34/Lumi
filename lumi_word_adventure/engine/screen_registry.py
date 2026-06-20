@@ -250,8 +250,7 @@ class ScreenRegistry:
                 "badge_unlock",
                 "21_badge_unlock.png",
                 (
-                    HitboxDefinition("Continue", 0.28, 0.76, 0.22, 0.13, action="continue_from_badge"),
-                    HitboxDefinition("View Badges", 0.55, 0.76, 0.24, 0.13, action="view_badges"),
+                    HitboxDefinition("Next", 0.38, 0.835, 0.24, 0.1, action="continue_from_badge"),
                 ),
             ),
             ScreenDefinition(
