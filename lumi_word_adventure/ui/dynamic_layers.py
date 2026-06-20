@@ -362,7 +362,9 @@ def _word_object_uses_selected(
     slot_word: str,
     target_word: str,
 ) -> bool:
-    if str(screen_id or "").strip() == "word_garden_game" or str(tile_variant or "normal").lower() == "normal":
+    variant = str(tile_variant or "normal").lower()
+    active = str(screen_id or "").strip()
+    if variant == "normal" and active == "word_garden_game":
         return False
     slot = str(slot_word or "").strip().lower()
     target = str(target_word or "").strip().lower()

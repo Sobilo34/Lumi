@@ -45,15 +45,37 @@ def test_existing_reference_image_is_scaled(tmp_path: Path) -> None:
 
 def test_word_garden_object_chunks_drop_export_padding() -> None:
     source = PROJECT_DIR / "assets" / "ui_chunks" / "word_garden_game" / "objects" / "cat.png"
+    marker = PROJECT_DIR / "assets" / "ui_chunks" / "word_garden_game" / ".shipped_ready"
     if not source.is_file():
         pytest.skip("Word Garden object assets are not installed")
 
     raw = pygame.image.load(str(source)).convert_alpha()
     manager = AssetManager()
-    trimmed = manager.load_chunk("word_garden_game", "objects/cat.png")
-    assert trimmed is not None
-    assert trimmed.get_width() < raw.get_width() - 100
-    assert trimmed.get_height() < raw.get_height() - 100
+    loaded = manager.load_chunk("word_garden_game", "objects/cat.png")
+    assert loaded is not None
+    if marker.is_file():
+        assert loaded.get_size() == raw.get_size()
+        return
+    assert loaded.get_width() < raw.get_width() - 100
+    assert loaded.get_height() < raw.get_height() - 100
+
+
+def test_word_garden_feedback_backgrounds_stay_opaque() -> None:
+    success = PROJECT_DIR / "assets" / "ui_chunks" / "word_garden_game" / "success_background.png"
+    if not success.is_file():
+        pytest.skip("Word Garden feedback backgrounds are not installed")
+
+    manager = AssetManager()
+    loaded = manager.load_chunk("word_garden_game", "success_background.png")
+    assert loaded is not None
+    transparent = sum(
+        1
+        for y in range(0, loaded.get_height(), 8)
+        for x in range(0, loaded.get_width(), 8)
+        if loaded.get_at((x, y)).a < 10
+    )
+    sampled = ((loaded.get_width() + 7) // 8) * ((loaded.get_height() + 7) // 8)
+    assert transparent / sampled < 0.02
 
 
 def test_word_garden_prompt_and_object_fit_inside_layout_slots() -> None:

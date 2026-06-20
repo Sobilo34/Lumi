@@ -52,7 +52,14 @@ def pct_rect(x_pct: float, y_pct: float, w_pct: float, h_pct: float) -> pygame.R
     )
 
 
+_FONT_CACHE: dict[tuple[int, bool], pygame.font.Font] = {}
+
+
 def font(size: int, *, bold: bool = True) -> pygame.font.Font:
+    cache_key = (size, bold)
+    cached = _FONT_CACHE.get(cache_key)
+    if cached is not None:
+        return cached
     for name in (
         "fredokaone",
         "fredoka one",
@@ -64,10 +71,14 @@ def font(size: int, *, bold: bool = True) -> pygame.font.Font:
         "arial",
     ):
         try:
-            return pygame.font.SysFont(name, size, bold=bold)
+            loaded = pygame.font.SysFont(name, size, bold=bold)
+            _FONT_CACHE[cache_key] = loaded
+            return loaded
         except Exception:
             continue
-    return pygame.font.SysFont(None, size)
+    loaded = pygame.font.SysFont(None, size)
+    _FONT_CACHE[cache_key] = loaded
+    return loaded
 
 
 def draw_rect_shadow(

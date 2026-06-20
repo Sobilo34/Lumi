@@ -56,7 +56,11 @@ def collect_chunk_files(spec: ScreenChunkSpec) -> tuple[str, ...]:
 
 def build_gameplay_chunk_queue() -> list[tuple[str, str]]:
     """Chunk paths for Word Garden and Letter Island — cheap assets first."""
-    queue: list[tuple[str, str]] = [("word_garden_game", "background.png")]
+    queue: list[tuple[str, str]] = [
+        ("word_garden_game", "background.png"),
+        ("word_garden_game", "success_background.png"),
+        ("word_garden_game", "failure_background.png"),
+    ]
     for word in WORD_GARDEN_WORDS:
         queue.append(("word_garden_game", f"prompts/{word}.png"))
     for letter in ascii_lowercase:
@@ -69,11 +73,7 @@ def build_gameplay_chunk_queue() -> list[tuple[str, str]]:
 
 
 def preload_item_cost(filename: str) -> int:
-    """Relative load cost for spreading heavy work across frames."""
-    if filename.startswith("objects/"):
-        return 8
-    if filename == "background.png":
-        return 2
+    """Relative load cost for spreading preload work across frames."""
     return 1
 
 

@@ -21,12 +21,15 @@ from engine.asset_manager import (
     _knock_out_export_padding,
     _knock_out_light_backdrop,
     _process_word_garden_object,
+    write_shipped_assets_marker,
 )
 
 ASSETS = Path("/home/bilal/.cursor/projects/home-bilal-bilal-projects-Learning-AIU-python-Lumi/assets")
 DEST = PROJECT / "assets" / "ui_chunks" / "word_garden_game"
 
 BACKGROUND_FILE = "image-285d73a5-cb3c-481d-98d4-c5fcb4c1de98.png"
+SUCCESS_BACKGROUND_FILE = "image-af43328f-7c47-499d-911c-2dce660b3743.png"
+FAILURE_BACKGROUND_FILE = "image-04e89b03-c223-46a3-b1a2-3ca4886ce06c.png"
 
 OBJECT_FILES: dict[str, str] = {
     "cat": "image-c58d2e7e-4f4f-41e5-8da0-8739214352f3.png",
@@ -91,13 +94,13 @@ def _copy(src_name: str, dest: Path, *, process: bool = False, crop: bool = Fals
 def main() -> None:
     print(f"Installing Word Garden chunks to {DEST}")
     _copy(BACKGROUND_FILE, DEST / "background.png")
+    _copy(SUCCESS_BACKGROUND_FILE, DEST / "success_background.png")
+    _copy(FAILURE_BACKGROUND_FILE, DEST / "failure_background.png")
     for word, filename in OBJECT_FILES.items():
         _copy(filename, DEST / "objects" / f"{word}.png", process=True, crop=False)
     for word, filename in PROMPT_FILES.items():
         _copy(filename, DEST / "prompts" / f"{word}.png", process=True)
-    trim_cache = DEST.parent / ".trim_cache" / "word_garden_game"
-    if trim_cache.is_dir():
-        shutil.rmtree(trim_cache, ignore_errors=True)
+    write_shipped_assets_marker(DEST.parent, "word_garden_game")
     print("Done.")
 
 

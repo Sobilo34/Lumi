@@ -2,11 +2,13 @@
 from __future__ import annotations
 
 import os
+from dataclasses import replace
 from pathlib import Path
 
 import pygame
 import pytest
 
+from config import PROJECT_DIR, SCREEN_HEIGHT, SCREEN_WIDTH
 from engine.game_engine import GameEngine, LEGACY_WORD_ACTIONS
 from engine.learner_model import LearnerModel
 from engine.personal_tutor import ALPHABET
@@ -186,6 +188,32 @@ def test_word_garden_dog_wrong_for_cat_target(engine: GameEngine) -> None:
 
     assert engine.state.current_screen_id == "word_mistake_hint"
     assert engine.state.last_word_selected == "dog"
+
+
+def test_word_garden_feedback_screens_use_chunk_backgrounds(engine: GameEngine) -> None:
+    from ui.chunk_composer import ChunkComposer
+    from ui.chunk_manifest import get_screen_spec
+
+    success_bg = PROJECT_DIR / "assets" / "ui_chunks" / "word_garden_game" / "success_background.png"
+    failure_bg = PROJECT_DIR / "assets" / "ui_chunks" / "word_garden_game" / "failure_background.png"
+    if not success_bg.is_file() or not failure_bg.is_file():
+        pytest.skip("Word Garden feedback backgrounds are not installed")
+
+    engine.state.current_task_target = "cat"
+    engine.state.word_choice_slots = ["cat", "dog", "sun", "ball"]
+    composer = ChunkComposer(engine.asset_manager)
+
+    for screen_id in ("word_correct_feedback", "word_mistake_hint"):
+        spec = get_screen_spec(screen_id, fallback_image=engine.registry.get_image_filename(screen_id))
+        view = replace(
+            engine._scene_view(),
+            screen_id=screen_id,
+            target_word="cat",
+            slot_words=("cat", "dog", "sun", "ball"),
+        )
+        surface = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+        composer.compose(surface, spec, view)
+        assert surface.get_at((640, 360)).a == 255
 
 
 def test_word_garden_hitboxes_use_neutral_actions() -> None:

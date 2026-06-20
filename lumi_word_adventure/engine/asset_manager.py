@@ -7,6 +7,10 @@ import pygame
 
 from config import BABY_PINK, REFERENCE_INTERFACES_DIR, SCREEN_HEIGHT, SCREEN_WIDTH, UI_CHUNKS_DIR
 
+# Install scripts write this marker after offline PNG processing is complete.
+SHIPPED_ASSETS_MARKER = ".shipped_ready"
+SHIPPED_ASSETS_VERSION = "1"
+
 
 def _is_flat_backdrop(r: int, g: int, b: int, a: int) -> bool:
     if a < 10:
@@ -106,7 +110,11 @@ def _trim_flat_backdrop(image: pygame.Surface) -> pygame.Surface:
 
 
 def _should_trim_chunk(filename: str) -> bool:
-    if filename == "background.png":
+    if filename in {
+        "background.png",
+        "success_background.png",
+        "failure_background.png",
+    }:
         return False
     if filename.startswith("objects/") or filename.startswith("prompts/"):
         return False
@@ -338,7 +346,21 @@ def _process_word_garden_chunk(image: pygame.Surface, *, crop: bool = False) -> 
     return _crop_to_opaque_bbox(surface)
 
 
-WORD_GARDEN_TRIM_CACHE_VERSION = "v7"
+WORD_GARDEN_TRIM_CACHE_VERSION = "v8"
+
+
+def write_shipped_assets_marker(chunks_dir: Path, screen_id: str, *, version: str = SHIPPED_ASSETS_VERSION) -> None:
+    """Mark a chunk folder as install-processed so runtime skips pixel surgery."""
+    marker = chunks_dir / screen_id / SHIPPED_ASSETS_MARKER
+    marker.parent.mkdir(parents=True, exist_ok=True)
+    marker.write_text(f"{version}\n", encoding="utf-8")
+
+
+def _shipped_assets_version(chunks_dir: Path, screen_id: str) -> str | None:
+    marker = chunks_dir / screen_id / SHIPPED_ASSETS_MARKER
+    if not marker.is_file():
+        return None
+    return marker.read_text(encoding="utf-8").strip() or None
 
 
 def _word_garden_trim_cache_stale(filename: str, surface: pygame.Surface, source: pygame.Surface) -> bool:
@@ -365,6 +387,53 @@ class AssetManager:
         self._chunk_cache: dict[str, pygame.Surface | None] = {}
         self._scaled_cache: dict[str, pygame.Surface] = {}
         self._missing_images: set[str] = set()
+        self._shipped_ready: dict[str, bool] = {}
+
+    def assets_shipped_ready(self, screen_id: str) -> bool:
+        cached = self._shipped_ready.get(screen_id)
+        if cached is not None:
+            return cached
+        ready = _shipped_assets_version(self.chunks_dir, screen_id) == SHIPPED_ASSETS_VERSION
+        self._shipped_ready[screen_id] = ready
+        return ready
+
+    def _load_chunk_file(self, image_path: Path) -> pygame.Surface:
+        image = pygame.image.load(str(image_path))
+        if image.get_alpha() is not None:
+            image = image.convert_alpha()
+        else:
+            image = image.convert()
+        return self._prepare_surface(image)
+
+    def _load_chunk_legacy(self, screen_id: str, filename: str, image_path: Path) -> pygame.Surface:
+        trimmed_path = (
+            self.chunks_dir
+            / ".trim_cache"
+            / WORD_GARDEN_TRIM_CACHE_VERSION
+            / screen_id
+            / filename
+        )
+        use_trim_cache = _should_trim_chunk(filename) or filename.startswith(("objects/", "prompts/"))
+        if (
+            use_trim_cache
+            and trimmed_path.is_file()
+            and trimmed_path.stat().st_mtime >= image_path.stat().st_mtime
+        ):
+            cached_trim = pygame.image.load(str(trimmed_path))
+            if not _word_garden_trim_cache_stale(filename, cached_trim, pygame.image.load(str(image_path))):
+                return self._prepare_surface(cached_trim)
+        image = pygame.image.load(str(image_path))
+        image = self._prepare_surface(image)
+        if filename.startswith("objects/"):
+            image = _process_word_garden_object(image)
+        elif filename.startswith("prompts/"):
+            image = _process_word_garden_chunk(image, crop=False)
+        elif use_trim_cache:
+            image = _trim_flat_backdrop(image)
+        if use_trim_cache or filename.startswith(("objects/", "prompts/")):
+            trimmed_path.parent.mkdir(parents=True, exist_ok=True)
+            pygame.image.save(image, str(trimmed_path))
+        return image
 
     def _placeholder_surface(self, filename: str) -> pygame.Surface:
         surface = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -452,47 +521,21 @@ class AssetManager:
         if not filename:
             return None
         cache_key = f"{screen_id}/{filename}"
-        if cache_key not in self._chunk_cache:
-            image_path = self.chunks_dir / screen_id / filename
-            if not image_path.is_file():
-                self._chunk_cache[cache_key] = None
+        if cache_key in self._chunk_cache:
+            return self._chunk_cache[cache_key]
+        image_path = self.chunks_dir / screen_id / filename
+        if not image_path.is_file():
+            self._chunk_cache[cache_key] = None
+            return None
+        try:
+            if self.assets_shipped_ready(screen_id):
+                image = self._load_chunk_file(image_path)
             else:
-                try:
-                    trimmed_path = (
-                        self.chunks_dir
-                        / ".trim_cache"
-                        / WORD_GARDEN_TRIM_CACHE_VERSION
-                        / screen_id
-                        / filename
-                    )
-                    use_trim_cache = _should_trim_chunk(filename) or filename.startswith(
-                        ("objects/", "prompts/")
-                    )
-                    if (
-                        use_trim_cache
-                        and trimmed_path.is_file()
-                        and trimmed_path.stat().st_mtime >= image_path.stat().st_mtime
-                    ):
-                        source_probe = pygame.image.load(str(image_path))
-                        cached_trim = pygame.image.load(str(trimmed_path))
-                        if not _word_garden_trim_cache_stale(filename, cached_trim, source_probe):
-                            self._chunk_cache[cache_key] = self._prepare_surface(cached_trim)
-                            return self._chunk_cache[cache_key]
-                    image = pygame.image.load(str(image_path))
-                    image = self._prepare_surface(image)
-                    if filename.startswith("objects/"):
-                        image = _process_word_garden_object(image)
-                    elif filename.startswith("prompts/"):
-                        image = _process_word_garden_chunk(image, crop=False)
-                    elif use_trim_cache:
-                        image = _trim_flat_backdrop(image)
-                    if use_trim_cache or filename.startswith(("objects/", "prompts/")):
-                        trimmed_path.parent.mkdir(parents=True, exist_ok=True)
-                        pygame.image.save(image, str(trimmed_path))
-                    self._chunk_cache[cache_key] = image
-                except (pygame.error, FileNotFoundError, OSError) as error:
-                    print(f"[Lumi Assets] Failed to load chunk '{cache_key}': {error}")
-                    self._chunk_cache[cache_key] = None
+                image = self._load_chunk_legacy(screen_id, filename, image_path)
+            self._chunk_cache[cache_key] = image
+        except (pygame.error, FileNotFoundError, OSError) as error:
+            print(f"[Lumi Assets] Failed to load chunk '{cache_key}': {error}")
+            self._chunk_cache[cache_key] = None
         return self._chunk_cache[cache_key]
 
     def invalidate_letter_tiles(self, asset_root: str = "letter_island_game") -> None:
@@ -504,17 +547,58 @@ class AssetManager:
                     del cache[key]
 
     def invalidate_word_garden_assets(self, asset_root: str = "word_garden_game") -> None:
-        """Drop cached Word Garden PNGs after asset install or layout changes."""
+        """Drop in-memory Word Garden caches (keeps shipped PNGs on disk)."""
         needle = f"{asset_root}/"
         for cache in (self._chunk_cache, self._scaled_cache):
             for key in list(cache.keys()):
                 if key.startswith(needle):
                     del cache[key]
-        trim_root = self.chunks_dir / ".trim_cache" / WORD_GARDEN_TRIM_CACHE_VERSION / asset_root
-        if trim_root.is_dir():
-            import shutil
+        self._shipped_ready.pop(asset_root, None)
 
-            shutil.rmtree(trim_root, ignore_errors=True)
+    def prewarm_gameplay_assets(
+        self,
+        *,
+        word_garden_root: str = "word_garden_game",
+        letter_root: str = "letter_island_game",
+        word_object_w: int = 182,
+        word_object_h: int = 227,
+        word_prompt_w: int = 109,
+        word_prompt_h: int = 26,
+        letter_tile_w: int = 140,
+        letter_tile_h: int = 158,
+        find_w: int = 435,
+        find_h: int = 72,
+    ) -> None:
+        """Load shipped gameplay PNGs and common draw sizes once at startup."""
+        from string import ascii_uppercase
+
+        from engine.word_garden import WORD_GARDEN_WORDS
+
+        for filename in ("background.png", "success_background.png", "failure_background.png"):
+            self.load_chunk(word_garden_root, filename)
+        for word in WORD_GARDEN_WORDS:
+            key = word.lower()
+            self.load_chunk(word_garden_root, f"objects/{key}.png")
+            self.load_chunk(word_garden_root, f"prompts/{key}.png")
+            self.scaled_word_prompt(word_garden_root, key, word_prompt_w, word_prompt_h, fit="contain")
+            self.scaled_word_object(word_garden_root, key, word_object_w, word_object_h, fit="contain")
+        for filename in ("07_letter_island_gameplay.png", "08_letter_correct_feedback.png", "11_word_garden_gameplay.png"):
+            self.load_image(filename)
+        for letter in ascii_uppercase:
+            key = letter.lower()
+            self.load_chunk(letter_root, f"find/{key}.png")
+            self.load_chunk(letter_root, f"letters/{key}.png")
+            self.load_chunk(letter_root, f"letters/{key}_selected.png")
+            self.scaled_find_prompt(letter_root, letter, find_w, find_h)
+            self.scaled_letter_tile(letter_root, letter, letter_tile_w, letter_tile_h, selected=False)
+            self.scaled_letter_tile(
+                letter_root,
+                letter,
+                letter_tile_w,
+                letter_tile_h,
+                selected=True,
+                selected_scale=1.22,
+            )
 
     def warm_word_garden_round(
         self,

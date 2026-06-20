@@ -12,7 +12,7 @@ import pygame
 PROJECT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT))
 
-from engine.asset_manager import _trim_flat_backdrop  # noqa: E402
+from engine.asset_manager import _trim_flat_backdrop, write_shipped_assets_marker  # noqa: E402
 
 ASSETS = Path("/home/bilal/.cursor/projects/home-bilal-bilal-projects-Learning-AIU-python-Lumi/assets")
 DEST = PROJECT / "assets" / "ui_chunks" / "letter_island_game"
@@ -102,22 +102,19 @@ def _copy_uuid(uuid: str, dest: Path) -> None:
     shutil.copy2(source, dest)
 
 
-def _pretrim_asset_tree(asset_root: Path, relative_dir: str) -> int:
-    """Write trimmed PNGs to .trim_cache so first gameplay frame is fast."""
+def _trim_assets_in_place(asset_root: Path, relative_dir: str) -> int:
+    """Trim letter/find PNGs in place so runtime only needs pygame.image.load."""
     pygame.init()
     if pygame.display.get_surface() is None:
         pygame.display.set_mode((1, 1))
     source_dir = asset_root / relative_dir
-    cache_dir = asset_root / ".trim_cache" / "letter_island_game" / relative_dir
     if not source_dir.is_dir():
         return 0
     count = 0
     for png in sorted(source_dir.glob("*.png")):
         image = pygame.image.load(str(png))
         trimmed = _trim_flat_backdrop(image)
-        out = cache_dir / png.name
-        out.parent.mkdir(parents=True, exist_ok=True)
-        pygame.image.save(trimmed, str(out))
+        pygame.image.save(trimmed, str(png))
         count += 1
     return count
 
@@ -141,9 +138,9 @@ def main() -> None:
         shutil.rmtree(find_dir)
     if letters_dir.exists():
         shutil.rmtree(letters_dir)
-    trim_cache = DEST / ".trim_cache" / "letter_island_game"
-    if trim_cache.exists():
-        shutil.rmtree(trim_cache)
+    legacy_trim = DEST / ".trim_cache"
+    if legacy_trim.exists():
+        shutil.rmtree(legacy_trim)
     _clear_ui_chunks()
     DEST.mkdir(parents=True, exist_ok=True)
     REF.mkdir(parents=True, exist_ok=True)
@@ -164,8 +161,9 @@ def main() -> None:
         _copy_uuid(sel_id, letters_dir / f"{key}_selected.png")
         _copy_uuid(norm_id, letters_dir / f"{key}.png")
 
-    trimmed_letters = _pretrim_asset_tree(DEST, "letters")
-    trimmed_find = _pretrim_asset_tree(DEST, "find")
+    trimmed_letters = _trim_assets_in_place(DEST, "letters")
+    trimmed_find = _trim_assets_in_place(DEST, "find")
+    write_shipped_assets_marker(DEST.parent, "letter_island_game")
 
     print(f"Installed Letter Island assets to {DEST}")
     print(f"  Background: {REF / '07_letter_island_gameplay.png'}")

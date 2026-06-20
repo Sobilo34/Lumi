@@ -1,6 +1,8 @@
 """Main runtime loop and screen orchestration."""
 from __future__ import annotations
 
+import os
+
 import pygame
 
 from config import (
@@ -136,9 +138,26 @@ class GameEngine:
         self._apply_loaded_settings(self.settings.load_settings())
         self._log_voice_startup_status()
         self.screens = self._build_screens()
-        self._preload_queue: list[tuple[str, str]] = self._build_preload_queue()
-        self._image_preload_queue: list[str] = list(GAMEPLAY_REFERENCE_IMAGES)
         self._static_warmed: set[str] = set()
+        shipped = self.asset_manager.assets_shipped_ready("word_garden_game") or self.asset_manager.assets_shipped_ready(
+            "letter_island_game"
+        )
+        if shipped and os.environ.get("LUMI_SKIP_PREWARM") != "1":
+            self.asset_manager.prewarm_gameplay_assets()
+            self._preload_queue: list[tuple[str, str]] = []
+            self._image_preload_queue: list[str] = []
+            for screen_id in (
+                "profile_selection",
+                "word_garden_game",
+                "word_correct_feedback",
+                "word_mistake_hint",
+                "letter_island_game",
+                "letter_correct_feedback",
+            ):
+                self._warm_screen_static(screen_id)
+        else:
+            self._preload_queue = self._build_preload_queue()
+            self._image_preload_queue = list(GAMEPLAY_REFERENCE_IMAGES)
         self.state.current_screen_id = self.registry.screen_ids[0]
         self.current_screen = self.screens[self.state.current_screen_id]
 
@@ -193,6 +212,10 @@ class GameEngine:
             remaining -= cost
             if screen_id == "word_garden_game" and filename == "background.png":
                 self._warm_screen_static("word_garden_game")
+            if screen_id == "word_garden_game" and filename == "success_background.png":
+                self._warm_screen_static("word_correct_feedback")
+            if screen_id == "word_garden_game" and filename == "failure_background.png":
+                self._warm_screen_static("word_mistake_hint")
             if screen_id == "word_garden_game" and filename.startswith("objects/"):
                 word = Path(filename).stem
                 warm_word_garden_draw_cache(self.asset_manager, word)
