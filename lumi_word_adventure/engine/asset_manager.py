@@ -573,11 +573,12 @@ class AssetManager:
         """Load shipped gameplay PNGs and common draw sizes once at startup."""
         from string import ascii_uppercase
 
-        from engine.word_garden import WORD_GARDEN_WORDS
+        from engine.word_garden import get_word_garden_pool
 
+        word_pool = get_word_garden_pool(word_garden_root)
         for filename in ("background.png", "success_background.png", "failure_background.png", "speak_background.png"):
             self.load_chunk(word_garden_root, filename)
-        for word in WORD_GARDEN_WORDS:
+        for word in word_pool:
             key = word.lower()
             self.load_chunk(word_garden_root, f"objects/{key}.png")
             self.load_chunk(word_garden_root, f"prompts/{key}.png")

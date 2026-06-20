@@ -17,6 +17,13 @@ from engine.adaptive_ai import (
     sync_mastered_letters_from_mastery,
     update_letter_mastery,
 )
+from engine.word_mastery import (
+    ensure_word_mastery,
+    get_word_mastery_record,
+    is_word_mastered,
+    record_word_confusion,
+    update_word_mastery,
+)
 
 
 class LearnerModel:
@@ -35,6 +42,8 @@ class LearnerModel:
         "hint_usage",
         "mastered_letters",
         "mastered_words",
+        "word_mastery",
+        "last_word_garden_target",
         "completed_worlds",
         "badges",
         "debug_persistent",
@@ -84,6 +93,8 @@ class LearnerModel:
         profile.setdefault("sentence_level", 0)
         profile.setdefault("letter_mastery", default_letter_mastery_map())
         profile.setdefault("curriculum_letters_since_review", 0)
+        profile.setdefault("word_mastery", {})
+        profile.setdefault("last_word_garden_target", "")
         return profile
 
     def _load_or_create_profile(self) -> tuple[dict[str, Any], bool]:
@@ -111,6 +122,7 @@ class LearnerModel:
             value = legacy_profile.get(field_name, defaults.get(field_name))
             normalized[field_name] = deepcopy(value)
         ensure_letter_mastery(normalized)
+        ensure_word_mastery(normalized)
         return normalized
 
     def _write_profile(self, profile: dict[str, Any]) -> None:
@@ -234,10 +246,43 @@ class LearnerModel:
 
     def mark_word_mastered(self, word: str) -> list[str]:
         key = word.strip().lower()
-        if key and key not in self.mastered_words:
-            self.mastered_words.append(key)
+        if key:
+            self.weak_words.pop(key, None)
+            if key not in self.mastered_words:
+                self.mastered_words.append(key)
             self.save_profile()
         return list(self.mastered_words)
+
+    def record_word_mastery_attempt(
+        self,
+        word: str,
+        *,
+        correct: bool,
+        first_try: bool = False,
+        hints_used: int = 0,
+        confused_with: str | None = None,
+    ) -> dict[str, Any]:
+        key = word.strip().lower()
+        if confused_with:
+            record_word_confusion(self, key, confused_with)
+        record = update_word_mastery(
+            self,
+            key,
+            correct=correct,
+            first_try=first_try,
+            hints_used=hints_used,
+        )
+        if correct and is_word_mastered(self, key) and key not in self.mastered_words:
+            self.mastered_words.append(key)
+            self.weak_words.pop(key, None)
+            self.save_profile()
+        return record
+
+    def get_word_mastery_record(self, word: str) -> dict[str, Any]:
+        return get_word_mastery_record(self, word)
+
+    def word_is_ai_mastered(self, word: str) -> bool:
+        return is_word_mastered(self, word)
 
     def add_badge(self, badge_name: str) -> list[str]:
         key = badge_name.strip()

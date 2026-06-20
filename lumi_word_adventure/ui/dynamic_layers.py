@@ -644,7 +644,7 @@ def draw_dynamic_layers(
     if not dynamic:
         return
     active_screen = screen_id or view.screen_id
-    for spec in dynamic.values():
+    for layer_key, spec in dynamic.items():
         if not isinstance(spec, dict):
             continue
         layer_type = str(spec.get("type") or "")

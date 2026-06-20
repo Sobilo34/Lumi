@@ -1,14 +1,13 @@
 {
   "child_name": "Test",
-  "total_stars": 163,
+  "total_stars": 197,
   "lumi_energy": 100,
   "current_world": "main_menu",
   "difficulty": 1,
-  "correct_streak": 5,
+  "correct_streak": 1,
   "wrong_streak": 0,
   "weak_letters": {},
   "weak_words": {
-    "dog": 8,
     "apple": 1
   },
   "sentence_errors": {},
@@ -30,22 +29,183 @@
   ],
   "mastered_words": [
     "cat",
-    "dog"
+    "dog",
+    "bird",
+    "ball",
+    "duck",
+    "star",
+    "tree",
+    "hat",
+    "cup",
+    "sun",
+    "fish"
   ],
+  "word_mastery": {
+    "apple": {
+      "attempts": 0,
+      "correct": 0,
+      "wrong": 0,
+      "first_try_correct": 0,
+      "hints_used": 0,
+      "mastery_score": 0.0,
+      "last_seen": 0,
+      "consecutive_correct": 0,
+      "confused_with": {}
+    },
+    "ball": {
+      "attempts": 1,
+      "correct": 1,
+      "wrong": 0,
+      "first_try_correct": 1,
+      "hints_used": 0,
+      "mastery_score": 0.3,
+      "last_seen": 1781929931,
+      "consecutive_correct": 1,
+      "confused_with": {}
+    },
+    "bird": {
+      "attempts": 1,
+      "correct": 1,
+      "wrong": 0,
+      "first_try_correct": 1,
+      "hints_used": 0,
+      "mastery_score": 0.3,
+      "last_seen": 1781929923,
+      "consecutive_correct": 1,
+      "confused_with": {}
+    },
+    "cat": {
+      "attempts": 0,
+      "correct": 0,
+      "wrong": 0,
+      "first_try_correct": 0,
+      "hints_used": 0,
+      "mastery_score": 0.0,
+      "last_seen": 0,
+      "consecutive_correct": 0,
+      "confused_with": {}
+    },
+    "cup": {
+      "attempts": 2,
+      "correct": 1,
+      "wrong": 1,
+      "first_try_correct": 0,
+      "hints_used": 1,
+      "mastery_score": 0.13,
+      "last_seen": 1781930104,
+      "consecutive_correct": 1,
+      "confused_with": {
+        "duck": 1
+      }
+    },
+    "dog": {
+      "attempts": 1,
+      "correct": 1,
+      "wrong": 0,
+      "first_try_correct": 1,
+      "hints_used": 0,
+      "mastery_score": 0.3,
+      "last_seen": 1781930078,
+      "consecutive_correct": 1,
+      "confused_with": {}
+    },
+    "duck": {
+      "attempts": 1,
+      "correct": 1,
+      "wrong": 0,
+      "first_try_correct": 1,
+      "hints_used": 0,
+      "mastery_score": 0.3,
+      "last_seen": 1781929936,
+      "consecutive_correct": 1,
+      "confused_with": {}
+    },
+    "fish": {
+      "attempts": 2,
+      "correct": 1,
+      "wrong": 1,
+      "first_try_correct": 0,
+      "hints_used": 1,
+      "mastery_score": 0.13,
+      "last_seen": 1781930222,
+      "consecutive_correct": 1,
+      "confused_with": {
+        "bird": 1
+      }
+    },
+    "frog": {
+      "attempts": 0,
+      "correct": 0,
+      "wrong": 0,
+      "first_try_correct": 0,
+      "hints_used": 0,
+      "mastery_score": 0.0,
+      "last_seen": 0,
+      "consecutive_correct": 0,
+      "confused_with": {}
+    },
+    "hat": {
+      "attempts": 1,
+      "correct": 1,
+      "wrong": 0,
+      "first_try_correct": 1,
+      "hints_used": 0,
+      "mastery_score": 0.3,
+      "last_seen": 1781930084,
+      "consecutive_correct": 1,
+      "confused_with": {}
+    },
+    "star": {
+      "attempts": 1,
+      "correct": 1,
+      "wrong": 0,
+      "first_try_correct": 1,
+      "hints_used": 0,
+      "mastery_score": 0.3,
+      "last_seen": 1781930053,
+      "consecutive_correct": 1,
+      "confused_with": {}
+    },
+    "sun": {
+      "attempts": 1,
+      "correct": 1,
+      "wrong": 0,
+      "first_try_correct": 1,
+      "hints_used": 0,
+      "mastery_score": 0.3,
+      "last_seen": 1781930109,
+      "consecutive_correct": 1,
+      "confused_with": {}
+    },
+    "tree": {
+      "attempts": 1,
+      "correct": 1,
+      "wrong": 0,
+      "first_try_correct": 1,
+      "hints_used": 0,
+      "mastery_score": 0.3,
+      "last_seen": 1781930073,
+      "consecutive_correct": 1,
+      "confused_with": {}
+    }
+  },
+  "last_word_garden_target": "bird",
   "completed_worlds": [
-    "letter_island"
+    "letter_island",
+    "word_garden"
   ],
   "badges": [
     "B and D Master",
     "Badge A",
     "Badge B",
     "Badge C",
-    "Great Learner"
+    "Great Learner",
+    "Word Explorer"
   ],
   "debug_persistent": false,
-  "attempts": 65,
-  "correct_answers": 55,
-  "accuracy": 84.62,
+  "attempts": 79,
+  "correct_answers": 67,
+  "accuracy": 84.81,
   "current_letter_index": 25,
   "current_word_length": 3,
   "sentence_level": 0,

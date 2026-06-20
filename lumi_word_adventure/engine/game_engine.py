@@ -45,10 +45,10 @@ from engine.personal_tutor import (
 )
 from engine.offline_fallback import offline_prompt_text, resolve_offline_message
 from engine.word_garden import (
-    WORD_GARDEN_WORDS,
     WORD_SLOT_COUNT,
     build_word_garden_round,
     build_word_garden_round_for_target,
+    get_word_garden_pool,
 )
 from engine.world_progression import (
     WORLD_LETTER_ISLAND,
@@ -105,7 +105,7 @@ from voice.voice_checker import check_spoken_answer
 
 LETTER_SLOT_COUNT = 4
 LETTER_ISLAND_ENTRY_SCREENS = frozenset({"world_map", "main_menu", "how_to_play"})
-WORD_GARDEN_VISIBLE = WORD_GARDEN_WORDS
+WORD_GARDEN_VISIBLE = get_word_garden_pool()
 GAMEPLAY_HITBOX_SCREEN_IDS = frozenset({
     "letter_island_game",
     "letter_correct_feedback",
@@ -817,11 +817,28 @@ class GameEngine:
                 return self.state.word_choice_slots[slot_index].lower()
         return LEGACY_WORD_ACTIONS.get(action)
 
+    def _word_garden_pool(self) -> tuple[str, ...]:
+        return get_word_garden_pool("word_garden_game")
+
     def _pick_visible_word(self, preferred: str, fallback: str = "cat") -> str:
+        pool = self._word_garden_pool()
         cleaned = preferred.strip().lower()
-        if cleaned in WORD_GARDEN_VISIBLE:
+        if cleaned in pool:
             return cleaned
-        return fallback if fallback in WORD_GARDEN_VISIBLE else "cat"
+        return fallback if fallback in pool else (pool[0] if pool else "cat")
+
+    def _build_word_garden_round(self) -> dict:
+        last_target = str(
+            self.state.last_word_garden_target
+            or getattr(self.learner, "last_word_garden_target", "")
+            or ""
+        ).strip().lower()
+        return build_word_garden_round(
+            self.learner,
+            pool=self._word_garden_pool(),
+            vocabulary_data=self.word_questions,
+            last_target=last_target,
+        )
 
     def _apply_letter_round(self, target: str, choices: list[str]) -> None:
         letter = str(target or "A").upper()
@@ -887,14 +904,19 @@ class GameEngine:
         target_word = str(round_data.get("target") or "cat").strip().lower()
         choices = [str(word).strip().lower() for word in round_data.get("choices") or [] if str(word).strip()]
         if len(choices) < WORD_SLOT_COUNT:
-            round_data = build_word_garden_round_for_target(self.learner, target_word)
+            round_data = build_word_garden_round_for_target(
+                self.learner,
+                target_word,
+                pool=self._word_garden_pool(),
+                vocabulary_data=self.word_questions,
+            )
             target_word = str(round_data.get("target") or target_word).lower()
             choices = [str(word).strip().lower() for word in round_data.get("choices") or []]
         if target_word not in choices:
             choices = [target_word, *[word for word in choices if word != target_word]]
             choices = choices[:WORD_SLOT_COUNT]
             while len(choices) < WORD_SLOT_COUNT:
-                for filler in WORD_GARDEN_WORDS:
+                for filler in self._word_garden_pool():
                     if filler not in choices:
                         choices.append(filler)
                     if len(choices) >= WORD_SLOT_COUNT:
@@ -909,6 +931,9 @@ class GameEngine:
         self.state.word_garden_option_count = len(self.state.word_choice_slots)
         self.state.last_word_selected = ""
         self.state.last_word_feedback_message = ""
+        self.state.last_word_garden_target = target_word
+        self.learner.last_word_garden_target = target_word
+        self.learner.save_profile()
         self._warm_word_garden_round_assets(target_word, choices[:WORD_SLOT_COUNT])
 
     def _warm_word_garden_round_assets(self, target: str, choices: list[str]) -> None:
@@ -917,7 +942,7 @@ class GameEngine:
         self.asset_manager.warm_word_garden_round(tuple(sorted(words)))
 
     def _configure_word_garden_task(self) -> None:
-        self._apply_word_garden_round(build_word_garden_round(self.learner))
+        self._apply_word_garden_round(self._build_word_garden_round())
 
     def _configure_voice_challenge_task(self) -> None:
         target = self._voice_challenge_target()
@@ -928,11 +953,12 @@ class GameEngine:
 
     def _voice_challenge_target(self) -> str:
         candidate = str(self.state.current_task_target or "").strip().lower()
-        if candidate in WORD_GARDEN_VISIBLE:
+        pool = self._word_garden_pool()
+        if candidate in pool:
             return candidate
         if self.state.word_choice_slots:
             first = str(self.state.word_choice_slots[0] or "").strip().lower()
-            if first in WORD_GARDEN_VISIBLE:
+            if first in pool:
                 return first
         return self._pick_visible_word(candidate or "cat")
 
@@ -996,7 +1022,7 @@ class GameEngine:
         self.state.sentence_slots = ["", "", "", ""]
         self.state.sentence_locked_indices = []
         self.state.sentence_feedback_message = ""
-        self.state.word_choice_slots = list(WORD_GARDEN_VISIBLE)
+        self.state.word_choice_slots = list(self._word_garden_pool())
         self.state.gameplay_refresh_pending = True
         self.state.history = [self.state.current_screen_id] if self.state.current_screen_id else []
 
@@ -1113,7 +1139,15 @@ class GameEngine:
     def _handle_word_garden_selection(self, selected_word: str) -> None:
         target_word = self.state.current_task_target or "cat"
         self.state.last_word_selected = selected_word
+        hints_used = int(self.state.current_hint_level or 0)
+        first_try = hints_used == 0
         if selected_word == target_word:
+            self.learner.record_word_mastery_attempt(
+                target_word,
+                correct=True,
+                first_try=first_try,
+                hints_used=hints_used,
+            )
             stars_earned = calculate_stars(True, self.state.current_hint_level)
             self.learner.update_correct_streak()
             self.learner.attempts = int(self.learner.attempts) + 1
@@ -1134,6 +1168,13 @@ class GameEngine:
             self.set_screen("word_correct_feedback")
             return
 
+        self.learner.record_word_mastery_attempt(
+            target_word,
+            correct=False,
+            first_try=first_try,
+            hints_used=hints_used,
+            confused_with=selected_word,
+        )
         self.learner.update_wrong_streak()
         self.learner.attempts = int(self.learner.attempts) + 1
         self.learner.update_accuracy()
@@ -1152,7 +1193,14 @@ class GameEngine:
 
     def _start_word_practice(self, word: str) -> None:
         self.state.preserve_word_garden_task = True
-        self._apply_word_garden_round(build_word_garden_round_for_target(self.learner, word))
+        self._apply_word_garden_round(
+            build_word_garden_round_for_target(
+                self.learner,
+                word,
+                pool=self._word_garden_pool(),
+                vocabulary_data=self.word_questions,
+            )
+        )
         self.set_screen("word_garden_game")
 
     def _configure_teacher_report(self) -> None:

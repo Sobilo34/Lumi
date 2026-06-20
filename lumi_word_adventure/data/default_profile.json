@@ -24,5 +24,7 @@
   "current_word_length": 3,
   "sentence_level": 0,
   "letter_mastery": {},
+  "word_mastery": {},
+  "last_word_garden_target": "",
   "curriculum_letters_since_review": 0
 }

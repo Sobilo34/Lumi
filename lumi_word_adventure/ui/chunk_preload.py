@@ -5,7 +5,7 @@ from string import ascii_lowercase
 
 from engine.asset_manager import AssetManager
 from engine.screen_registry import ScreenRegistry
-from engine.word_garden import WORD_GARDEN_WORDS
+from engine.word_garden import get_word_garden_pool
 from ui.chunk_manifest import ScreenChunkSpec, get_screen_spec
 from ui.chunk_screen import ChunkScreen
 
@@ -62,13 +62,14 @@ def build_gameplay_chunk_queue() -> list[tuple[str, str]]:
         ("word_garden_game", "failure_background.png"),
         ("word_garden_game", "speak_background.png"),
     ]
-    for word in WORD_GARDEN_WORDS:
+    word_pool = get_word_garden_pool()
+    for word in word_pool:
         queue.append(("word_garden_game", f"prompts/{word}.png"))
     for letter in ascii_lowercase:
         queue.append(("letter_island_game", f"find/{letter}.png"))
         queue.append(("letter_island_game", f"letters/{letter}.png"))
         queue.append(("letter_island_game", f"letters/{letter}_selected.png"))
-    for word in WORD_GARDEN_WORDS:
+    for word in word_pool:
         queue.append(("word_garden_game", f"objects/{word}.png"))
     return queue
 

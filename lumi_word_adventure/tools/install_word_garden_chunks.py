@@ -28,7 +28,7 @@ ASSETS = Path("/home/bilal/.cursor/projects/home-bilal-bilal-projects-Learning-A
 DEST = PROJECT / "assets" / "ui_chunks" / "word_garden_game"
 
 BACKGROUND_FILE = "image-285d73a5-cb3c-481d-98d4-c5fcb4c1de98.png"
-SUCCESS_BACKGROUND_FILE = "image-af43328f-7c47-499d-911c-2dce660b3743.png"
+SUCCESS_BACKGROUND_FILE = "image-d720d304-07b9-4a8f-bbd9-550aeb8001fb.png"
 FAILURE_BACKGROUND_FILE = "image-04e89b03-c223-46a3-b1a2-3ca4886ce06c.png"
 SPEAK_BACKGROUND_FILE = "image-47d4bf35-7631-430f-bea0-e2f3963c25e2.png"
 

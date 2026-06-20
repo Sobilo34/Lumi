@@ -36,6 +36,7 @@ class GameState:
     word_garden_option_count: int = 4
     last_word_selected: str = ""
     last_word_feedback_message: str = ""
+    last_word_garden_target: str = ""
     last_letter_feedback_message: str = ""
     last_selected_letter: str = ""
     highlight_letter_slot: int = -1
@@ -49,6 +50,7 @@ class GameState:
     bd_confusion_attempts: int = 0
     history: list[str] = field(default_factory=list)
     last_unlocked_badges: list[str] = field(default_factory=list)
+    badge_return_screen: str = ""
     world_map_status_message: str = ""
     world_map_status_shown_at_ms: int | None = None
     practice_recommendation: dict | None = None
