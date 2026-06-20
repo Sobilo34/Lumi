@@ -25,6 +25,28 @@ def _write_tone(path: Path, frequency: float, duration: float, volume: float = 0
         handle.writeframes(frames)
 
 
+def _write_badge_fanfare(path: Path) -> None:
+    """Rising 'uhhh-nnn' style achievement tone for badge unlock."""
+    sample_rate = 22050
+    duration = 0.95
+    sample_count = int(sample_rate * duration)
+    with wave.open(str(path), "w") as handle:
+        handle.setnchannels(1)
+        handle.setsampwidth(2)
+        handle.setframerate(sample_rate)
+        frames = bytearray()
+        for index in range(sample_count):
+            t = index / sample_rate
+            progress = t / duration
+            frequency = 280.0 + (760.0 * progress**0.65)
+            attack = min(1.0, t * 8.0)
+            release = max(0.0, 1.0 - max(0.0, (t - 0.72) / 0.23))
+            envelope = attack * release
+            sample = int(0.34 * envelope * 32767.0 * math.sin(2.0 * math.pi * frequency * t))
+            frames.extend(struct.pack("<h", sample))
+        handle.writeframes(frames)
+
+
 def _write_chime(path: Path) -> None:
     sample_rate = 22050
     duration = 0.45
@@ -51,7 +73,7 @@ def generate_default_sfx(output_dir: Path | None = None) -> list[Path]:
         "correct.wav": _write_chime,
         "wrong.wav": lambda path: _write_tone(path, 220.0, 0.25, volume=0.28),
         "star.wav": lambda path: _write_tone(path, 880.0, 0.18, volume=0.3),
-        "badge.wav": _write_chime,
+        "badge.wav": _write_badge_fanfare,
     }
     written: list[Path] = []
     for filename, writer in specs.items():

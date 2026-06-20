@@ -65,9 +65,7 @@ class TextToSpeech:
                 self._engine.say(text)
                 self._engine.runAndWait()
             except Exception as error:
-                self._available = False
                 print(f"[Lumi Voice] TTS playback failed safely: {error}")
-                break
 
     def clear_pending(self) -> None:
         """Drop queued lines without touching the pyttsx3 engine (thread-safe)."""
@@ -110,4 +108,4 @@ class TextToSpeech:
             try:
                 self._engine.setProperty("rate", self._rate)
             except Exception:
-                self._available = False
+                pass

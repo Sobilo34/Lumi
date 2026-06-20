@@ -124,6 +124,29 @@ def test_mastering_j_unlocks_badge_a_and_returns_to_success_screen(engine: GameE
     assert engine.state.completed_letter_target == "J"
 
 
+def test_mastering_z_shows_progress_complete_after_badge_c(engine: GameEngine) -> None:
+    engine.learner.current_letter_index = ALPHABET.index("Z")
+    engine.learner.badges = ["Badge A", "Badge B"]
+    engine.learner.completed_worlds = []
+    engine.learner.mastered_letters = list("ABCDEFGHIJKLMNOPQRSTUVWXY")
+    engine.learner.weak_letters = {}
+    engine.learner.save_profile()
+    engine._configure_letter_island_task()
+    assert engine.state.current_task_target == "Z"
+
+    slot_index = _slot_for_target(engine, "Z")
+    engine.set_screen("letter_island_game")
+    engine._handle_letter_island_action(f"select_letter_slot_{slot_index}")
+
+    assert engine.state.current_screen_id == "badge_unlock"
+    assert engine.state.last_unlocked_badges == ["Badge C"]
+    assert engine.state.badge_return_screen == "progress_complete"
+    assert "letter_island" in engine.learner.completed_worlds
+
+    engine._handle_action("continue_from_badge")
+    assert engine.state.current_screen_id == "progress_complete"
+
+
 def test_all_letters_perfected_shows_completion_badge_and_word_garden_path(engine: GameEngine) -> None:
     from engine.scoring import LETTER_ISLAND_COMPLETE_BADGE
 

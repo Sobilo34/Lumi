@@ -59,6 +59,14 @@ def test_tts_missing_engine_does_not_crash() -> None:
     tts.set_rate(130)
 
 
+def test_tts_clear_pending_drops_queued_lines() -> None:
+    tts = TextToSpeech(enabled=True)
+    tts._available = True
+    tts._queue.put("queued line")
+    tts.clear_pending()
+    assert tts._queue.empty()
+
+
 def test_letter_island_speak_shows_page_when_stt_unavailable(
     engine: GameEngine,
     monkeypatch: pytest.MonkeyPatch,

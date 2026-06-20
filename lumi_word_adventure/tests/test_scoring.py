@@ -1,4 +1,5 @@
 from engine.scoring import (
+    badge_unlock_speech_message,
     calculate_accuracy,
     calculate_stars,
     check_badge_unlocks,
@@ -83,3 +84,14 @@ def test_letter_hero_badge_not_awarded_at_five_letters() -> None:
     )
     unlocked = check_badge_unlocks(learner)
     assert "Letter Hero" not in unlocked
+
+
+def test_badge_unlock_speech_message_names_badge() -> None:
+    message = badge_unlock_speech_message(["Badge A"])
+    assert "Badge A" in message
+    assert "Letters A" in message
+
+
+def test_badge_unlock_speech_message_without_names() -> None:
+    message = badge_unlock_speech_message([])
+    assert "new badge" in message.lower()

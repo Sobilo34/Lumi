@@ -149,6 +149,19 @@ def badge_subtitle(badge_name: str) -> str:
     return BADGE_DISPLAY_SUBTITLES.get(badge_name.strip(), "Great work!")
 
 
+def badge_unlock_speech_message(badge_names: list[str] | tuple[str, ...] | None) -> str:
+    """Voice line for badge unlock (plays after the badge SFX)."""
+    msg = "Hooray! You unlocked a new badge!"
+    names = [str(name).strip() for name in (badge_names or []) if str(name).strip()]
+    if not names:
+        return msg
+    if len(names) == 1:
+        badge_name = names[0]
+        return f"You unlocked {badge_name}. {badge_subtitle(badge_name)}"
+    joined = ", ".join(names)
+    return f"You unlocked {joined}. {badge_subtitle(names[-1])}"
+
+
 def badge_icon_filename(badge_name: str) -> str:
     return BADGE_ICON_FILES.get(badge_name.strip(), "great_learner.png")
 
