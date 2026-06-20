@@ -324,7 +324,9 @@
           "h_pct": 0.048,
           "fit": "contain",
           "halign": "center",
-          "valign": "middle"
+          "valign": "middle",
+          "offset_x_px": -308,
+          "offset_y_px": 165
         },
         "word_cards": {
           "type": "word_object_cards",
@@ -332,6 +334,8 @@
           "fit": "contain",
           "pad_x_pct": 0.012,
           "pad_y_pct": 0.018,
+          "offset_x_px": [275, 290, 280, 260],
+          "offset_y_px": -50,
           "selected_scale": 1.06,
           "slots": [
             { "x_pct": 0.176, "y_pct": 0.385, "w_pct": 0.142, "h_pct": 0.315 },
@@ -367,7 +371,9 @@
           "h_pct": 0.04,
           "fit": "contain",
           "halign": "center",
-          "valign": "middle"
+          "valign": "middle",
+          "offset_x_px": 187,
+          "offset_y_px": 78
         },
         "word_cards": {
           "type": "word_object_cards",
@@ -375,6 +381,8 @@
           "fit": "contain",
           "pad_x_pct": 0.012,
           "pad_y_pct": 0.018,
+          "offset_x_px": [135, 145, 155, 105],
+          "offset_y_px": 15,
           "slots": [
             { "x_pct": 0.176, "y_pct": 0.385, "w_pct": 0.142, "h_pct": 0.315 },
             { "x_pct": 0.31, "y_pct": 0.385, "w_pct": 0.142, "h_pct": 0.315 },

@@ -1,6 +1,6 @@
 {
   "child_name": "Test",
-  "total_stars": 138,
+  "total_stars": 151,
   "lumi_energy": 100,
   "current_world": "main_menu",
   "difficulty": 1,
@@ -8,7 +8,7 @@
   "wrong_streak": 0,
   "weak_letters": {},
   "weak_words": {
-    "dog": 3,
+    "dog": 8,
     "apple": 1
   },
   "sentence_errors": {},
@@ -42,9 +42,9 @@
     "Great Learner"
   ],
   "debug_persistent": false,
-  "attempts": 51,
-  "correct_answers": 46,
-  "accuracy": 90.2,
+  "attempts": 61,
+  "correct_answers": 51,
+  "accuracy": 83.61,
   "current_letter_index": 25,
   "current_word_length": 3,
   "sentence_level": 0,
