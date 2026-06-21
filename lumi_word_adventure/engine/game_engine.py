@@ -28,17 +28,14 @@ from datetime import datetime
 from pathlib import Path
 from engine.adaptive_ai import (
     choose_next_question,
+    choose_hint,
     diagnose_letter_mistake,
     diagnose_word_mistake,
     note_curriculum_letter_completed,
     recommend_practice,
 )
-<<<<<<< Updated upstream
 from engine.feedback import get_feedback, get_hint, get_letter_voice_character_hint, get_lumi_speech
-=======
-from engine.feedback import get_feedback, get_lumi_speech
 from engine.hint_engine import get_hint_engine
->>>>>>> Stashed changes
 from engine.game_state import GameState
 from engine.learner_model import LearnerModel
 from engine.microphone_check import run_microphone_check as execute_microphone_check
@@ -89,18 +86,15 @@ from ui.microphone_overlay import draw_microphone_check_overlay
 from ui.offline_overlay import draw_offline_overlay
 from ui.report_overlay import draw_teacher_report_overlays
 from ui.settings_overlay import draw_settings_overlay
-<<<<<<< Updated upstream
 from ui.badge_overlay import draw_badge_unlock_overlay
 from ui.voice_pronunciation_overlay import draw_voice_pronunciation_overlay
 from ui.voice_mic_prompt_overlay import draw_voice_mic_prompt_overlay
-=======
 from ui.answer_popup_overlay import LETTER_ISLAND_POPUP_ANCHOR_Y_PCT, draw_answer_popup_overlay
 from ui.control_buttons_overlay import (
     PLACEHOLDER_CONTROL_SCREENS,
     draw_control_button_placeholders,
 )
 from ui.world_map_overlay import draw_world_map_overlay
->>>>>>> Stashed changes
 from ui.screen_factory import create_game_screen
 from ui.scene_view import SceneView
 from ui.chunk_preload import (
@@ -331,6 +325,8 @@ class GameEngine:
         )
 
     def _progress_text_for_screen(self, screen_id: str) -> str:
+        if screen_id == "progress_complete":
+            return "Great work today!"
         if screen_id == "world_map":
             return world_map_progress_text(self.learner)
         if screen_id.startswith("letter") or screen_id == "bd_practice":
@@ -573,6 +569,7 @@ class GameEngine:
                 sync_world_completion(self.learner)
                 if not self.state.last_completed_world_id:
                     self.state.last_completed_world_id = latest_completed_world(self.learner)
+                self._refresh_screen_hitboxes("progress_complete")
             if screen_id == "settings":
                 self._refresh_screen_hitboxes("settings")
             if screen_id == "badge_unlock":
@@ -1171,11 +1168,7 @@ class GameEngine:
     def _configure_letter_voice_task(self) -> None:
         target = self._letter_voice_target()
         self.state.current_task_target = target
-<<<<<<< Updated upstream
-        self.state.current_task_prompt = LETTER_VOICE_QUESTION
-=======
         self.state.current_task_prompt = LETTER_VOICE_PROMPT
->>>>>>> Stashed changes
         self.state.current_hint_level = 0
         self.asset_manager.scaled_letter_tile(
             "letter_island_game",
@@ -1422,7 +1415,6 @@ class GameEngine:
                 self.learner.save_profile()
             unlocked = check_badge_unlocks(self.learner)
             self.state.current_hint_level = 0
-<<<<<<< Updated upstream
             self.state.last_word_feedback_message = "Correct!"
             self._play_feedback_sfx("correct", stars_earned=stars_earned)
             if unlocked:
@@ -1435,14 +1427,6 @@ class GameEngine:
             self.state.suppress_screen_speech_once = True
             self.set_screen("voice_challenge")
             self._schedule_voice_correct_advance("word")
-=======
-            self.state.last_word_feedback_message = f"You said {target_word}!"
-            if unlocked:
-                self._play_feedback_sfx("correct", stars_earned=stars_earned)
-                self._handle_badges(unlocked, return_screen="word_garden_game")
-                return
-            self._show_word_correct_feedback(f"You said {target_word}!", stars_earned=stars_earned)
->>>>>>> Stashed changes
             return
 
         self.learner.update_wrong_streak()
@@ -1450,7 +1434,6 @@ class GameEngine:
         self.learner.update_accuracy()
 
         if result == "close":
-<<<<<<< Updated upstream
             self._show_voice_pronunciation_feedback("try_again")
             self._speak_tutor_line("Try again. Almost! I heard something close.")
             self.state.suppress_screen_speech_once = True
@@ -1462,19 +1445,6 @@ class GameEngine:
         self._speak_tutor_line(self._voice_voice_try_again_line(target_word, spoken_text))
         self.state.suppress_screen_speech_once = True
         self.set_screen("voice_challenge")
-=======
-            self._show_word_mistake_feedback(
-                "Almost! I heard something close. Try again.",
-                return_screen="voice_challenge",
-            )
-            return
-
-        self.learner.record_weak_word(target_word)
-        self._show_word_mistake_feedback(
-            self._voice_help_line(target_word, heard=spoken_text),
-            return_screen="voice_challenge",
-        )
->>>>>>> Stashed changes
 
     def _process_letter_voice_capture_result(self, spoken: str | None) -> None:
         target_letter = self._letter_voice_target()
@@ -1510,44 +1480,18 @@ class GameEngine:
         self.learner.update_accuracy()
 
         if result == "close":
-<<<<<<< Updated upstream
-            self._show_voice_pronunciation_feedback("try_again")
-            self._speak_tutor_line("Try again. Almost! I heard something close.")
-            self.state.suppress_screen_speech_once = True
-            self.set_screen("letter_voice_challenge")
-=======
             self._show_letter_mistake_feedback(
                 "Almost! I heard something close. Try again.",
                 return_screen="letter_voice_challenge",
             )
->>>>>>> Stashed changes
             return
 
         if not self.learner.letter_is_ai_mastered(target_letter):
             self.learner.record_weak_letter(target_letter)
-<<<<<<< Updated upstream
-        self._show_voice_pronunciation_feedback("try_again")
-        self._speak_tutor_line(self._letter_voice_try_again_line(target_letter, spoken_text))
-        self.state.suppress_screen_speech_once = True
-        self.set_screen("letter_voice_challenge")
-
-    def _letter_voice_try_again_line(self, target_letter: str | None = None, spoken: str = "") -> str:
-        letter = str(target_letter or self._letter_voice_target() or "A").strip().upper()
-        self.state.current_hint_level += 1
-        self.learner.record_hint_usage(self.state.current_hint_level)
-        guessed = guess_spoken_letter(spoken)
-        if guessed and guessed.upper() != letter:
-            mistake = diagnose_letter_mistake(letter, guessed.upper())
-            hint = get_hint(
-                "letter",
-                self.state.current_hint_level,
-                letter,
-                mistake_type=mistake,
-                selected=guessed.upper(),
-            )
-        else:
-            hint = get_letter_voice_character_hint(letter, self.state.current_hint_level)
-        return f"Try again. {hint}"
+        self._show_letter_mistake_feedback(
+            self._letter_voice_help_line(target_letter, heard=spoken_text),
+            return_screen="letter_voice_challenge",
+        )
 
     def _voice_voice_try_again_line(self, target_word: str | None = None, spoken: str = "") -> str:
         word = str(target_word or self._voice_challenge_target() or "cat").strip().lower()
@@ -1560,31 +1504,19 @@ class GameEngine:
             hint = get_hint("voice", self.state.current_hint_level, word)
         return f"Try again. {hint}"
 
-    def _letter_voice_help_line(self, target_letter: str | None = None) -> str:
-        letter = str(target_letter or self._letter_voice_target() or "A").strip().upper()
-        hint = get_letter_voice_character_hint(letter, max(1, self.state.current_hint_level + 1))
-        return f"Here is a hint. {hint}"
-=======
-        self._show_letter_mistake_feedback(
-            self._letter_voice_help_line(target_letter, heard=spoken_text),
-            return_screen="letter_voice_challenge",
-        )
-
     def _letter_voice_help_line(self, target_letter: str | None = None, *, heard: str = "") -> str:
         letter = str(target_letter or self._letter_voice_target() or "A").strip().upper()
         level = max(1, int(getattr(self.state, "current_hint_level", 0) or 0))
         return self.hint_engine.letter_speaking_hint(
             letter, level=level, heard=heard, profile=self.learner
         )
->>>>>>> Stashed changes
 
     def _voice_help_line(self, target_word: str | None = None, *, heard: str = "") -> str:
         word = str(target_word or self._voice_challenge_target() or "cat").strip().lower()
-<<<<<<< Updated upstream
-        self.state.current_hint_level += 1
-        self.learner.record_hint_usage(self.state.current_hint_level)
-        hint = get_hint("voice", self.state.current_hint_level, word)
-        return f"Here is a hint. {hint}"
+        level = max(1, int(getattr(self.state, "current_hint_level", 0) or 0))
+        return self.hint_engine.word_speaking_hint(
+            word, level=level, heard=heard, profile=self.learner
+        )
 
     def _advance_to_next_letter_voice_round(self) -> None:
         if self.state.pending_letter_curriculum_advance:
@@ -1603,12 +1535,6 @@ class GameEngine:
         self._configure_voice_challenge_task()
         self.state.suppress_screen_speech_once = True
         self.set_screen("voice_challenge")
-=======
-        level = max(1, int(getattr(self.state, "current_hint_level", 0) or 0))
-        return self.hint_engine.word_speaking_hint(
-            word, level=level, heard=heard, profile=self.learner
-        )
->>>>>>> Stashed changes
 
     def _word_target_sound_line(self) -> str:
         target_word = str(self.state.current_task_target or "cat").strip().lower()
@@ -1774,13 +1700,9 @@ class GameEngine:
                 self._speak_tutor_line(WORD_VOICE_QUESTION)
                 return
             if action == "voice_help":
-<<<<<<< Updated upstream
-                self._speak_tutor_line(self._voice_help_line(self._voice_challenge_target()))
-=======
                 self.state.current_hint_level += 1
                 self.learner.record_hint_usage(self.state.current_hint_level)
-                self._show_hint_popup(self._voice_help_line(target))
->>>>>>> Stashed changes
+                self._show_hint_popup(self._voice_help_line(self._voice_challenge_target()))
                 return
             if action == "skip_voice":
                 self.state.preserve_word_garden_task = True
@@ -1791,19 +1713,12 @@ class GameEngine:
                 return
         if self.state.current_screen_id == "letter_voice_challenge":
             if action == "repeat_letter":
-<<<<<<< Updated upstream
-                self._speak_tutor_line(LETTER_VOICE_QUESTION)
-                return
-            if action == "letter_voice_help":
-                self._speak_tutor_line(self._letter_voice_help_line(self._letter_voice_target()))
-=======
                 self._speak_tutor_line(LETTER_VOICE_PROMPT, tone="instruct")
                 return
             if action == "letter_voice_help":
                 self.state.current_hint_level += 1
                 self.learner.record_hint_usage(self.state.current_hint_level)
-                self._show_hint_popup(self._letter_voice_help_line(target))
->>>>>>> Stashed changes
+                self._show_hint_popup(self._letter_voice_help_line(self._letter_voice_target()))
                 return
             if action == "skip_letter_voice":
                 self.state.preserve_letter_island_task = True
@@ -1860,11 +1775,7 @@ class GameEngine:
                 return
         if self.state.current_screen_id == "letter_listening_state":
             if action == "repeat_letter":
-<<<<<<< Updated upstream
-                self.voice.speak(LETTER_VOICE_QUESTION)
-=======
                 self.voice.speak(LETTER_VOICE_PROMPT, tone="instruct")
->>>>>>> Stashed changes
                 return
             if action in {"stop_letter_listening", "stop_listening", "stop_and_process"}:
                 self.voice.speak("Listening stopped. What letter is this?")
@@ -2078,6 +1989,7 @@ class GameEngine:
             self.state.last_letter_feedback_message = (
                 f"{correct_message} You perfected every letter A–Z!"
             )
+            self.state.stars = stars_earned
             if voice_mode:
                 self._show_voice_pronunciation_feedback("correct")
                 self._speak_tutor_line("Correct!")
@@ -2099,18 +2011,18 @@ class GameEngine:
             str(item).upper() for item in self.state.letter_choice_slots[:LETTER_SLOT_COUNT]
         ]
         if unlocked:
-<<<<<<< Updated upstream
-            resume = "progress_complete" if world_just_completed else "letter_correct_feedback"
+            resume = "progress_complete" if world_just_completed else "letter_island_game"
             if voice_mode:
                 self._show_voice_pronunciation_feedback("correct")
                 self._speak_tutor_line("Correct!")
-=======
-            resume = "progress_complete" if world_just_completed else "letter_island_game"
-            self._play_feedback_sfx("correct", stars_earned=stars_earned)
->>>>>>> Stashed changes
+            else:
+                self._play_feedback_sfx("correct", stars_earned=stars_earned)
+            if world_just_completed:
+                self.state.stars = stars_earned
             self._handle_badges(unlocked, return_screen=resume)
             return
         if world_just_completed:
+            self.state.stars = stars_earned
             self.state.last_letter_feedback_message = (
                 f"{LETTER_CORRECT_SPEECH}. You finished Letter Island!"
             )
@@ -2119,7 +2031,6 @@ class GameEngine:
                 self._speak_tutor_line("Correct!")
             self.set_screen("progress_complete")
             return
-<<<<<<< Updated upstream
         if voice_mode:
             self._show_voice_pronunciation_feedback("correct")
             self._speak_tutor_line("Correct!")
@@ -2127,10 +2038,7 @@ class GameEngine:
             self.set_screen("letter_voice_challenge")
             self._schedule_voice_correct_advance("letter")
             return
-        self.set_screen("letter_correct_feedback")
-=======
         self._show_letter_correct_feedback("", stars_earned=stars_earned)
->>>>>>> Stashed changes
 
     def _handle_letter_island_action(self, action: str) -> None:
         target_letter = (self.state.current_task_target or "A").upper()
@@ -2225,41 +2133,22 @@ class GameEngine:
             return
 
         if screen_id == "voice_challenge":
-<<<<<<< Updated upstream
-            self.voice.speak(WORD_VOICE_QUESTION)
-            return
-
-        if screen_id == "letter_voice_challenge":
-            self.voice.speak(LETTER_VOICE_QUESTION)
-=======
-            target = self._voice_challenge_target()
-            self.voice.speak(f"Say {target}.", tone="instruct")
+            self.voice.speak(WORD_VOICE_QUESTION, tone="instruct")
             return
 
         if screen_id == "letter_voice_challenge":
             self.voice.speak(LETTER_VOICE_PROMPT, tone="instruct")
->>>>>>> Stashed changes
             return
 
         if screen_id == "listening_state":
             if self.state.microphone_test_mode:
                 self.voice.speak(self.state.microphone_status_message or "Microphone is ready.", tone="encourage")
             else:
-<<<<<<< Updated upstream
-                self.voice.speak("I'm listening.")
+                self.voice.speak("I'm listening.", tone="instruct")
             return
 
         if screen_id == "letter_listening_state":
-            self.voice.speak("I'm listening.")
-=======
-                target = self._voice_challenge_target()
-                self.voice.speak(f"I am listening. Say {target}.", tone="instruct")
-            return
-
-        if screen_id == "letter_listening_state":
-            target = self._letter_voice_target()
-            self.voice.speak(f"I am listening. Say {target}.", tone="instruct")
->>>>>>> Stashed changes
+            self.voice.speak("I'm listening.", tone="instruct")
             return
 
         if screen_id == "microphone_check":
@@ -2301,17 +2190,14 @@ class GameEngine:
 
     def update(self) -> None:
         self.current_screen.update()
-<<<<<<< Updated upstream
         self._update_voice_pronunciation_feedback()
         self._maybe_complete_voice_correct_advance()
         self._maybe_start_scheduled_voice_listen()
-=======
         if self.state.answer_popup_kind:
             elapsed = pygame.time.get_ticks() - int(self.state.answer_popup_shown_at_ms or 0)
             duration = HINT_POPUP_DURATION_MS if self.state.answer_popup_kind == "hint" else ANSWER_POPUP_DURATION_MS
             if elapsed >= duration:
                 self._resolve_answer_popup()
->>>>>>> Stashed changes
         if self.state.current_screen_id in IDLE_PRELOAD_SCREEN_IDS:
             budget = 14 if self.state.current_screen_id == "splash_loading" else 8
             if self._preload_queue or self._image_preload_queue:

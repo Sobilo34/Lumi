@@ -1,7 +1,9 @@
 """Component renderers for every Lumi Word Adventure screen."""
 from __future__ import annotations
 
+import math
 from collections.abc import Callable
+from pathlib import Path
 from typing import Any
 
 import pygame
@@ -29,6 +31,7 @@ from ui.components.primitives import (
     blit_fitted_text,
     draw_circle_button,
     draw_dashed_rounded_rect,
+    display_font,
     draw_icon_bulb,
     draw_icon_home,
     draw_icon_mic,
@@ -53,6 +56,96 @@ from ui.themes.chrome import (
 from ui.themes.menu_bg import paint_loading_bar, paint_pink_sky
 
 SceneRenderer = Callable[[pygame.Surface, SceneView], None]
+
+_PROGRESS_BTN_DIR = Path(__file__).resolve().parents[2] / "assets" / "ui_chunks" / "progress_complete"
+_PROGRESS_BUTTONS: dict[str, pygame.Surface] = {}
+
+# Bottom row: three pill buttons evenly centered.
+_PROGRESS_BTN_RECTS = (
+    ("next_world.png", pct_rect(0.105, 0.80, 0.24, 0.12)),
+    ("practice_again.png", pct_rect(0.38, 0.80, 0.24, 0.12)),
+    ("view_report.png", pct_rect(0.655, 0.80, 0.24, 0.12)),
+)
+
+
+def _dramatic_text(
+    surface: pygame.Surface,
+    value: str,
+    size: int,
+    center: tuple[int, int],
+    color: tuple[int, int, int],
+    *,
+    outline: tuple[int, int, int] = (180, 95, 40),
+) -> None:
+    f = display_font(size)
+    outline_width = max(3, size // 18)
+    for dx in range(-outline_width, outline_width + 1):
+        for dy in range(-outline_width, outline_width + 1):
+            if dx * dx + dy * dy > outline_width * outline_width:
+                continue
+            if dx == 0 and dy == 0:
+                continue
+            layer = f.render(value, True, outline)
+            surface.blit(layer, layer.get_rect(center=(center[0] + dx, center[1] + dy)))
+    label = f.render(value, True, color)
+    surface.blit(label, label.get_rect(center=center))
+
+
+def _progress_button_surface(filename: str) -> pygame.Surface | None:
+    cached = _PROGRESS_BUTTONS.get(filename)
+    if cached is not None:
+        return cached
+    path = _PROGRESS_BTN_DIR / filename
+    if not path.is_file():
+        return None
+    try:
+        image = pygame.image.load(str(path)).convert_alpha()
+    except (pygame.error, FileNotFoundError, OSError):
+        return None
+    _PROGRESS_BUTTONS[filename] = image
+    return image
+
+
+def _blit_progress_button(surface: pygame.Surface, rect: pygame.Rect, filename: str) -> bool:
+    image = _progress_button_surface(filename)
+    if image is None:
+        return False
+    source_w, source_h = image.get_size()
+    if source_w <= 0 or source_h <= 0:
+        return False
+    scale = min(rect.width / source_w, rect.height / source_h)
+    target_w = max(1, int(source_w * scale))
+    target_h = max(1, int(source_h * scale))
+    if target_w != source_w or target_h != source_h:
+        image = pygame.transform.smoothscale(image, (target_w, target_h))
+    surface.blit(image, image.get_rect(center=rect.center))
+    return True
+
+
+def _draw_outline_star(surface: pygame.Surface, center: tuple[int, int], size: int) -> None:
+    cx, cy = center
+    points: list[tuple[int, int]] = []
+    for i in range(10):
+        angle = i * math.pi / 5 - math.pi / 2
+        radius = size if i % 2 == 0 else size // 2
+        points.append((cx + int(radius * math.cos(angle)), cy + int(radius * math.sin(angle))))
+    pygame.draw.polygon(surface, (225, 205, 215), points)
+    pygame.draw.polygon(surface, (190, 170, 185), points, width=max(2, size // 12))
+
+
+def _draw_progress_complete_stars(surface: pygame.Surface, center: tuple[int, int], filled: int) -> None:
+    from ui.dynamic_layers import _draw_filled_star
+
+    size = 36
+    gap = int(size * 1.18)
+    start_x = center[0] - gap
+    filled = max(0, min(3, int(filled)))
+    for index in range(3):
+        cx = start_x + index * gap
+        if index < filled:
+            _draw_filled_star(surface, (cx, center[1]), size)
+        else:
+            _draw_outline_star(surface, (cx, center[1]), size)
 
 
 def _text(surface: pygame.Surface, value: str, size: int, center: tuple[int, int], color: tuple[int, int, int], *, bold: bool = True) -> None:
@@ -428,17 +521,35 @@ def render_progress_complete(surface: pygame.Surface, view: SceneView) -> None:
     paint_pink_sky(surface)
     panel_outer = pct_rect(0.20, 0.18, 0.60, 0.50)
     panel_inner = draw_stitched_panel(surface, panel_outer, border_color=(255, 198, 96))
-    _text(surface, "Level Complete!", 62, (panel_inner.centerx, panel_inner.y + 64), (227, 144, 56))
-    _text(surface, "Stars earned:", 34, (panel_inner.centerx - 70, panel_inner.y + 140), PROMPT_BROWN)
-    stars = max(0, min(3, int(view.stars_filled)))
-    for i in range(3):
-        color = STAR_YELLOW if i < stars else (225, 205, 215)
-        _text(surface, "★", 56, (panel_inner.centerx + 54 + i * 58, panel_inner.y + 142), color)
+    _dramatic_text(
+        surface,
+        "Level Complete!",
+        74,
+        (panel_inner.centerx, panel_inner.y + 66),
+        (255, 196, 72),
+        outline=(210, 110, 35),
+    )
+    stars_earned = max(0, min(3, int(view.stars_filled)))
+    label = font(30, bold=True).render("Stars earned:", True, PROMPT_BROWN)
+    surface.blit(label, label.get_rect(center=(panel_inner.centerx, panel_inner.y + 138)))
+    _draw_progress_complete_stars(surface, (panel_inner.centerx, panel_inner.y + 198), stars_earned)
     progress = view.progress_text or "Great work today!"
-    _text(surface, progress, 30, (panel_inner.centerx, panel_inner.y + 222), HUD_PINK_DARK)
-    draw_menu_button(surface, pct_rect(0.36, 0.73, 0.25, 0.13), "Next World", accent=(255, 195, 111))
-    draw_menu_button(surface, pct_rect(0.63, 0.73, 0.25, 0.13), "Practice Again", accent=(172, 196, 245))
-    draw_menu_button(surface, pct_rect(0.90, 0.05, 0.16, 0.12), "View Report", accent=(198, 172, 241))
+    _dramatic_text(
+        surface,
+        progress,
+        40,
+        (panel_inner.centerx, panel_inner.y + 278),
+        HUD_PINK_DARK,
+        outline=(160, 90, 120),
+    )
+    fallbacks = (
+        ("Next World", (255, 195, 111)),
+        ("Practice Again", (172, 196, 245)),
+        ("View Report", (198, 172, 241)),
+    )
+    for (filename, rect), (label_text, accent) in zip(_PROGRESS_BTN_RECTS, fallbacks, strict=True):
+        if not _blit_progress_button(surface, rect, filename):
+            draw_menu_button(surface, rect, label_text, accent=accent)
 
 
 def render_practice_weak_skills(surface: pygame.Surface, view: SceneView) -> None:

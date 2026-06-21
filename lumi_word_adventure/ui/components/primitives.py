@@ -81,6 +81,35 @@ def font(size: int, *, bold: bool = True) -> pygame.font.Font:
     return loaded
 
 
+_DISPLAY_FONT_CACHE: dict[int, pygame.font.Font] = {}
+
+
+def display_font(size: int) -> pygame.font.Font:
+    """Larger celebratory headings for completion screens."""
+    cached = _DISPLAY_FONT_CACHE.get(size)
+    if cached is not None:
+        return cached
+    for name in (
+        "luckiest guy",
+        "impact",
+        "cooper black",
+        "arial black",
+        "fredokaone",
+        "fredoka one",
+        "baloo2",
+        "nunito",
+    ):
+        try:
+            loaded = pygame.font.SysFont(name, size, bold=True)
+            _DISPLAY_FONT_CACHE[size] = loaded
+            return loaded
+        except Exception:
+            continue
+    loaded = font(size, bold=True)
+    _DISPLAY_FONT_CACHE[size] = loaded
+    return loaded
+
+
 def draw_rect_shadow(
     surface: pygame.Surface,
     rect: pygame.Rect,

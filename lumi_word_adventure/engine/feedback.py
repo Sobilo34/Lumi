@@ -251,11 +251,7 @@ def get_lumi_speech(screen_id: str, current_task: str | None = None) -> str:
     if screen == "voice_challenge":
         return "What word is this?"
     if screen == "letter_voice_challenge":
-<<<<<<< Updated upstream
-        return "What letter is this?"
-=======
         return LETTER_VOICE_PROMPT
->>>>>>> Stashed changes
     if screen == "letter_listening_state":
         return "I'm listening carefully."
     if screen == "listening_state":
