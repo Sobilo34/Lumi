@@ -69,7 +69,9 @@ class GameState:
     end_session_pending: bool = False
     session_end_report_path: str = ""
     last_completed_world_id: str = ""
+    last_points_awarded: int = 0
     current_round_wrong_count: int = 0
+<<<<<<< Updated upstream
     voice_listen_pending: bool = False
     voice_listen_scheduled_at_ms: int = 0
     suppress_screen_speech_once: bool = False
@@ -78,3 +80,12 @@ class GameState:
     voice_round_advance_pending: str = ""
     voice_round_advance_at_ms: int = 0
     voice_mic_prompt_at_ms: int = 0
+=======
+    feedback_return_screen: str = ""
+    answer_popup_kind: str = ""
+    answer_popup_message: str = ""
+    answer_popup_shown_at_ms: int = 0
+    answer_popup_next_screen: str = ""
+    answer_popup_refresh: bool = False
+    answer_popup_preserve: bool = False
+>>>>>>> Stashed changes

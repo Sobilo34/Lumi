@@ -23,7 +23,6 @@ BADGE_DISPLAY_SUBTITLES: dict[str, str] = {
     "B and D Master": "You mastered B and D!",
     "Word Explorer": "You mastered 5 words!",
     "Brave Speaker": "You finished the voice challenge!",
-    "Sentence Builder": "You built sentences in the castle!",
     "Great Learner": "You earned 20 stars!",
 }
 
@@ -35,7 +34,6 @@ BADGE_ICON_FILES: dict[str, str] = {
     "B and D Master": "b_and_d_master.png",
     "Word Explorer": "word_explorer.png",
     "Brave Speaker": "brave_speaker.png",
-    "Sentence Builder": "sentence_builder.png",
     "Great Learner": "great_learner.png",
 }
 
@@ -43,7 +41,6 @@ BADGE_ICON_FILES: dict[str, str] = {
 BADGE_DEFINITIONS: dict[str, Callable[[dict[str, Any]], bool]] = {
     "Word Explorer": lambda profile: len(profile.get("mastered_words", [])) >= 5,
     "Brave Speaker": lambda profile: "voice_challenge" in profile.get("completed_worlds", []),
-    "Sentence Builder": lambda profile: "sentence_castle" in profile.get("completed_worlds", []),
     "B and D Master": lambda profile: {"B", "D"}.issubset(set(profile.get("mastered_letters", []))),
     "Great Learner": lambda profile: int(profile.get("total_stars", 0)) >= 20,
 }

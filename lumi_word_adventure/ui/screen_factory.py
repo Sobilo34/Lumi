@@ -16,7 +16,23 @@ from ui.screens import BaseScreen, create_screen_with_hitboxes
 # Full reference PNG only — no chunk layers or dynamic overlays.
 IMAGE_ONLY_SCREEN_IDS = frozenset({
     "welcome",
-    "letter_mistake_hint",
+})
+
+# Menu / flow / info screens have no dedicated image components, so they are
+# drawn with the procedural component renderers. These paint the shared app
+# background and clean vector components on top (kid-friendly, simple to read).
+PROCEDURAL_SCREEN_IDS = frozenset({
+    "main_menu",
+    "world_map",
+    "bd_practice",
+    "progress_complete",
+    "practice_weak_skills",
+    "teacher_report",
+    "settings",
+    "microphone_check",
+    "end_session",
+    "offline_continue",
+    "points_page",
 })
 
 
@@ -37,7 +53,7 @@ def create_game_screen(
     spec = get_screen_spec(screen_id, fallback_image=fallback)
     composer = ChunkComposer(asset_manager)
 
-    if prefer_procedural:
+    if prefer_procedural or screen_id in PROCEDURAL_SCREEN_IDS:
         return create_component_screen(screen_id, hitboxes, view_fn)
 
     # Image-first: chunk layers when present, otherwise full reference_interfaces PNG.

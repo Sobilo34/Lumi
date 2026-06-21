@@ -174,7 +174,18 @@
     "letter_island_game": {
       "asset_root": "letter_island_game",
       "fallback_image": "07_letter_island_gameplay.png",
-      "layers": [],
+      "layers": [
+        {
+          "id": "background",
+          "file": "background.png",
+          "z": 0,
+          "x_pct": 0,
+          "y_pct": 0,
+          "w_pct": 1,
+          "h_pct": 1,
+          "fit": "fill"
+        }
+      ],
       "dynamic": {
         "find_prompt": {
           "type": "find_letter_png",
@@ -196,45 +207,10 @@
           "y_pct": 0.56,
           "tile_w_pct": 0.11,
           "tile_h_pct": 0.22,
-          "gap_pct": 0.028
-        }
-      }
-    },
-    "letter_correct_feedback": {
-      "asset_root": "letter_island_game",
-      "fallback_image": "08_letter_correct_feedback.png",
-      "layers": [],
-      "dynamic": {
-        "find_prompt": {
-          "type": "find_letter_png",
-          "field": "target_letter",
-          "anchor": "center",
-          "container_x_pct": 0.329,
-          "container_w_pct": 0.485,
-          "y_pct": 0.305,
-          "w_pct": 0.34,
-          "h_pct": 0.1
-        },
-        "letter_cards": {
-          "type": "letter_tile_cards",
-          "layout": "row",
-          "count": 4,
-          "tile_variant": "success",
-          "container_x_pct": 0.329,
-          "container_w_pct": 0.485,
-          "y_pct": 0.56,
-          "tile_w_pct": 0.11,
-          "tile_h_pct": 0.22,
           "gap_pct": 0.028,
-          "selected_scale": 1.22
+          "selected_scale": 1.32
         }
       }
-    },
-    "letter_mistake_hint": {
-      "asset_root": "letter_island_game",
-      "fallback_image": "09_letter_mistake_hint.png",
-      "layers": [],
-      "dynamic": {}
     },
     "letter_voice_challenge": {
       "asset_root": "letter_island_game",
@@ -252,6 +228,14 @@
         }
       ],
       "dynamic": {
+        "voice_prompt": {
+          "type": "letter_voice_prompt",
+          "anchor": "center",
+          "x_pct": 0.5,
+          "y_pct": 0.20,
+          "w_pct": 0.72,
+          "h_pct": 0.12
+        },
         "say_letter": {
           "type": "letter_focus_png",
           "field": "target_letter",
@@ -281,6 +265,14 @@
         }
       ],
       "dynamic": {
+        "voice_prompt": {
+          "type": "letter_voice_prompt",
+          "anchor": "center",
+          "x_pct": 0.5,
+          "y_pct": 0.20,
+          "w_pct": 0.72,
+          "h_pct": 0.12
+        },
         "say_letter": {
           "type": "letter_focus_png",
           "field": "target_letter",
@@ -362,101 +354,6 @@
               "w_pct": 0.108,
               "h_pct": 0.315
             }
-          ]
-        }
-      }
-    },
-    "word_correct_feedback": {
-      "asset_root": "word_garden_game",
-      "fallback_image": "12_word_correct_feedback.png",
-      "layers": [
-        {
-          "id": "background",
-          "file": "success_background.png",
-          "z": 0,
-          "x_pct": 0,
-          "y_pct": 0,
-          "w_pct": 1,
-          "h_pct": 1,
-          "fit": "fill"
-        }
-      ],
-      "dynamic": {
-        "answer_word": {
-          "type": "touch_word_png",
-          "field": "target_word",
-          "x_pct": 0.378,
-          "y_pct": 0.214,
-          "w_pct": 0.275,
-          "h_pct": 0.048,
-          "fit": "contain",
-          "halign": "center",
-          "valign": "middle",
-          "offset_x_px": -308,
-          "offset_y_px": 165
-        },
-        "word_cards": {
-          "type": "word_object_cards",
-          "tile_variant": "success",
-          "fit": "contain",
-          "pad_x_pct": 0.012,
-          "pad_y_pct": 0.018,
-          "shrink_px": 5,
-          "offset_x_px": [275, 290, 280, 260],
-          "offset_y_px": -50,
-          "selected_scale": 1.06,
-          "slots": [
-            { "x_pct": 0.176, "y_pct": 0.385, "w_pct": 0.142, "h_pct": 0.315 },
-            { "x_pct": 0.31, "y_pct": 0.385, "w_pct": 0.142, "h_pct": 0.315 },
-            { "x_pct": 0.482, "y_pct": 0.385, "w_pct": 0.128, "h_pct": 0.315 },
-            { "x_pct": 0.652, "y_pct": 0.385, "w_pct": 0.108, "h_pct": 0.315 }
-          ]
-        }
-      }
-    },
-    "word_mistake_hint": {
-      "asset_root": "word_garden_game",
-      "fallback_image": "13_word_mistake_hint.png",
-      "layers": [
-        {
-          "id": "background",
-          "file": "failure_background.png",
-          "z": 0,
-          "x_pct": 0,
-          "y_pct": 0,
-          "w_pct": 1,
-          "h_pct": 1,
-          "fit": "fill"
-        }
-      ],
-      "dynamic": {
-        "answer_word": {
-          "type": "touch_word_png",
-          "field": "target_word",
-          "x_pct": 0.455,
-          "y_pct": 0.108,
-          "w_pct": 0.11,
-          "h_pct": 0.04,
-          "fit": "contain",
-          "halign": "center",
-          "valign": "middle",
-          "offset_x_px": 187,
-          "offset_y_px": 78
-        },
-        "word_cards": {
-          "type": "word_object_cards",
-          "tile_variant": "normal",
-          "fit": "contain",
-          "pad_x_pct": 0.012,
-          "pad_y_pct": 0.018,
-          "shrink_px": 5,
-          "offset_x_px": [135, 145, 155, 105],
-          "offset_y_px": 15,
-          "slots": [
-            { "x_pct": 0.176, "y_pct": 0.385, "w_pct": 0.142, "h_pct": 0.315 },
-            { "x_pct": 0.31, "y_pct": 0.385, "w_pct": 0.142, "h_pct": 0.315 },
-            { "x_pct": 0.482, "y_pct": 0.385, "w_pct": 0.128, "h_pct": 0.315 },
-            { "x_pct": 0.652, "y_pct": 0.385, "w_pct": 0.108, "h_pct": 0.315 }
           ]
         }
       }

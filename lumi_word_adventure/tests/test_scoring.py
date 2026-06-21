@@ -42,7 +42,7 @@ def test_check_badge_unlocks_finds_expected_badges() -> None:
         "total_stars": 20,
         "mastered_letters": ["A", "B", "C", "D", "E", "F"],
         "mastered_words": ["cat", "dog", "sun", "ball", "apple"],
-        "completed_worlds": ["voice_challenge", "sentence_castle"],
+        "completed_worlds": ["voice_challenge"],
         "badges": [],
     }
 
@@ -51,7 +51,6 @@ def test_check_badge_unlocks_finds_expected_badges() -> None:
     assert "Letter Hero" not in unlocked
     assert "Word Explorer" in unlocked
     assert "Brave Speaker" in unlocked
-    assert "Sentence Builder" in unlocked
     assert "B and D Master" in unlocked
     assert "Great Learner" in unlocked
 

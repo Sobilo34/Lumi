@@ -4,7 +4,6 @@ import pytest
 
 from reports.report_generator import (
     SCREEN_BD_PRACTICE,
-    SCREEN_SENTENCE_CASTLE,
     SCREEN_WORD_GARDEN,
     SCREEN_WORLD_MAP,
     calculate_accuracy,
@@ -27,7 +26,6 @@ def _rich_profile() -> dict:
         "mastered_words": ["cat", "dog"],
         "weak_letters": {"B": 3, "D": 2},
         "weak_words": {"cat": 4},
-        "sentence_errors": {"word_order": 1},
     }
 
 
@@ -54,7 +52,6 @@ def test_calculate_accuracy_from_profile() -> None:
         ({"weak_letters": {"B": 2, "D": 1}}, SCREEN_BD_PRACTICE),
         ({"weak_letters": {"D": 2}}, SCREEN_BD_PRACTICE),
         ({"weak_letters": {"B": 1}, "weak_words": {"cat": 2}}, SCREEN_WORD_GARDEN),
-        ({"sentence_errors": {"word_order": 1}}, SCREEN_SENTENCE_CASTLE),
         ({}, SCREEN_WORLD_MAP),
     ],
 )
@@ -75,7 +72,6 @@ def test_generate_report_writes_session_json(tmp_path: Path) -> None:
     assert report["needs_practice"] == "Letters B and D"
     assert report["weak_letters"] == {"B": 3, "D": 2}
     assert report["weak_words"] == {"cat": 4}
-    assert report["sentence_errors"] == {"word_order": 1}
     assert report["recommended_next_activity"] == "B/D Practice"
     assert report["recommended_screen_id"] == SCREEN_BD_PRACTICE
     assert report["generated_at"]
@@ -95,7 +91,6 @@ def test_save_session_report_default_filename(tmp_path: Path, monkeypatch: pytes
 def test_resolve_engine_screen_id_maps_mcp_ids() -> None:
     assert resolve_engine_screen_id(SCREEN_BD_PRACTICE) == "bd_practice"
     assert resolve_engine_screen_id(SCREEN_WORD_GARDEN) == "word_garden_game"
-    assert resolve_engine_screen_id(SCREEN_SENTENCE_CASTLE) == "sentence_castle_game"
     assert resolve_engine_screen_id(SCREEN_WORLD_MAP) == "world_map"
 
 
@@ -110,7 +105,6 @@ def test_b4_demo_profile_report_fields(tmp_path: Path) -> None:
         "mastered_words": ["dog"],
         "weak_letters": {"B": 2, "D": 1},
         "weak_words": {"cat": 2},
-        "sentence_errors": {"word_order": 1},
     }
     report = generate_report(profile, output_path=tmp_path / "b4_report.json")
 

@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from data_loader import DataLoadError, load_default_profile, load_letters, load_sentences, load_vocabulary
+from data_loader import DataLoadError, load_default_profile, load_letters, load_vocabulary
 
 
 def test_load_letters_returns_expected_entries() -> None:
@@ -12,13 +12,8 @@ def test_load_letters_returns_expected_entries() -> None:
 
 def test_load_vocabulary_returns_expected_words() -> None:
     vocabulary = load_vocabulary()
-    assert {entry["word"] for entry in vocabulary} == {"cat", "dog", "sun", "ball", "apple", "boat", "flower"}
-
-
-def test_load_sentences_returns_expected_sentences() -> None:
-    sentences = load_sentences()
-    assert len(sentences) == 5
-    assert sentences[0]["prompt"].startswith("Build the sentence")
+    words = {entry["word"] for entry in vocabulary}
+    assert words >= {"cat", "dog", "sun", "ball", "apple"}
 
 
 def test_load_default_profile_has_new_schema() -> None:

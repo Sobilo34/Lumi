@@ -49,12 +49,6 @@ def load_vocabulary() -> list[dict[str, Any]]:
     return payload
 
 
-def load_sentences() -> list[dict[str, Any]]:
-    payload = load_json_file("sentences.json")
-    if not isinstance(payload, list):
-        raise DataLoadError("sentences.json must contain a JSON array")
-    return payload
-
 
 def load_default_profile() -> dict[str, Any]:
     payload = load_json_file("default_profile.json")

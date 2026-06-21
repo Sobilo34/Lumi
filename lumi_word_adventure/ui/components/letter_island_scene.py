@@ -445,7 +445,10 @@ def _wrap(text_font: pygame.font.Font, text: str, max_width: int) -> list[str]:
 
 
 def _render_base(surface: pygame.Surface, view: LetterIslandView) -> None:
-    surface.blit(_background_surface(), (0, 0))
+    from ui.app_background import paint_app_background
+
+    if not paint_app_background(surface):
+        surface.blit(_background_surface(), (0, 0))
     _draw_lumi_mascot(surface, view.held_letter or view.target_letter)
     _draw_top_hud(surface, view)
     _draw_game_board(surface, view)

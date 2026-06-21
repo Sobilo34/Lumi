@@ -246,6 +246,27 @@ def _selection_weight(
     return max(weight, 0.05)
 
 
+def _strongest_review_word(profile: Any, candidates: list[str]) -> str:
+    """Return the most-missed, not-yet-mastered word in ``candidates`` (or "")."""
+    weak_words = _profile_dict(profile).get("weak_words", {})
+    if not isinstance(weak_words, dict):
+        return ""
+    scored: list[tuple[int, str]] = []
+    for word in candidates:
+        key = _lower_word(word)
+        weak_count = int(weak_words.get(key, 0) or 0)
+        if weak_count < 2:
+            continue
+        record = get_word_mastery_record(profile, key)
+        if float(record.get("mastery_score", 0.0) or 0.0) >= WORD_MASTERY_THRESHOLD:
+            continue
+        scored.append((weak_count, key))
+    if not scored:
+        return ""
+    scored.sort(key=lambda item: (-item[0], item[1]))
+    return scored[0][1]
+
+
 def pick_word_garden_target(
     profile: Any,
     pool: tuple[str, ...],
@@ -262,6 +283,16 @@ def pick_word_garden_target(
     now = int(time.time())
     last = _lower_word(last_target)
     candidates = [word for word in words if word != last] or list(words)
+
+    # Always review a word the child keeps missing before exploring new ones.
+    review_word = _strongest_review_word(profile, candidates)
+    if review_word:
+        log_ai_decision(
+            "word_pick",
+            f"target={review_word} reason=word_review pool={len(words)} last={last or '-'}",
+        )
+        return review_word, "word_review"
+
     weights = [_selection_weight(word, profile, last_target=last, now=now) for word in candidates]
     target = randomizer.choices(candidates, weights=weights, k=1)[0]
 

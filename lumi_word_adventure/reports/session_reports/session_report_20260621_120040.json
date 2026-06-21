@@ -1,0 +1,20 @@
+{
+  "child_name": "Test",
+  "stars_earned": 144,
+  "accuracy_percent": 80,
+  "strong_skill": "Letter recognition",
+  "needs_practice": "None",
+  "weak_letters": {},
+  "weak_words": {
+    "apple": 3,
+    "fish": 1,
+    "dog": 1
+  },
+  "sentence_errors": {},
+  "recommended_next_activity": "World Map",
+  "recommended_screen_id": "06_world_map",
+  "generated_at": "2026-06-21T04:00:40+00:00",
+  "attempts": 61,
+  "correct_answers": 49,
+  "difficulty": 1
+}

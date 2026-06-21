@@ -5,15 +5,27 @@ import pygame
 
 from config import SCREEN_HEIGHT, SCREEN_WIDTH
 from engine.asset_manager import AssetManager
+from ui.app_background import paint_app_background, screen_uses_app_background
 from ui.chunk_manifest import LayerSpec, ScreenChunkSpec, slot_rect
 from ui.dynamic_layers import draw_dynamic_layers
 from ui.scene_view import SceneView
+
+# Full-screen art replaced by the shared app background on non-exempt screens.
+_BACKGROUND_LAYER_FILES = frozenset(
+    {
+        "background.png",
+        "speak_background.png",
+        "success_background.png",
+        "failure_background.png",
+    }
+)
 
 
 class ChunkComposer:
     def __init__(self, asset_manager: AssetManager) -> None:
         self.assets = asset_manager
         self._static_cache: dict[str, pygame.Surface] = {}
+        self._foreground_cache: dict[str, pygame.Surface] = {}
 
     def warm_static(self, spec: ScreenChunkSpec) -> None:
         self._static_surface(spec)
@@ -29,7 +41,12 @@ class ChunkComposer:
         return False
 
     def compose(self, surface: pygame.Surface, spec: ScreenChunkSpec, view: SceneView) -> None:
-        if self._has_any_chunk(spec):
+        if screen_uses_app_background(spec.screen_id) and paint_app_background(surface):
+            # Shared background painted; layer only the foreground chunks on top so
+            # the new background shows through behind every component.
+            if self._has_any_chunk(spec):
+                surface.blit(self._foreground_surface(spec), (0, 0))
+        elif self._has_any_chunk(spec):
             surface.blit(self._static_surface(spec), (0, 0))
         elif spec.fallback_image:
             surface.blit(self.assets.load_image(spec.fallback_image), (0, 0))
@@ -59,6 +76,25 @@ class ChunkComposer:
                 self._blit_layer(static, asset_root, layer)
         self._static_cache[spec.screen_id] = static
         return static
+
+    def _foreground_surface(self, spec: ScreenChunkSpec) -> pygame.Surface:
+        """Static chunks minus full-screen backgrounds, on a transparent surface."""
+        cached = self._foreground_cache.get(spec.screen_id)
+        if cached is not None:
+            return cached
+        asset_root = spec.asset_root or spec.screen_id
+        foreground = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
+        for layer in spec.layers:
+            if layer.repeat == "letter_slots":
+                self._blit_card_frames(foreground, spec, asset_root)
+            elif layer.repeat == "profile_slots":
+                self._blit_profile_frames(foreground, spec, asset_root)
+            elif layer.file in _BACKGROUND_LAYER_FILES:
+                continue
+            else:
+                self._blit_layer(foreground, asset_root, layer)
+        self._foreground_cache[spec.screen_id] = foreground
+        return foreground
 
     def _blit_layer(self, surface: pygame.Surface, asset_root: str, layer: LayerSpec) -> None:
         image = self.assets.load_chunk(asset_root, layer.file)

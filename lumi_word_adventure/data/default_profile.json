@@ -8,7 +8,6 @@
   "wrong_streak": 0,
   "weak_letters": {},
   "weak_words": {},
-  "sentence_errors": {},
   "hint_usage": {
     "level_1": 0,
     "level_2": 0,
@@ -22,7 +21,6 @@
   "correct_answers": 0,
   "current_letter_index": 0,
   "current_word_length": 3,
-  "sentence_level": 0,
   "letter_mastery": {},
   "word_mastery": {},
   "last_word_garden_target": "",

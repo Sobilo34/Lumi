@@ -31,6 +31,8 @@ class LearnerModel:
     _PROFILE_FIELDS = (
         "child_name",
         "total_stars",
+        "total_points",
+        "best_streak",
         "lumi_energy",
         "current_world",
         "difficulty",
@@ -38,7 +40,6 @@ class LearnerModel:
         "wrong_streak",
         "weak_letters",
         "weak_words",
-        "sentence_errors",
         "hint_usage",
         "mastered_letters",
         "mastered_words",
@@ -52,7 +53,6 @@ class LearnerModel:
         "accuracy",
         "current_letter_index",
         "current_word_length",
-        "sentence_level",
         "letter_mastery",
         "curriculum_letters_since_review",
     )
@@ -90,11 +90,12 @@ class LearnerModel:
         profile.setdefault("debug_persistent", False)
         profile.setdefault("current_letter_index", 0)
         profile.setdefault("current_word_length", 3)
-        profile.setdefault("sentence_level", 0)
         profile.setdefault("letter_mastery", default_letter_mastery_map())
         profile.setdefault("curriculum_letters_since_review", 0)
         profile.setdefault("word_mastery", {})
         profile.setdefault("last_word_garden_target", "")
+        profile.setdefault("total_points", 0)
+        profile.setdefault("best_streak", 0)
         return profile
 
     def _load_or_create_profile(self) -> tuple[dict[str, Any], bool]:
@@ -149,6 +150,18 @@ class LearnerModel:
         self.save_profile()
         return self.total_stars
 
+    def add_points(self, amount: int) -> int:
+        current = int(self._profile.get("total_points", 0) or 0)
+        self.total_points = max(0, current + max(0, int(amount)))
+        self.save_profile()
+        return self.total_points
+
+    def note_best_streak(self, streak: int) -> int:
+        best = max(int(self._profile.get("best_streak", 0) or 0), max(0, int(streak)))
+        self.best_streak = best
+        self.save_profile()
+        return best
+
     def update_accuracy(self) -> float:
         attempts = int(self.attempts)
         correct_answers = int(self.correct_answers)
@@ -182,13 +195,6 @@ class LearnerModel:
             self.weak_words[key] = int(self.weak_words.get(key, 0)) + 1
             self.save_profile()
         return int(self.weak_words.get(key, 0))
-
-    def record_sentence_error(self, error_type: str) -> int:
-        key = error_type.strip().lower()
-        if key:
-            self.sentence_errors[key] = int(self.sentence_errors.get(key, 0)) + 1
-            self.save_profile()
-        return int(self.sentence_errors.get(key, 0))
 
     def record_hint_usage(self, level: int | str) -> int:
         if isinstance(level, str) and level.startswith("level_"):

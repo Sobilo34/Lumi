@@ -21,9 +21,6 @@ class SceneView:
     slot_words: tuple[str, ...] = ()
     voice_target: str = "apple"
     voice_listening: bool = False
-    sentence_prompt: str = "Build the sentence."
-    sentence_words: tuple[str, ...] = ()
-    sentence_slots: tuple[str, ...] = ()
     feedback_message: str = ""
     music_enabled: bool = True
     voice_enabled: bool = True
@@ -32,7 +29,20 @@ class SceneView:
     teacher_report: dict[str, Any] = field(default_factory=dict)
     offline_message: str = ""
     microphone_status: str = ""
-    practice_cards: tuple[str, ...] = ("Practice B / D", "Practice Words", "Practice Sentences")
+    practice_cards: tuple[str, ...] = ("Practice B / D", "Practice Words")
     badge_names: tuple[str, ...] = ()
     loading_progress: float = 0.66
     highlight_letter_slot: int = -1
+    letter_success_slot: int = -1
+    letter_success_progress: float = 0.0
+    # Points / rewards
+    total_points: int = 0
+    points_rank: str = "Little Sprout"
+    points_emoji: str = "🌱"
+    points_progress: float = 0.0
+    points_to_next: int = 0
+    next_rank_name: str = ""
+    best_streak: int = 0
+    current_streak: int = 0
+    badges_count: int = 0
+    last_points_awarded: int = 0

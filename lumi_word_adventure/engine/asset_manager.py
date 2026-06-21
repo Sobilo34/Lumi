@@ -6,10 +6,38 @@ from pathlib import Path
 import pygame
 
 from config import BABY_PINK, REFERENCE_INTERFACES_DIR, SCREEN_HEIGHT, SCREEN_WIDTH, UI_CHUNKS_DIR
+from engine.letter_tile_bg import knock_out_letter_backdrop
 
 # Install scripts write this marker after offline PNG processing is complete.
 SHIPPED_ASSETS_MARKER = ".shipped_ready"
 SHIPPED_ASSETS_VERSION = "1"
+
+
+def _letter_tile_needs_cleanup(image: pygame.Surface) -> bool:
+    width, height = image.get_size()
+    if width <= 0 or height <= 0:
+        return False
+    for x, y in ((0, 0), (width - 1, 0), (0, height - 1), (width - 1, height - 1)):
+        if image.get_at((x, y)).a > 8:
+            return True
+    return False
+
+
+def _prepare_letter_tile_surface(image: pygame.Surface) -> pygame.Surface:
+    """Strip export checkerboard/white padding while keeping tile art intact."""
+    if not _letter_tile_needs_cleanup(image):
+        return image.convert_alpha()
+    try:
+        import numpy as np
+        from engine.letter_tile_bg import knock_out_letter_backdrop_array
+
+        width, height = image.get_size()
+        rgba = np.frombuffer(pygame.image.tobytes(image.convert_alpha(), "RGBA"), dtype=np.uint8)
+        rgba = rgba.reshape((height, width, 4))
+        cleaned = knock_out_letter_backdrop_array(rgba)
+        return pygame.image.frombuffer(cleaned.tobytes(), (width, height), "RGBA").convert_alpha()
+    except Exception:
+        return image.convert_alpha()
 
 
 def _is_flat_backdrop(r: int, g: int, b: int, a: int) -> bool:
@@ -560,6 +588,8 @@ class AssetManager:
                 image = self._load_chunk_file(image_path)
             else:
                 image = self._load_chunk_legacy(screen_id, filename, image_path)
+            if filename.startswith("letters/") and filename.endswith(".png"):
+                image = _prepare_letter_tile_surface(image)
             self._chunk_cache[cache_key] = image
         except (pygame.error, FileNotFoundError, OSError) as error:
             print(f"[Lumi Assets] Failed to load chunk '{cache_key}': {error}")

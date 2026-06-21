@@ -18,6 +18,10 @@ def _draw_flashcard(surface: pygame.Surface, rect: pygame.Rect, emoji: str, word
 
 
 def paint_pink_sky(surface: pygame.Surface) -> None:
+    from ui.app_background import paint_app_background
+
+    if paint_app_background(surface):
+        return
     draw_vertical_gradient(surface, (255, 200, 210), SKY_MID, SKY_BOTTOM)
     for cx, cy, rx, ry in ((180, 70, 100, 38), (520, 45, 120, 42), (950, 80, 90, 32), (1080, 120, 70, 28)):
         cloud = pygame.Surface((rx * 2 + 30, ry * 2 + 16), pygame.SRCALPHA)

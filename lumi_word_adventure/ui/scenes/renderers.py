@@ -9,9 +9,7 @@ import pygame
 from config import SCREEN_HEIGHT, SCREEN_WIDTH
 from ui.components.letter_island_scene import (
     LetterIslandView,
-    render_letter_island_correct,
     render_letter_island_gameplay,
-    render_letter_island_mistake,
 )
 from ui.components.primitives import (
     BOARD_BORDER,
@@ -180,35 +178,11 @@ def _paint_word_garden_background(surface: pygame.Surface) -> None:
         pygame.draw.circle(surface, color, (int(SCREEN_WIDTH * x_pct), int(SCREEN_HEIGHT * y_pct)), 12)
 
 
-def _paint_castle_background(surface: pygame.Surface) -> None:
-    paint_pink_sky(surface)
-    sky_tint = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
-    sky_tint.fill((165, 120, 205, 65))
-    surface.blit(sky_tint, (0, 0))
-    ground = pct_rect(0.0, 0.56, 1.0, 0.44)
-    pygame.draw.rect(surface, (207, 177, 237), ground)
-    tower_left = pct_rect(0.08, 0.23, 0.14, 0.40)
-    tower_right = pct_rect(0.78, 0.24, 0.14, 0.38)
-    for tower in (tower_left, tower_right):
-        draw_rounded_rect(surface, tower, (223, 204, 244), radius=12, border=(190, 155, 222), border_width=3)
-        top = pygame.Rect(tower.x + 4, tower.y - 24, tower.width - 8, 34)
-        draw_rounded_rect(surface, top, (190, 150, 230), radius=10, border=(175, 134, 214), border_width=2)
-    gate = pct_rect(0.39, 0.30, 0.22, 0.33)
-    draw_rounded_rect(surface, gate, (213, 188, 238), radius=18, border=(180, 142, 220), border_width=3)
-    door = pygame.Rect(gate.centerx - 54, gate.bottom - 122, 108, 122)
-    draw_rounded_rect(surface, door, (166, 125, 212), radius=22, border=(148, 106, 198), border_width=3)
-    for x_pct in (0.12, 0.86):
-        flag = [(int(SCREEN_WIDTH * x_pct), int(SCREEN_HEIGHT * 0.16)), (int(SCREEN_WIDTH * x_pct), int(SCREEN_HEIGHT * 0.28))]
-        pygame.draw.line(surface, PROMPT_BROWN, flag[0], flag[1], 4)
-        pennant = [
-            (flag[0][0], flag[0][1] + 8),
-            (flag[0][0] + 54, flag[0][1] + 24),
-            (flag[0][0], flag[0][1] + 42),
-        ]
-        pygame.draw.polygon(surface, (255, 190, 86), pennant)
-
-
 def _paint_room_background(surface: pygame.Surface) -> None:
+    from ui.app_background import paint_app_background
+
+    if paint_app_background(surface):
+        return
     surface.fill((248, 236, 246))
     wall = pct_rect(0.0, 0.0, 1.0, 0.70)
     floor = pct_rect(0.0, 0.70, 1.0, 0.30)
@@ -245,13 +219,6 @@ def _draw_word_card(surface: pygame.Surface, rect: pygame.Rect, text_value: str,
         padding=16,
         shadow=(60, 45, 55),
     )
-
-
-def _draw_sentence_slot(surface: pygame.Surface, rect: pygame.Rect, text_value: str) -> None:
-    fill = (255, 255, 255) if not text_value else (255, 240, 206)
-    draw_rounded_rect(surface, rect, fill, radius=14, border=BOARD_STITCH, border_width=3)
-    if text_value:
-        blit_fitted_text(surface, rect, text_value, PROMPT_BROWN, padding=10)
 
 
 def _draw_toggle(surface: pygame.Surface, rect: pygame.Rect, enabled: bool) -> None:
@@ -354,7 +321,9 @@ def render_world_map(surface: pygame.Surface, view: SceneView) -> None:
     pygame.draw.lines(surface, (247, 194, 141), False, path, 4)
     _draw_world_node(surface, 0.24, 0.52, "Letter Island", (255, 202, 136))
     _draw_world_node(surface, 0.50, 0.52, "Word Garden", (178, 230, 164))
-    _draw_world_node(surface, 0.76, 0.52, "Sentence Castle", (202, 179, 246))
+    points_chip = pct_rect(0.40, 0.02, 0.20, 0.11)
+    draw_rounded_rect(surface, points_chip, (255, 255, 255), radius=16, border=(255, 198, 96), border_width=3)
+    _text(surface, f"{view.points_emoji} {int(view.total_points)} pts", 24, points_chip.center, (227, 144, 56))
     words_chip = pct_rect(0.87, 0.12, 0.08, 0.13)
     draw_rounded_rect(surface, words_chip, (255, 255, 255), radius=16, border=HUD_PINK, border_width=3)
     _text(surface, "My\nWords", 18, words_chip.center, HUD_PINK_DARK)
@@ -366,15 +335,6 @@ def render_world_map(surface: pygame.Surface, view: SceneView) -> None:
 
 def render_letter_island_game(surface: pygame.Surface, view: SceneView) -> None:
     render_letter_island_gameplay(surface, _letter_island_view(view))
-
-
-def render_letter_correct_feedback(surface: pygame.Surface, view: SceneView) -> None:
-    render_letter_island_correct(surface, _letter_island_view(view))
-    draw_cta_button(surface, pct_rect(0.36, 0.79, 0.29, 0.15), "Next")
-
-
-def render_letter_mistake_hint(surface: pygame.Surface, view: SceneView) -> None:
-    render_letter_island_mistake(surface, _letter_island_view(view))
 
 
 def render_bd_practice(surface: pygame.Surface, view: SceneView) -> None:
@@ -420,33 +380,6 @@ def render_word_garden_game(surface: pygame.Surface, view: SceneView) -> None:
     _draw_footer_action_triplet(surface)
 
 
-def render_word_correct_feedback(surface: pygame.Surface, view: SceneView) -> None:
-    _paint_word_garden_background(surface)
-    draw_corner_nav(surface, show_home=False, show_settings=True)
-    panel_outer = pct_rect(0.27, 0.24, 0.46, 0.38)
-    panel_inner = draw_stitched_panel(surface, panel_outer, border_color=(157, 212, 136))
-    _text(surface, "Great!", 72, (panel_inner.centerx, panel_inner.y + 66), (109, 178, 93))
-    msg = view.feedback_message or f"You found {str(view.target_word or 'cat').lower()}!"
-    for i, line in enumerate(_wrap(msg, panel_inner.width - 50, size=30)):
-        _text(surface, line, 30, (panel_inner.centerx, panel_inner.y + 138 + i * 36), PROMPT_BROWN)
-    draw_cta_button(surface, pct_rect(0.37, 0.82, 0.27, 0.13), "Next")
-
-
-def render_word_mistake_hint(surface: pygame.Surface, view: SceneView) -> None:
-    _paint_word_garden_background(surface)
-    panel_outer = pct_rect(0.22, 0.18, 0.56, 0.50)
-    panel_inner = draw_stitched_panel(surface, panel_outer, border_color=(243, 160, 171))
-    message = view.feedback_message or "Good try. Listen and try again."
-    for i, line in enumerate(_wrap(message, panel_inner.width - 52, size=31)):
-        _text(surface, line, 31, (panel_inner.centerx, panel_inner.y + 70 + i * 38), PROMPT_BROWN)
-    sound_chip = pct_rect(0.28, 0.42, 0.07, 0.11)
-    draw_circle_button(surface, sound_chip.center, min(sound_chip.width, sound_chip.height) // 2, BUTTON_BLUE)
-    draw_icon_refresh(surface, sound_chip.center)
-    draw_menu_button(surface, pct_rect(0.25, 0.78, 0.20, 0.14), "Try Again", accent=(251, 186, 121))
-    draw_menu_button(surface, pct_rect(0.48, 0.78, 0.20, 0.14), "Repeat", accent=(172, 196, 245))
-    draw_menu_button(surface, pct_rect(0.70, 0.78, 0.16, 0.14), "Hint", accent=(198, 172, 241))
-
-
 def render_voice_challenge(surface: pygame.Surface, view: SceneView) -> None:
     paint_pink_sky(surface)
     draw_logo_banner(surface, y_pct=0.08)
@@ -473,97 +406,6 @@ def render_listening_state(surface: pygame.Surface, view: SceneView) -> None:
         surface.blit(pulse, (ring_center[0] - radius - 1, ring_center[1] - radius - 1))
     _text(surface, "Listening...", 38, (int(SCREEN_WIDTH * 0.50), int(SCREEN_HEIGHT * 0.63)), (58, 144, 204))
     draw_cta_button(surface, pct_rect(0.35, 0.77, 0.27, 0.15), "Stop")
-
-
-def render_voice_correct_feedback(surface: pygame.Surface, view: SceneView) -> None:
-    paint_pink_sky(surface)
-    draw_logo_banner(surface, y_pct=0.09)
-    panel_outer = pct_rect(0.24, 0.22, 0.52, 0.34)
-    panel_inner = draw_stitched_panel(surface, panel_outer, border_color=(163, 218, 145))
-    _text(surface, "Awesome!", 70, (panel_inner.centerx, panel_inner.y + 64), (92, 177, 94))
-    spoken = view.feedback_message or f"You said {str(view.voice_target or 'apple').lower()}!"
-    _text(surface, spoken, 32, (panel_inner.centerx, panel_inner.centery + 40), PROMPT_BROWN)
-    draw_cta_button(surface, pct_rect(0.29, 0.80, 0.29, 0.14), "Next")
-    draw_menu_button(surface, pct_rect(0.63, 0.80, 0.20, 0.12), "Say Again", accent=(166, 201, 244))
-
-
-def _render_sentence_base(surface: pygame.Surface, view: SceneView) -> None:
-    _paint_castle_background(surface)
-    draw_corner_nav(surface, show_home=True, show_settings=False)
-    draw_lumi_hud(
-        surface,
-        child_name=view.child_name or "Lumi",
-        energy=view.lumi_energy,
-        energy_max=view.lumi_energy_max,
-        stars_filled=view.stars_filled,
-        progress_text=view.progress_text or "Sentence castle",
-    )
-    panel_outer = pct_rect(0.17, 0.18, 0.66, 0.46)
-    panel_inner = draw_stitched_panel(surface, panel_outer, border_color=(198, 163, 236))
-    prompt = view.sentence_prompt or "Build the sentence."
-    _text(surface, prompt, 42, (panel_inner.centerx, panel_inner.y + 54), PROMPT_BROWN)
-    slot_rects = (
-        pct_rect(0.22, 0.55, 0.13, 0.13),
-        pct_rect(0.35, 0.55, 0.13, 0.13),
-        pct_rect(0.51, 0.55, 0.13, 0.13),
-        pct_rect(0.64, 0.55, 0.13, 0.13),
-    )
-    words = list(view.sentence_slots[:4])
-    while len(words) < 4:
-        words.append("")
-    for idx, rect in enumerate(slot_rects):
-        _draw_sentence_slot(surface, rect, words[idx])
-    card_rects = (
-        pct_rect(0.21, 0.75, 0.14, 0.15),
-        pct_rect(0.38, 0.75, 0.16, 0.15),
-        pct_rect(0.56, 0.75, 0.14, 0.15),
-        pct_rect(0.71, 0.75, 0.16, 0.15),
-    )
-    words_bank = list(view.sentence_words[:4])
-    if not words_bank:
-        words_bank = ["I", "see", "a", "cat"]
-    while len(words_bank) < 4:
-        words_bank.append("")
-    for idx, rect in enumerate(card_rects):
-        draw_rounded_rect(surface, rect, (255, 255, 255), radius=14, border=(190, 155, 222), border_width=3)
-        _text(surface, words_bank[idx], 30, rect.center, PROMPT_BROWN)
-    draw_circle_button(surface, (int(SCREEN_WIDTH * 0.865), int(SCREEN_HEIGHT * 0.845)), 28, BUTTON_YELLOW)
-    draw_icon_bulb(surface, (int(SCREEN_WIDTH * 0.865), int(SCREEN_HEIGHT * 0.845)))
-    draw_circle_button(surface, (int(SCREEN_WIDTH * 0.945), int(SCREEN_HEIGHT * 0.845)), 28, BUTTON_PURPLE)
-    draw_icon_refresh(surface, (int(SCREEN_WIDTH * 0.945), int(SCREEN_HEIGHT * 0.845)))
-
-
-def render_sentence_castle_game(surface: pygame.Surface, view: SceneView) -> None:
-    _render_sentence_base(surface, view)
-
-
-def render_sentence_dragging(surface: pygame.Surface, view: SceneView) -> None:
-    _render_sentence_base(surface, view)
-    drag_chip = pct_rect(0.41, 0.34, 0.18, 0.08)
-    draw_rounded_rect(surface, drag_chip, (255, 255, 255), radius=12, border=(190, 155, 222), border_width=2)
-    _text(surface, "Dragging...", 24, drag_chip.center, HUD_PINK_DARK)
-
-
-def render_sentence_mistake_hint(surface: pygame.Surface, view: SceneView) -> None:
-    _render_sentence_base(surface, view)
-    panel = pct_rect(0.25, 0.26, 0.50, 0.18)
-    draw_rounded_rect(surface, panel, (255, 255, 255), radius=16, border=HUD_PINK, border_width=3)
-    message = view.feedback_message or "Good try. Start with I."
-    for i, line in enumerate(_wrap(message, panel.width - 40, size=28)):
-        _text(surface, line, 28, (panel.centerx, panel.y + 44 + i * 32), PROMPT_BROWN)
-    draw_menu_button(surface, pct_rect(0.28, 0.78, 0.18, 0.13), "Try Again", accent=(255, 194, 117))
-    draw_menu_button(surface, pct_rect(0.50, 0.78, 0.18, 0.13), "Hint", accent=(172, 196, 245))
-    draw_menu_button(surface, pct_rect(0.70, 0.78, 0.18, 0.13), "Repeat", accent=(198, 172, 241))
-
-
-def render_sentence_correct_feedback(surface: pygame.Surface, view: SceneView) -> None:
-    _paint_castle_background(surface)
-    panel_outer = pct_rect(0.27, 0.23, 0.46, 0.35)
-    panel_inner = draw_stitched_panel(surface, panel_outer, border_color=(164, 219, 147))
-    _text(surface, "Sentence Complete!", 56, (panel_inner.centerx, panel_inner.y + 62), (93, 179, 95))
-    message = view.feedback_message or "You built it!"
-    _text(surface, message, 33, (panel_inner.centerx, panel_inner.centery + 36), PROMPT_BROWN)
-    draw_cta_button(surface, pct_rect(0.38, 0.80, 0.24, 0.14), "Next")
 
 
 def render_badge_unlock(surface: pygame.Surface, view: SceneView) -> None:
@@ -603,14 +445,13 @@ def render_practice_weak_skills(surface: pygame.Surface, view: SceneView) -> Non
     paint_pink_sky(surface)
     draw_logo_banner(surface, y_pct=0.08)
     _text(surface, "Choose a practice card", 34, (SCREEN_WIDTH // 2, int(SCREEN_HEIGHT * 0.24)), PROMPT_BROWN)
-    cards = list(view.practice_cards[:4]) if view.practice_cards else ["Practice B", "Practice D", "Practice Word Cat", "Practice Sentence"]
-    while len(cards) < 4:
+    cards = list(view.practice_cards[:3]) if view.practice_cards else ["Practice B", "Practice D", "Practice Word Cat"]
+    while len(cards) < 3:
         cards.append(f"Practice {len(cards) + 1}")
     card_specs = (
         (pct_rect(0.195, 0.455, 0.22, 0.20), cards[0], (255, 196, 111)),
         (pct_rect(0.425, 0.455, 0.22, 0.20), cards[1], (172, 196, 245)),
         (pct_rect(0.655, 0.455, 0.22, 0.20), cards[2], (198, 172, 241)),
-        (pct_rect(0.36, 0.70, 0.48, 0.18), cards[3], (159, 219, 147)),
     )
     for rect, label, accent in card_specs:
         draw_menu_button(surface, rect, label, accent=accent)
@@ -710,7 +551,59 @@ def render_offline_continue(surface: pygame.Surface, view: SceneView) -> None:
     draw_cta_button(surface, pct_rect(0.36, 0.65, 0.29, 0.13), "Continue Offline")
 
 
+def _draw_points_stat_card(
+    surface: pygame.Surface,
+    rect: pygame.Rect,
+    label: str,
+    value: str,
+    accent: tuple[int, int, int],
+) -> None:
+    draw_rounded_rect(surface, rect, (255, 255, 255), radius=20, border=accent, border_width=4)
+    chip = pygame.Rect(rect.x, rect.y, rect.width, int(rect.height * 0.34))
+    draw_rounded_rect(surface, chip, accent, radius=20)
+    _text(surface, label, 24, (chip.centerx, chip.centery), (255, 255, 255))
+    _text(surface, value, 46, (rect.centerx, rect.y + int(rect.height * 0.66)), PROMPT_BROWN)
+
+
+def render_points_page(surface: pygame.Surface, view: SceneView) -> None:
+    paint_pink_sky(surface)
+    draw_corner_nav(surface, show_home=True, show_settings=False)
+
+    header = pct_rect(0.30, 0.04, 0.40, 0.10)
+    draw_rounded_rect(surface, header, (255, 255, 255), radius=20, border=HUD_PINK, border_width=3)
+    _text(surface, "My Points", 44, header.center, HUD_PINK_DARK)
+
+    # Big points medallion.
+    medal = pct_rect(0.08, 0.20, 0.40, 0.34)
+    draw_rounded_rect(surface, medal, (255, 255, 255), radius=26, border=(255, 198, 96), border_width=5)
+    _text(surface, f"{view.points_emoji}  {view.points_rank}", 30, (medal.centerx, medal.y + 44), (227, 144, 56))
+    _text(surface, str(int(view.total_points)), 96, (medal.centerx, medal.centery + 24), STAR_YELLOW)
+    _text(surface, "points", 26, (medal.centerx, medal.bottom - 34), PROMPT_BROWN)
+
+    # Progress bar toward next rank.
+    bar_label_y = int(SCREEN_HEIGHT * 0.60)
+    if view.next_rank_name:
+        msg = f"{view.points_to_next} points to {view.next_rank_name}"
+    else:
+        msg = "Top rank reached! You're amazing!"
+    _text(surface, msg, 26, (int(SCREEN_WIDTH * 0.28), bar_label_y), PROMPT_BROWN)
+    bar_outer = pct_rect(0.08, 0.64, 0.40, 0.05)
+    draw_rounded_rect(surface, bar_outer, (255, 255, 255), radius=14, border=HUD_PINK, border_width=3)
+    fill = bar_outer.inflate(-8, -8)
+    fill.width = max(6, int(fill.width * max(0.0, min(1.0, view.points_progress))))
+    draw_rounded_rect(surface, fill, (125, 202, 134), radius=10)
+
+    # Stat cards.
+    _draw_points_stat_card(surface, pct_rect(0.54, 0.20, 0.18, 0.22), "Stars", str(int(view.total_stars)), (255, 196, 91))
+    _draw_points_stat_card(surface, pct_rect(0.76, 0.20, 0.18, 0.22), "Badges", str(int(view.badges_count)), (198, 172, 241))
+    _draw_points_stat_card(surface, pct_rect(0.54, 0.46, 0.18, 0.22), "Best Streak", str(int(view.best_streak)), (172, 196, 245))
+    _draw_points_stat_card(surface, pct_rect(0.76, 0.46, 0.18, 0.22), "Now", str(int(view.current_streak)), (255, 166, 186))
+
+    draw_cta_button(surface, pct_rect(0.36, 0.84, 0.28, 0.12), "Play")
+
+
 SCENE_RENDERERS: dict[str, SceneRenderer] = {
+    "points_page": render_points_page,
     "splash_loading": render_splash_loading,
     "welcome": render_welcome,
     "profile_selection": render_profile_selection,
@@ -718,19 +611,10 @@ SCENE_RENDERERS: dict[str, SceneRenderer] = {
     "how_to_play": render_how_to_play,
     "world_map": render_world_map,
     "letter_island_game": render_letter_island_game,
-    "letter_correct_feedback": render_letter_correct_feedback,
-    "letter_mistake_hint": render_letter_mistake_hint,
     "bd_practice": render_bd_practice,
     "word_garden_game": render_word_garden_game,
-    "word_correct_feedback": render_word_correct_feedback,
-    "word_mistake_hint": render_word_mistake_hint,
     "voice_challenge": render_voice_challenge,
     "listening_state": render_listening_state,
-    "voice_correct_feedback": render_voice_correct_feedback,
-    "sentence_castle_game": render_sentence_castle_game,
-    "sentence_dragging": render_sentence_dragging,
-    "sentence_mistake_hint": render_sentence_mistake_hint,
-    "sentence_correct_feedback": render_sentence_correct_feedback,
     "badge_unlock": render_badge_unlock,
     "progress_complete": render_progress_complete,
     "practice_weak_skills": render_practice_weak_skills,

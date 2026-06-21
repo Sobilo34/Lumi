@@ -20,6 +20,15 @@ SOUNDS_DIR = ASSETS_DIR / "sounds"
 FONTS_DIR = ASSETS_DIR / "fonts"
 UI_CHUNKS_DIR = ASSETS_DIR / "ui_chunks"
 
+# Single soft background used across the whole app (kids 2-4 friendly).
+# Two pages keep their original art: the start page and the
+# "listen, tap and speak" how-to page.
+APP_BACKGROUND_PATH = ASSETS_DIR / "app_background.png"
+BACKGROUND_EXEMPT_SCREENS = frozenset({"splash_loading", "welcome", "how_to_play"})
+
+LETTER_VOICE_PROMPT = "What letter is this?"
+LETTER_CORRECT_SPEECH = "Correct"
+
 DEBUG_HITBOXES = False
 VOICE_ENABLED_DEFAULT = True
 MIN_DIFFICULTY = 1

@@ -11,13 +11,11 @@ SESSION_REPORTS_DIR = REPORTS_DIR / "session_reports"
 
 SCREEN_BD_PRACTICE = "10_letter_bd_practice"
 SCREEN_WORD_GARDEN = "11_word_garden_gameplay"
-SCREEN_SENTENCE_CASTLE = "17_sentence_castle_gameplay"
 SCREEN_WORLD_MAP = "06_world_map"
 
 ENGINE_SCREEN_MAP: dict[str, str] = {
     SCREEN_BD_PRACTICE: "bd_practice",
     SCREEN_WORD_GARDEN: "word_garden_game",
-    SCREEN_SENTENCE_CASTLE: "sentence_castle_game",
     SCREEN_WORLD_MAP: "world_map",
 }
 
@@ -81,7 +79,6 @@ def get_strong_skill(profile: dict[str, Any] | Any) -> str:
     data = _profile_dict(profile)
     mastered_letters = _count_map(data.get("mastered_letters"))
     mastered_words = _count_map(data.get("mastered_words"))
-    sentence_errors = _count_map(data.get("sentence_errors"))
 
     if isinstance(data.get("mastered_letters"), list):
         letter_score = len(data.get("mastered_letters") or [])
@@ -93,11 +90,9 @@ def get_strong_skill(profile: dict[str, Any] | Any) -> str:
     else:
         word_score = len(mastered_words)
 
-    sentence_score = max(0, 3 - len(sentence_errors))
     mastery_counts = [
         ("Letter recognition", letter_score),
         ("Word reading", word_score),
-        ("Sentence building", sentence_score),
     ]
     strongest = max(mastery_counts, key=lambda item: item[1])
     if strongest[1] <= 0:
@@ -114,8 +109,6 @@ def get_weak_area(profile: dict[str, Any] | Any) -> str:
         return "Letters B and D"
     if activity.startswith("Word Garden"):
         return "Word: Cat"
-    if activity == "Sentence Castle":
-        return "Sentence order"
     return "General practice"
 
 
@@ -123,7 +116,6 @@ def get_recommendation(profile: dict[str, Any] | Any) -> dict[str, str]:
     data = _profile_dict(profile)
     weak_letters = _count_map(data.get("weak_letters"))
     weak_words = _count_map(data.get("weak_words"))
-    sentence_errors = _count_map(data.get("sentence_errors"))
 
     if _letter_count(weak_letters, "B") >= 2 or _letter_count(weak_letters, "D") >= 2:
         return {
@@ -139,16 +131,6 @@ def get_recommendation(profile: dict[str, Any] | Any) -> dict[str, str]:
         return {
             "activity": "Word Garden: Cat",
             "screen_id": SCREEN_WORD_GARDEN,
-        }
-
-    word_order_count = 0
-    for key, count in sentence_errors.items():
-        if str(key).strip().lower() in {"word_order", "sentence_order", "order"}:
-            word_order_count += max(0, int(count))
-    if word_order_count >= 1:
-        return {
-            "activity": "Sentence Castle",
-            "screen_id": SCREEN_SENTENCE_CASTLE,
         }
 
     return {
@@ -180,7 +162,6 @@ def generate_report(profile: dict[str, Any] | Any, output_path: str | Path | Non
     data = _profile_dict(profile)
     weak_letters = _count_map(data.get("weak_letters"))
     weak_words = _count_map(data.get("weak_words"))
-    sentence_errors = _count_map(data.get("sentence_errors"))
     recommendation = get_recommendation(data)
 
     report: dict[str, Any] = {
@@ -191,7 +172,6 @@ def generate_report(profile: dict[str, Any] | Any, output_path: str | Path | Non
         "needs_practice": get_weak_area(data),
         "weak_letters": weak_letters,
         "weak_words": weak_words,
-        "sentence_errors": sentence_errors,
         "recommended_next_activity": recommendation["activity"],
         "recommended_screen_id": recommendation["screen_id"],
         "generated_at": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),

@@ -1,4 +1,4 @@
-"""Rule-based personal tutor: letter, word, and sentence round building."""
+"""Rule-based personal tutor: letter and word round building."""
 from __future__ import annotations
 
 import random
@@ -202,29 +202,3 @@ def advance_word_length(profile: Any, *, mastered: bool) -> int:
     return current
 
 
-def build_sentence_round(profile: Any, sentences: list[dict[str, Any]]) -> dict[str, Any]:
-    profile_data = _profile_dict(profile)
-    level = int(profile_data.get("sentence_level", 0) or 0)
-    level = max(0, min(level, max(0, len(sentences) - 1)))
-    entry = sentences[level] if sentences else {}
-    words = [str(word) for word in entry.get("words", []) if str(word).strip()]
-    sentence = str(entry.get("sentence") or " ".join(words)).strip()
-    prompt = str(entry.get("prompt") or f"Build the sentence: {sentence}").strip()
-    return {
-        "target": sentence,
-        "words": words,
-        "prompt": prompt,
-        "sentence_level": level,
-        "reason": "sentence_curriculum",
-    }
-
-
-def advance_sentence_level(profile: Any, *, mastered: bool, sentence_count: int) -> int:
-    level = int(getattr(profile, "sentence_level", 0) or 0)
-    if mastered and level < max(0, sentence_count - 1):
-        level += 1
-    if hasattr(profile, "sentence_level"):
-        profile.sentence_level = level
-        if hasattr(profile, "save_profile"):
-            profile.save_profile()
-    return level

@@ -17,7 +17,6 @@ def test_all_known_badges_map_to_icon_files() -> None:
         "B and D Master",
         "Word Explorer",
         "Brave Speaker",
-        "Sentence Builder",
         "Great Learner",
     }
     assert set(BADGE_ICON_FILES) == expected

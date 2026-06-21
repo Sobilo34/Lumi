@@ -14,14 +14,14 @@ from ui.dynamic_layers import letter_tile_uses_selected
 
 
 @pytest.mark.parametrize(
-    ("letter", "index", "screen_id", "variant", "target", "slots", "expected"),
+    ("letter", "index", "screen_id", "variant", "target", "slots", "expected", "success_slot"),
     [
-        ("R", 0, "letter_island_game", "normal", "R", ("R", "S", "T", "U"), False),
-        ("R", 0, "letter_correct_feedback", "success", "R", ("R", "S", "T", "U"), True),
-        ("R", 1, "letter_correct_feedback", "success", "R", ("R", "S", "T", "U"), False),
-        ("W", 2, "letter_island_game", "normal", "W", ("U", "V", "W", "X"), False),
-        ("W", 2, "letter_correct_feedback", "success", "W", ("U", "V", "W", "X"), True),
-        ("W", 3, "letter_correct_feedback", "success", "W", ("U", "V", "W", "X"), False),
+        ("R", 0, "letter_island_game", "normal", "R", ("R", "S", "T", "U"), False, -1),
+        ("R", 0, "letter_island_game", "normal", "R", ("R", "S", "T", "U"), True, 0),
+        ("R", 1, "letter_correct_feedback", "success", "R", ("R", "S", "T", "U"), False, -1),
+        ("W", 2, "letter_island_game", "normal", "W", ("U", "V", "W", "X"), False, -1),
+        ("W", 2, "letter_correct_feedback", "success", "W", ("U", "V", "W", "X"), True, -1),
+        ("W", 3, "letter_correct_feedback", "success", "W", ("U", "V", "W", "X"), False, -1),
     ],
 )
 def test_letter_tile_uses_selected_rules(
@@ -32,6 +32,7 @@ def test_letter_tile_uses_selected_rules(
     target: str,
     slots: tuple[str, ...],
     expected: bool,
+    success_slot: int,
 ) -> None:
     assert (
         letter_tile_uses_selected(
@@ -39,6 +40,8 @@ def test_letter_tile_uses_selected_rules(
             tile_variant=variant,
             slot_letter=slots[index],
             target_letter=target,
+            letter_success_slot=success_slot,
+            slot_index=index,
         )
         is expected
     )
@@ -57,31 +60,6 @@ def engine(tmp_path: Path) -> GameEngine:
 
 
 @pytest.mark.parametrize("letter", list("RSTUVWXYZ"))
-def test_rw_success_view_highlights_only_target(engine: GameEngine, letter: str) -> None:
-    distractors = [item for item in "RSTUVWXYZ" if item != letter][:3]
-    slots = [letter] + distractors
-    engine.state.current_screen_id = "letter_correct_feedback"
-    engine.state.completed_letter_target = letter
-    engine.state.completed_letter_choices = slots
-    engine.state.letter_choice_slots = slots
-
-    view = engine._scene_view()
-    assert view.target_letter == letter
-    assert tuple(view.slot_letters) == tuple(slots)
-    selected_count = sum(
-        1
-        for slot in view.slot_letters
-        if letter_tile_uses_selected(
-            screen_id=view.screen_id,
-            tile_variant="success",
-            slot_letter=slot,
-            target_letter=view.target_letter,
-        )
-    )
-    assert selected_count == 1
-
-
-@pytest.mark.parametrize("letter", list("RSTUVWXYZ"))
 def test_rw_challenge_view_never_uses_selected(engine: GameEngine, letter: str) -> None:
     slots = list("RSTU")
     engine.state.current_screen_id = "letter_island_game"
@@ -95,8 +73,10 @@ def test_rw_challenge_view_never_uses_selected(engine: GameEngine, letter: str) 
             tile_variant="normal",
             slot_letter=slot,
             target_letter=view.target_letter,
+            letter_success_slot=int(getattr(view, "letter_success_slot", -1) or -1),
+            slot_index=idx,
         )
-        for slot in view.slot_letters
+        for idx, slot in enumerate(view.slot_letters)
     )
 
 

@@ -1,4 +1,4 @@
-"""World map unlock rules: Letter Island → Word Garden → Sentence Castle."""
+"""World map unlock rules: Letter Island → Word Garden."""
 from __future__ import annotations
 
 from copy import deepcopy
@@ -8,24 +8,16 @@ from engine.adaptive_ai import ALPHABET, all_letters_mastered
 
 WORLD_LETTER_ISLAND = "letter_island"
 WORLD_WORD_GARDEN = "word_garden"
-WORLD_SENTENCE_CASTLE = "sentence_castle"
 
 WORLD_PRACTICE_ENTRY: dict[str, str] = {
     WORLD_LETTER_ISLAND: "letter_island_game",
     WORLD_WORD_GARDEN: "word_garden_game",
-    WORLD_SENTENCE_CASTLE: "sentence_castle_game",
 }
 
 WORD_GARDEN_REQUIRED_WORDS = ("cat", "dog", "sun", "ball")
 
 SCREEN_TO_WORLD = {
     "word_garden_game": WORLD_WORD_GARDEN,
-    "word_correct_feedback": WORLD_WORD_GARDEN,
-    "word_mistake_hint": WORLD_WORD_GARDEN,
-    "sentence_castle_game": WORLD_SENTENCE_CASTLE,
-    "sentence_dragging": WORLD_SENTENCE_CASTLE,
-    "sentence_mistake_hint": WORLD_SENTENCE_CASTLE,
-    "sentence_correct_feedback": WORLD_SENTENCE_CASTLE,
 }
 
 
@@ -104,23 +96,18 @@ def word_garden_unlocked(profile: Any) -> bool:
     return letter_island_complete(profile)
 
 
-def sentence_castle_unlocked(profile: Any) -> bool:
-    return word_garden_complete(profile)
-
-
 def world_unlocked(profile: Any, world_id: str) -> bool:
     key = str(world_id or "").strip()
     if key == WORLD_LETTER_ISLAND:
         return True
     if key == WORLD_WORD_GARDEN:
         return word_garden_unlocked(profile)
-    if key == WORLD_SENTENCE_CASTLE:
-        return sentence_castle_unlocked(profile)
     return True
 
 
 def screen_accessible(profile: Any, screen_id: str) -> bool:
-    world_id = SCREEN_TO_WORLD.get(str(screen_id or "").strip())
+    active = str(screen_id or "").strip()
+    world_id = SCREEN_TO_WORLD.get(active)
     if world_id is None:
         return True
     return world_unlocked(profile, world_id)
@@ -130,8 +117,6 @@ def locked_world_message(screen_id: str) -> str:
     world_id = SCREEN_TO_WORLD.get(str(screen_id or "").strip(), "")
     if world_id == WORLD_WORD_GARDEN:
         return "Complete Letter Island before unlocking Word Garden!"
-    if world_id == WORLD_SENTENCE_CASTLE:
-        return "Complete Word Garden before unlocking Sentence Castle!"
     return "Complete the previous level to unlock this area."
 
 
@@ -177,8 +162,6 @@ def prepare_world_practice(profile: Any, world_id: str) -> str:
         profile.current_letter_index = 0
     elif key == WORLD_WORD_GARDEN and hasattr(profile, "current_word_length"):
         profile.current_word_length = 3
-    elif key == WORLD_SENTENCE_CASTLE and hasattr(profile, "sentence_level"):
-        profile.sentence_level = 0
     _persist_profile(profile)
     return WORLD_PRACTICE_ENTRY.get(key, "letter_island_game")
 
@@ -186,6 +169,4 @@ def prepare_world_practice(profile: Any, world_id: str) -> str:
 def world_map_progress_text(profile: Any) -> str:
     if not word_garden_unlocked(profile):
         return "Complete Letter Island (A–Z) to unlock Word Garden"
-    if not sentence_castle_unlocked(profile):
-        return "Master cat, dog, sun, and ball to unlock Sentence Castle"
     return "All worlds unlocked — great journey!"

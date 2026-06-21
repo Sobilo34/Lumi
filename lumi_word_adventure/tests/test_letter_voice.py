@@ -68,3 +68,67 @@ def test_letter_voice_renders_normal_letter_tile(engine: GameEngine) -> None:
     surface = pygame.Surface((1280, 720))
     ChunkComposer(engine.asset_manager).compose(surface, spec, view)
     assert surface.get_at((640, 300)).a > 0
+
+
+def test_letter_voice_wrong_shows_try_again_popup(engine: GameEngine) -> None:
+    engine.set_screen("letter_voice_challenge")
+    engine.state.current_task_target = "T"
+    engine._process_letter_voice_capture_result("wrong-letter")
+    assert engine.state.current_screen_id == "letter_voice_challenge"
+    assert engine.state.answer_popup_kind == "wrong"
+    assert engine.state.answer_popup_next_screen == "letter_voice_challenge"
+
+
+def test_word_voice_wrong_shows_try_again_popup(engine: GameEngine) -> None:
+    engine.learner.completed_worlds = ["letter_island"]
+    engine.learner.save_profile()
+    engine.set_screen("voice_challenge")
+    engine.state.current_task_target = "cat"
+    engine.state.word_choice_slots = ["cat", "dog", "sun", "ball"]
+    engine._process_voice_capture_result("wrong-word")
+    assert engine.state.current_screen_id == "voice_challenge"
+    assert engine.state.answer_popup_kind == "wrong"
+    assert engine.state.answer_popup_next_screen == "voice_challenge"
+
+
+def test_word_voice_correct_shows_success_popup(
+    engine: GameEngine,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr("engine.game_engine.check_badge_unlocks", lambda profile: [])
+    engine.set_screen("voice_challenge")
+    engine.state.current_task_target = "cat"
+    engine.state.word_choice_slots = ["cat", "dog", "sun", "ball"]
+    engine._process_voice_capture_result("cat")
+    assert engine.state.current_screen_id == "voice_challenge"
+    assert engine.state.answer_popup_kind == "correct"
+    assert engine.state.answer_popup_next_screen == "word_garden_game"
+
+
+def test_word_voice_close_shows_try_again_popup(
+    engine: GameEngine,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    engine.learner.completed_worlds = ["letter_island"]
+    engine.learner.save_profile()
+    monkeypatch.setattr("engine.game_engine.check_spoken_answer", lambda spoken, target: "close")
+    engine.set_screen("voice_challenge")
+    engine.state.current_task_target = "cat"
+    engine.state.word_choice_slots = ["cat", "dog", "sun", "ball"]
+    engine._process_voice_capture_result("ca")
+    assert engine.state.current_screen_id == "voice_challenge"
+    assert engine.state.answer_popup_kind == "wrong"
+    assert engine.state.answer_popup_next_screen == "voice_challenge"
+
+
+def test_letter_voice_close_shows_try_again_popup(
+    engine: GameEngine,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr("engine.game_engine.check_spoken_answer", lambda spoken, target: "close")
+    engine.set_screen("letter_voice_challenge")
+    engine.state.current_task_target = "T"
+    engine._process_letter_voice_capture_result("tea")
+    assert engine.state.current_screen_id == "letter_voice_challenge"
+    assert engine.state.answer_popup_kind == "wrong"
+    assert engine.state.answer_popup_next_screen == "letter_voice_challenge"

@@ -69,10 +69,10 @@ class ScreenRegistry:
                 "06_world_map.png",
                 (
                     HitboxDefinition("Home", 0.01, 0.02, 0.06, 0.1, target="main_menu"),
+                    HitboxDefinition("My Points", 0.40, 0.02, 0.20, 0.11, target="points_page"),
                     HitboxDefinition("My Words", 0.87, 0.12, 0.08, 0.13, target="practice_weak_skills"),
                     HitboxDefinition("Letter Island", 0.12, 0.4, 0.22, 0.33, target="letter_island_game"),
                     HitboxDefinition("Word Garden", 0.39, 0.38, 0.22, 0.35, target="word_garden_game"),
-                    HitboxDefinition("Sentence Castle", 0.68, 0.38, 0.24, 0.36, target="sentence_castle_game"),
                 ),
             ),
             ScreenDefinition(
@@ -88,26 +88,6 @@ class ScreenRegistry:
                     HitboxDefinition("Repeat", 0.31, 0.77, 0.1, 0.18, action="repeat_prompt"),
                     HitboxDefinition("Hint", 0.45, 0.77, 0.11, 0.18, action="show_hint"),
                     HitboxDefinition("Speak", 0.6, 0.77, 0.1, 0.18, action="voice_or_speak_mode"),
-                ),
-            ),
-            ScreenDefinition(
-                "letter_correct_feedback",
-                "08_letter_correct_feedback.png",
-                (
-                    HitboxDefinition("Home", 0.01, 0.02, 0.06, 0.1, target="world_map"),
-                    HitboxDefinition("Settings", 0.92, 0.02, 0.06, 0.1, target="settings"),
-                    HitboxDefinition("Next", 0.36, 0.79, 0.29, 0.15, action="next_activity"),
-                ),
-            ),
-            ScreenDefinition(
-                "letter_mistake_hint",
-                "09_letter_mistake_hint.png",
-                (
-                    HitboxDefinition("Home", 0.01, 0.02, 0.06, 0.1, target="world_map"),
-                    HitboxDefinition("Settings", 0.92, 0.02, 0.06, 0.1, target="settings"),
-                    HitboxDefinition("Try Again", 0.26, 0.8, 0.17, 0.12, action="try_again"),
-                    HitboxDefinition("Repeat", 0.45, 0.8, 0.17, 0.12, action="repeat_prompt"),
-                    HitboxDefinition("Hint", 0.64, 0.8, 0.17, 0.12, action="next_hint_or_bd_practice"),
                 ),
             ),
             ScreenDefinition(
@@ -159,26 +139,6 @@ class ScreenRegistry:
                 ),
             ),
             ScreenDefinition(
-                "word_correct_feedback",
-                "12_word_correct_feedback.png",
-                (
-                    HitboxDefinition("Home", 0.01, 0.02, 0.06, 0.1, target="world_map"),
-                    HitboxDefinition("Settings", 0.92, 0.02, 0.06, 0.1, target="settings"),
-                    HitboxDefinition("Next", 0.37, 0.82, 0.27, 0.13, action="next_word_round"),
-                ),
-            ),
-            ScreenDefinition(
-                "word_mistake_hint",
-                "13_word_mistake_hint.png",
-                (
-                    HitboxDefinition("Home", 0.01, 0.02, 0.06, 0.1, target="world_map"),
-                    HitboxDefinition("Settings", 0.92, 0.02, 0.06, 0.1, target="settings"),
-                    HitboxDefinition("Try Again", 0.25, 0.78, 0.2, 0.14, action="try_again"),
-                    HitboxDefinition("Repeat", 0.48, 0.78, 0.2, 0.14, action="repeat_prompt"),
-                    HitboxDefinition("Hint", 0.7, 0.78, 0.16, 0.14, action="show_next_hint"),
-                ),
-            ),
-            ScreenDefinition(
                 "voice_challenge",
                 "14_voice_say_apple.png",
                 (
@@ -198,55 +158,6 @@ class ScreenRegistry:
                 ),
             ),
             ScreenDefinition(
-                "voice_correct_feedback",
-                "16_voice_result_correct.png",
-                (
-                    HitboxDefinition("Next", 0.29, 0.8, 0.29, 0.14, action="next_activity"),
-                    HitboxDefinition("Say Again", 0.63, 0.8, 0.2, 0.12, action="say_again"),
-                ),
-            ),
-            ScreenDefinition(
-                "sentence_castle_game",
-                "17_sentence_castle_gameplay.png",
-                (
-                    HitboxDefinition("Word I", 0.21, 0.75, 0.14, 0.15, action="drag_word_I"),
-                    HitboxDefinition("Word see", 0.38, 0.75, 0.16, 0.15, action="drag_word_see"),
-                    HitboxDefinition("Word a", 0.56, 0.75, 0.14, 0.15, action="drag_word_a"),
-                    HitboxDefinition("Word cat", 0.71, 0.75, 0.16, 0.15, action="drag_word_cat"),
-                    HitboxDefinition("Hint", 0.83, 0.77, 0.07, 0.15, action="show_hint"),
-                    HitboxDefinition("Repeat", 0.91, 0.77, 0.07, 0.15, action="repeat_sentence_prompt"),
-                ),
-            ),
-            ScreenDefinition(
-                "sentence_dragging",
-                "18_sentence_dragging_state.png",
-                (
-                    HitboxDefinition("Word I", 0.21, 0.75, 0.14, 0.15, action="drag_word_I"),
-                    HitboxDefinition("Word see", 0.38, 0.75, 0.16, 0.15, action="drag_word_see"),
-                    HitboxDefinition("Word a", 0.56, 0.75, 0.14, 0.15, action="drag_word_a"),
-                    HitboxDefinition("Word cat", 0.71, 0.75, 0.16, 0.15, action="drag_word_cat"),
-                    HitboxDefinition("Drop slot 3", 0.51, 0.55, 0.13, 0.13, action="drop_a"),
-                    HitboxDefinition("Drop slot 4", 0.64, 0.55, 0.13, 0.13, action="drop_cat"),
-                    HitboxDefinition("Hint", 0.84, 0.78, 0.07, 0.15, action="show_hint"),
-                ),
-            ),
-            ScreenDefinition(
-                "sentence_mistake_hint",
-                "19_sentence_mistake_hint.png",
-                (
-                    HitboxDefinition("Try Again", 0.28, 0.78, 0.18, 0.13, action="try_again"),
-                    HitboxDefinition("Hint", 0.5, 0.78, 0.18, 0.13, action="show_next_hint"),
-                    HitboxDefinition("Repeat", 0.7, 0.78, 0.18, 0.13, action="repeat_prompt"),
-                ),
-            ),
-            ScreenDefinition(
-                "sentence_correct_feedback",
-                "20_sentence_correct_feedback.png",
-                (
-                    HitboxDefinition("Next", 0.38, 0.8, 0.24, 0.14, action="next_badge"),
-                ),
-            ),
-            ScreenDefinition(
                 "badge_unlock",
                 "21_badge_unlock.png",
                 (
@@ -259,7 +170,6 @@ class ScreenRegistry:
                 (
                     HitboxDefinition("Letter Island", 0.12, 0.4, 0.22, 0.33, target="letter_island_game"),
                     HitboxDefinition("Word Garden", 0.39, 0.38, 0.22, 0.35, target="word_garden_game"),
-                    HitboxDefinition("Sentence Castle", 0.68, 0.38, 0.24, 0.36, target="sentence_castle_game"),
                     HitboxDefinition("Next World", 0.36, 0.73, 0.25, 0.13, action="next_world"),
                     HitboxDefinition("Practice Again", 0.63, 0.73, 0.25, 0.13, action="practice_again"),
                     HitboxDefinition("View Report", 0.9, 0.05, 0.16, 0.12, action="view_report"),
@@ -273,7 +183,6 @@ class ScreenRegistry:
                     HitboxDefinition("Practice B", 0.195, 0.455, 0.22, 0.20, action="practice_bd_b"),
                     HitboxDefinition("Practice D", 0.425, 0.455, 0.22, 0.20, action="practice_bd_d"),
                     HitboxDefinition("Practice Word Cat", 0.655, 0.455, 0.22, 0.20, action="practice_word_cat"),
-                    HitboxDefinition("Practice Sentence", 0.36, 0.70, 0.48, 0.18, action="practice_sentence_order"),
                 ),
             ),
             ScreenDefinition(
@@ -342,6 +251,14 @@ class ScreenRegistry:
                         action="continue_offline",
                         target="main_menu",
                     ),
+                ),
+            ),
+            ScreenDefinition(
+                "points_page",
+                "29_points.png",
+                (
+                    HitboxDefinition("Home", 0.01, 0.02, 0.06, 0.1, target="main_menu"),
+                    HitboxDefinition("Play", 0.36, 0.84, 0.28, 0.12, target="world_map"),
                 ),
             ),
         ]

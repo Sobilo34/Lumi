@@ -1,0 +1,20 @@
+{
+  "child_name": "Player 1",
+  "stars_earned": 4,
+  "accuracy_percent": 60,
+  "strong_skill": "Practice in progress",
+  "needs_practice": "Word: Cat",
+  "weak_letters": {
+    "B": 1,
+    "D": 1
+  },
+  "weak_words": {
+    "cat": 2
+  },
+  "recommended_next_activity": "Word Garden: Cat",
+  "recommended_screen_id": "11_word_garden_gameplay",
+  "generated_at": "2026-06-21T14:19:00+00:00",
+  "attempts": 5,
+  "correct_answers": 3,
+  "difficulty": 1
+}

@@ -106,6 +106,8 @@ def test_word_garden_speak_routes_offline_when_stt_unavailable(
     monkeypatch.setattr("engine.game_engine.is_stt_ready", lambda: False)
     monkeypatch.setattr("engine.game_engine.stt_status_message", lambda: "Voice is not ready. You can still tap answers.")
 
+    engine.learner.completed_worlds = ["letter_island"]
+    engine.learner.save_profile()
     engine.set_screen("word_garden_game")
     engine._handle_action("voice_mode")
 

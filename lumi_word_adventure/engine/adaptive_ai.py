@@ -436,8 +436,6 @@ def _question_type(question: dict[str, Any]) -> str:
         return "letter"
     if "word" in question or "speech_prompt" in question:
         return "word"
-    if "sentence" in question or "words" in question:
-        return "sentence"
     return "unknown"
 
 
@@ -521,19 +519,6 @@ def diagnose_word_mistake(target: str, selected: str, vocabulary_data: Any) -> s
         return "word_confusion"
 
     return "word_confusion"
-
-
-def diagnose_sentence_mistake(target_words: list[str], submitted_words: list[str]) -> str:
-    normalized_target = [_normalize_text(word) for word in target_words if _normalize_text(word)]
-    normalized_submitted = [_normalize_text(word) for word in submitted_words if _normalize_text(word)]
-
-    if not normalized_target or not normalized_submitted:
-        return "sentence_order"
-    if normalized_target == normalized_submitted:
-        return "correct"
-    if sorted(word.lower() for word in normalized_target) == sorted(word.lower() for word in normalized_submitted):
-        return "word_order"
-    return "sentence_order"
 
 
 def should_increase_difficulty(profile: Any) -> bool:
@@ -670,35 +655,6 @@ def _word_focus_recommendation(profile: dict[str, Any], question_bank: Any) -> d
     }
 
 
-def _sentence_focus_recommendation(profile: dict[str, Any], question_bank: Any) -> dict[str, Any]:
-    questions = [question for question in _iter_questions(question_bank) if _question_type(question) == "sentence"]
-    word_order_errors = int(profile.get("sentence_errors", {}).get("word_order", 0)) if isinstance(profile.get("sentence_errors", {}), dict) else 0
-
-    chosen = _pick_closest_question(questions, _profile_difficulty(profile))
-    support = ""
-    reason = "adaptive_sentence_selection"
-
-    if word_order_errors >= 2:
-        chosen = _pick_easiest_question(questions)
-        support = "ghost_hints"
-        reason = "word_order_support"
-
-    if should_decrease_difficulty(profile):
-        chosen = _pick_easiest_question(questions)
-        support = support or "ghost_hints"
-        reason = reason if reason == "word_order_support" else "reduced_sentence_difficulty"
-    elif should_increase_difficulty(profile):
-        chosen = _pick_closest_question(questions, min(MAX_DIFFICULTY, _profile_difficulty(profile) + 1))
-
-    return {
-        "activity": "sentence_castle_game",
-        "focus": _normalize_text(chosen.get("sentence")) if chosen else "",
-        "reason": reason,
-        "support": support,
-        "question": chosen,
-    }
-
-
 def recommend_practice(profile: Any) -> dict[str, Any]:
     profile_dict = _profile_dict(profile)
 
@@ -727,16 +683,6 @@ def recommend_practice(profile: Any) -> dict[str, Any]:
             "support": "simplified_word_garden" if repeated_word in {"cat", "dog"} else "",
             "option_count": 2 if repeated_word in {"cat", "dog"} else 4,
             "option_pool": ["cat", "dog"] if repeated_word in {"cat", "dog"} else [],
-            "question": None,
-        }
-
-    sentence_errors = profile_dict.get("sentence_errors", {})
-    if isinstance(sentence_errors, dict) and int(sentence_errors.get("word_order", 0)) >= 2:
-        return {
-            "activity": "sentence_castle_game",
-            "focus": "word_order",
-            "reason": "word_order_support",
-            "support": "ghost_hints",
             "question": None,
         }
 
@@ -793,11 +739,6 @@ def choose_hint(profile: Any, activity_type: str, mistake_type: str, *, target: 
             return f"Look for the word {focus_word}."
         return "Look for the word again."
 
-    if activity == "sentence":
-        if mistake == "word_order":
-            return "Start with the first word and put the sentence in order."
-        return "Put the words in order."
-
     return "Try again with a careful look."
 
 
@@ -814,9 +755,6 @@ def choose_next_question(profile: Any, question_bank: Any, activity_type: str) -
 
     if activity == "word":
         return _word_focus_recommendation(profile_dict, question_bank)
-
-    if activity == "sentence":
-        return _sentence_focus_recommendation(profile_dict, question_bank)
 
     return {
         "activity": activity_type,

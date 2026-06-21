@@ -3,6 +3,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from config import LETTER_VOICE_PROMPT
+
 
 _VISUAL_CONFUSION_HINTS: dict[tuple[str, str], str] = {
     ("B", "D"): "B has a belly. D has a drum.",
@@ -249,7 +251,11 @@ def get_lumi_speech(screen_id: str, current_task: str | None = None) -> str:
     if screen == "voice_challenge":
         return "What word is this?"
     if screen == "letter_voice_challenge":
+<<<<<<< Updated upstream
         return "What letter is this?"
+=======
+        return LETTER_VOICE_PROMPT
+>>>>>>> Stashed changes
     if screen == "letter_listening_state":
         return "I'm listening carefully."
     if screen == "listening_state":

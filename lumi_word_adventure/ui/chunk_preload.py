@@ -14,7 +14,6 @@ EARLY_SCREEN_IDS = ("profile_selection",)
 # Full reference PNGs for gameplay screens (loaded via AssetManager.load_image).
 GAMEPLAY_REFERENCE_IMAGES: tuple[str, ...] = (
     "07_letter_island_gameplay.png",
-    "08_letter_correct_feedback.png",
     "11_word_garden_gameplay.png",
 )
 
@@ -58,8 +57,6 @@ def build_gameplay_chunk_queue() -> list[tuple[str, str]]:
     """Chunk paths for Word Garden and Letter Island — cheap assets first."""
     queue: list[tuple[str, str]] = [
         ("word_garden_game", "background.png"),
-        ("word_garden_game", "success_background.png"),
-        ("word_garden_game", "failure_background.png"),
         ("word_garden_game", "speak_background.png"),
     ]
     word_pool = get_word_garden_pool()

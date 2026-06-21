@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Any
 
 import pygame
 
-from config import SCREEN_HEIGHT, SCREEN_WIDTH
+from config import LETTER_VOICE_PROMPT, SCREEN_HEIGHT, SCREEN_WIDTH
 from ui.components.primitives import (
     CARD_STYLES,
     HUD_PINK,
@@ -88,6 +88,25 @@ def _draw_find_letter_png(
     _draw_find_letter(surface, spec, view)
 
 
+def _draw_letter_voice_prompt(surface: pygame.Surface, spec: dict[str, Any]) -> None:
+    """Big centered prompt above the letter on the speak screen."""
+    text = str(spec.get("text") or LETTER_VOICE_PROMPT)
+    cx = int(SCREEN_WIDTH * float(spec.get("x_pct") or 0.5))
+    cy = int(SCREEN_HEIGHT * float(spec.get("y_pct") or 0.20))
+    max_w = int(SCREEN_WIDTH * float(spec.get("w_pct") or 0.72))
+    bounds = pygame.Rect(0, 0, max_w, int(SCREEN_HEIGHT * float(spec.get("h_pct") or 0.12)))
+    size = fit_font_size(text, bounds, fill_height_ratio=0.82)
+    blit_outlined_text(
+        surface,
+        text,
+        (cx, cy),
+        size,
+        PROMPT_BROWN,
+        outline=(255, 255, 255),
+        outline_width=3,
+    )
+
+
 def _draw_letter_cards(surface: pygame.Surface, spec: dict[str, Any], view: SceneView) -> None:
     letters = tuple(str(item or "").upper() for item in (view.slot_letters or ()))
     slots: list[dict[str, Any]] = list(spec.get("slots") or [])
@@ -124,15 +143,25 @@ def letter_tile_uses_selected(
     tile_variant: str,
     slot_letter: str,
     target_letter: str,
+    letter_success_slot: int = -1,
+    slot_index: int = -1,
 ) -> bool:
-    """Challenge tiles are always normal; success highlights only the correct letter."""
+    """Challenge tiles stay normal until the correct popup highlights the answer."""
     screen = str(screen_id or "").strip()
     variant = str(tile_variant or "normal").strip().lower()
+    slot = str(slot_letter or "").strip().upper()
+    target = str(target_letter or "").strip().upper()
+    if (
+        screen == "letter_island_game"
+        and letter_success_slot >= 0
+        and slot_index == letter_success_slot
+        and slot
+        and slot == target
+    ):
+        return True
     if screen in {"letter_island_game", "letter_voice_challenge", "letter_listening_state"} or variant == "normal":
         return False
     if screen == "letter_correct_feedback" or variant == "success":
-        slot = str(slot_letter or "").strip().upper()
-        target = str(target_letter or "").strip().upper()
         return bool(slot) and slot == target
     return False
 
@@ -157,16 +186,23 @@ def _draw_letter_tile_cards(
             tile_variant=tile_variant,
             slot_letter=letters[index],
             target_letter=target_letter,
+            letter_success_slot=int(getattr(view, "letter_success_slot", -1) or -1),
+            slot_index=index,
         )
         if assets is not None and asset_root:
-            selected_scale = float(spec.get("selected_scale") or 1.22)
+            target_scale = float(spec.get("selected_scale") or 1.32)
+            progress = float(getattr(view, "letter_success_progress", 0.0) or 0.0)
+            if selected:
+                scale = 1.0 + (target_scale - 1.0) * min(1.0, max(0.0, progress))
+            else:
+                scale = 1.0
             tile = assets.scaled_letter_tile(
                 asset_root,
                 letters[index],
                 w,
                 h,
                 selected=selected,
-                selected_scale=selected_scale if selected else 1.0,
+                selected_scale=scale,
             )
             if tile is not None:
                 draw_x = x + (w - tile.get_width()) // 2
@@ -364,27 +400,98 @@ def _draw_badge_icon_png(
     assets: AssetManager | None,
     asset_root: str,
 ) -> None:
-    """Draw the unlocked badge icon in the spotlight above the purple banner."""
+    """Draw a celebratory badge-unlock card (panel, title, icon, name, button)."""
     from engine.scoring import badge_icon_filename
 
     names = getattr(view, "badge_names", ()) or ()
     if not names:
         return
     badge_name = str(names[0]).strip()
-    if not badge_name or assets is None or not asset_root:
+    if not badge_name:
         return
 
-    filename = badge_icon_filename(badge_name)
-    x, y, w, h = slot_rect(spec)
-    offset_x = int(spec.get("offset_x_px") or 0)
-    offset_y = int(spec.get("offset_y_px") or 0)
-    fit = str(spec.get("fit") or "contain")
-    tile = assets.scaled_chunk(asset_root, f"badges/{filename}", w, h, fit=fit)
-    if tile is None:
-        return
-    draw_x = x + (w - tile.get_width()) // 2 + offset_x
-    draw_y = y + (h - tile.get_height()) // 2 + offset_y
-    surface.blit(tile, (draw_x, draw_y))
+    _draw_badge_celebration_card(surface, badge_name, spec, assets, asset_root)
+
+
+def _draw_badge_celebration_card(
+    surface: pygame.Surface,
+    badge_name: str,
+    spec: dict[str, Any],
+    assets: AssetManager | None,
+    asset_root: str,
+) -> None:
+    from engine.scoring import badge_icon_filename, badge_subtitle
+
+    # Soft celebration panel.
+    panel = pygame.Rect(
+        int(SCREEN_WIDTH * 0.28),
+        int(SCREEN_HEIGHT * 0.10),
+        int(SCREEN_WIDTH * 0.44),
+        int(SCREEN_HEIGHT * 0.84),
+    )
+    shadow = panel.inflate(20, 20)
+    shadow_surf = pygame.Surface(shadow.size, pygame.SRCALPHA)
+    pygame.draw.rect(shadow_surf, (120, 80, 110, 60), shadow_surf.get_rect(), border_radius=36)
+    surface.blit(shadow_surf, shadow.topleft)
+    card_surf = pygame.Surface(panel.size, pygame.SRCALPHA)
+    pygame.draw.rect(card_surf, (255, 255, 255, 236), card_surf.get_rect(), border_radius=32)
+    surface.blit(card_surf, panel.topleft)
+    pygame.draw.rect(surface, (255, 198, 96), panel, width=5, border_radius=32)
+
+    # Corner sparkles, kept clear of all text.
+    for sx, sy in (
+        (panel.x + 40, panel.y + 150),
+        (panel.right - 40, panel.y + 150),
+        (panel.x + 46, panel.bottom - 120),
+        (panel.right - 46, panel.bottom - 120),
+    ):
+        draw_sparkle(surface, sx, sy, size=5)
+
+    # Title.
+    title = font(44, bold=True).render("Badge Unlocked!", True, (227, 144, 56))
+    surface.blit(title, title.get_rect(center=(panel.centerx, int(SCREEN_HEIGHT * 0.165))))
+
+    # Glow behind icon.
+    glow_center = (panel.centerx, int(SCREEN_HEIGHT * 0.42))
+    for radius, alpha in ((132, 42), (104, 62), (78, 92)):
+        glow = pygame.Surface((radius * 2, radius * 2), pygame.SRCALPHA)
+        pygame.draw.circle(glow, (255, 222, 130, alpha), (radius, radius), radius)
+        surface.blit(glow, (glow_center[0] - radius, glow_center[1] - radius))
+
+    # Badge icon (image when available, else a marvelous star medallion).
+    icon_w = int(SCREEN_WIDTH * 0.24)
+    icon_h = int(SCREEN_HEIGHT * 0.30)
+    tile = None
+    if assets is not None and asset_root:
+        filename = badge_icon_filename(badge_name)
+        tile = assets.scaled_chunk(asset_root, f"badges/{filename}", icon_w, icon_h, fit="contain")
+    if tile is not None:
+        surface.blit(tile, tile.get_rect(center=glow_center))
+    else:
+        medal_r = int(SCREEN_HEIGHT * 0.12)
+        pygame.draw.circle(surface, (255, 198, 96), glow_center, medal_r)
+        pygame.draw.circle(surface, (255, 255, 255), glow_center, medal_r, 6)
+        star = font(int(medal_r * 1.4), bold=True).render("★", True, (255, 255, 255))
+        surface.blit(star, star.get_rect(center=glow_center))
+
+    # Encouraging subtitle + badge name.
+    subtitle = badge_subtitle(badge_name)
+    if subtitle:
+        sub_label = font(26, bold=True).render(subtitle, True, HUD_PINK)
+        surface.blit(sub_label, sub_label.get_rect(center=(panel.centerx, int(SCREEN_HEIGHT * 0.605))))
+    name_label = font(34, bold=True).render(badge_name, True, PROMPT_BROWN)
+    surface.blit(name_label, name_label.get_rect(center=(panel.centerx, int(SCREEN_HEIGHT * 0.665))))
+
+    # Next button (aligned to the continue_from_badge hitbox).
+    button = pygame.Rect(
+        int(SCREEN_WIDTH * 0.38),
+        int(SCREEN_HEIGHT * 0.835),
+        int(SCREEN_WIDTH * 0.24),
+        int(SCREEN_HEIGHT * 0.10),
+    )
+    draw_rounded_rect(surface, button, (255, 138, 170), radius=button.height // 2, border=(255, 255, 255), border_width=4)
+    next_label = font(34, bold=True).render("Next", True, (255, 255, 255))
+    surface.blit(next_label, next_label.get_rect(center=button.center))
 
 
 def _draw_letter_focus_png(
@@ -757,6 +864,8 @@ def draw_dynamic_layers(
             _draw_badge_icon_png(surface, spec, view, assets, active_screen)
         elif layer_type == "letter_focus_png":
             _draw_letter_focus_png(surface, spec, view, assets, active_screen)
+        elif layer_type == "letter_voice_prompt":
+            _draw_letter_voice_prompt(surface, spec)
         elif layer_type == "word_object_focus":
             _draw_word_object_focus(surface, spec, view, assets, active_screen)
         elif layer_type == "listening_overlay":

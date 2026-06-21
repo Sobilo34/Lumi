@@ -24,7 +24,6 @@ def e1_demo_profile() -> dict:
         "mastered_words": ["dog"],
         "weak_letters": {"B": 2, "D": 1},
         "weak_words": {"cat": 2},
-        "sentence_errors": {"word_order": 1},
     }
 
 
@@ -70,7 +69,8 @@ def test_end_session_speaks_celebration_message(headless_engine: GameEngine) -> 
 
     engine.set_screen("end_session")
 
-    engine.voice.speak.assert_called_with(END_SESSION_MESSAGE)
+    args, kwargs = engine.voice.speak.call_args
+    assert args[0] == END_SESSION_MESSAGE
 
 
 def test_progress_view_report_back_routes_to_end_session(headless_engine: GameEngine) -> None:

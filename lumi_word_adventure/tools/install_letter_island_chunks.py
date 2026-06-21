@@ -148,6 +148,8 @@ def main() -> None:
 
     _copy_uuid(BACKGROUND_UUID, REF / "07_letter_island_gameplay.png")
     _copy_uuid(SUCCESS_BACKGROUND_UUID, REF / "08_letter_correct_feedback.png")
+    _copy_uuid(SUCCESS_BACKGROUND_UUID, DEST / "success_background.png")
+    _copy_uuid(BACKGROUND_UUID, DEST / "background.png")
     _copy_uuid(SPEAK_BACKGROUND_UUID, DEST / "speak_background.png")
 
     for letter, uuid in FIND_PROMPTS.items():
@@ -166,6 +168,13 @@ def main() -> None:
     trimmed_letters = _trim_assets_in_place(DEST, "letters")
     trimmed_find = _trim_assets_in_place(DEST, "find")
     write_shipped_assets_marker(DEST.parent, "letter_island_game")
+
+    word_garden_dest = PROJECT / "assets" / "ui_chunks" / "word_garden_game"
+    for filename in ("success_background.png", "failure_background.png"):
+        src = word_garden_dest / filename
+        if src.is_file():
+            shutil.copy2(src, DEST / filename)
+            print(f"  -> {DEST.relative_to(PROJECT) / filename}")
 
     print(f"Installed Letter Island assets to {DEST}")
     print(f"  Background: {REF / '07_letter_island_gameplay.png'}")

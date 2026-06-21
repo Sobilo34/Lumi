@@ -1,5 +1,6 @@
 {
   "child_name": "Test",
+<<<<<<< Updated upstream
   "total_stars": 155,
   "lumi_energy": 100,
   "current_world": "main_menu",
@@ -15,6 +16,20 @@
   "sentence_errors": {},
   "hint_usage": {
     "level_1": 11,
+=======
+  "total_stars": 102,
+  "total_points": 1360,
+  "best_streak": 17,
+  "lumi_energy": 100,
+  "current_world": "main_menu",
+  "difficulty": 1,
+  "correct_streak": 17,
+  "wrong_streak": 0,
+  "weak_letters": {},
+  "weak_words": {},
+  "hint_usage": {
+    "level_1": 0,
+>>>>>>> Stashed changes
     "level_2": 0,
     "level_3": 0
   },
@@ -24,6 +39,7 @@
     "C",
     "D",
     "E",
+<<<<<<< Updated upstream
     "P",
     "F",
     "W",
@@ -40,7 +56,13 @@
     "hat",
     "cup",
     "star"
+=======
+    "H",
+    "N",
+    "F"
+>>>>>>> Stashed changes
   ],
+  "mastered_words": [],
   "word_mastery": {
     "apple": {
       "attempts": 0,
@@ -54,6 +76,7 @@
       "confused_with": {}
     },
     "ball": {
+<<<<<<< Updated upstream
       "attempts": 4,
       "correct": 3,
       "wrong": 1,
@@ -65,6 +88,17 @@
       "confused_with": {
         "dog": 1
       }
+=======
+      "attempts": 0,
+      "correct": 0,
+      "wrong": 0,
+      "first_try_correct": 0,
+      "hints_used": 0,
+      "mastery_score": 0.0,
+      "last_seen": 0,
+      "consecutive_correct": 0,
+      "confused_with": {}
+>>>>>>> Stashed changes
     },
     "bird": {
       "attempts": 0,
@@ -78,36 +112,41 @@
       "confused_with": {}
     },
     "cat": {
-      "attempts": 2,
-      "correct": 1,
-      "wrong": 1,
+      "attempts": 0,
+      "correct": 0,
+      "wrong": 0,
       "first_try_correct": 0,
-      "hints_used": 1,
-      "mastery_score": 0.13,
-      "last_seen": 1781947571,
-      "consecutive_correct": 1,
-      "confused_with": {
-        "frog": 1
-      }
+      "hints_used": 0,
+      "mastery_score": 0.0,
+      "last_seen": 0,
+      "consecutive_correct": 0,
+      "confused_with": {}
     },
     "cup": {
-      "attempts": 1,
-      "correct": 1,
+      "attempts": 0,
+      "correct": 0,
       "wrong": 0,
-      "first_try_correct": 1,
+      "first_try_correct": 0,
       "hints_used": 0,
-      "mastery_score": 0.3,
-      "last_seen": 1781947965,
-      "consecutive_correct": 1,
+      "mastery_score": 0.0,
+      "last_seen": 0,
+      "consecutive_correct": 0,
       "confused_with": {}
     },
     "dog": {
+<<<<<<< Updated upstream
       "attempts": 4,
       "correct": 1,
       "wrong": 3,
+=======
+      "attempts": 0,
+      "correct": 0,
+      "wrong": 0,
+>>>>>>> Stashed changes
       "first_try_correct": 0,
-      "hints_used": 1,
+      "hints_used": 0,
       "mastery_score": 0.0,
+<<<<<<< Updated upstream
       "last_seen": 1781950189,
       "consecutive_correct": 0,
       "confused_with": {
@@ -115,30 +154,33 @@
         "duck": 1,
         "star": 1
       }
+=======
+      "last_seen": 0,
+      "consecutive_correct": 0,
+      "confused_with": {}
+>>>>>>> Stashed changes
     },
     "duck": {
-      "attempts": 1,
-      "correct": 1,
-      "wrong": 0,
-      "first_try_correct": 1,
-      "hints_used": 0,
-      "mastery_score": 0.3,
-      "last_seen": 1781947942,
-      "consecutive_correct": 1,
-      "confused_with": {}
-    },
-    "fish": {
-      "attempts": 1,
+      "attempts": 0,
       "correct": 0,
-      "wrong": 1,
+      "wrong": 0,
       "first_try_correct": 0,
       "hints_used": 0,
       "mastery_score": 0.0,
-      "last_seen": 1781947585,
+      "last_seen": 0,
       "consecutive_correct": 0,
-      "confused_with": {
-        "duck": 1
-      }
+      "confused_with": {}
+    },
+    "fish": {
+      "attempts": 0,
+      "correct": 0,
+      "wrong": 0,
+      "first_try_correct": 0,
+      "hints_used": 0,
+      "mastery_score": 0.0,
+      "last_seen": 0,
+      "consecutive_correct": 0,
+      "confused_with": {}
     },
     "frog": {
       "attempts": 0,
@@ -152,14 +194,14 @@
       "confused_with": {}
     },
     "hat": {
-      "attempts": 1,
-      "correct": 1,
+      "attempts": 0,
+      "correct": 0,
       "wrong": 0,
-      "first_try_correct": 1,
+      "first_try_correct": 0,
       "hints_used": 0,
-      "mastery_score": 0.3,
-      "last_seen": 1781947954,
-      "consecutive_correct": 1,
+      "mastery_score": 0.0,
+      "last_seen": 0,
+      "consecutive_correct": 0,
       "confused_with": {}
     },
     "star": {
@@ -174,14 +216,14 @@
       "confused_with": {}
     },
     "sun": {
-      "attempts": 2,
-      "correct": 2,
+      "attempts": 0,
+      "correct": 0,
       "wrong": 0,
-      "first_try_correct": 2,
+      "first_try_correct": 0,
       "hints_used": 0,
-      "mastery_score": 0.6,
-      "last_seen": 1781947580,
-      "consecutive_correct": 2,
+      "mastery_score": 0.0,
+      "last_seen": 0,
+      "consecutive_correct": 0,
       "confused_with": {}
     },
     "tree": {
@@ -198,14 +240,19 @@
   },
   "last_word_garden_target": "frog",
   "completed_worlds": [
+<<<<<<< Updated upstream
     "letter_island",
     "word_garden",
     "voice_challenge"
+=======
+    "letter_island"
+>>>>>>> Stashed changes
   ],
   "badges": [
     "B and D Master",
     "Badge A",
     "Badge B",
+<<<<<<< Updated upstream
     "Badge C",
     "Great Learner",
     "Word Explorer",
@@ -215,9 +262,16 @@
   "attempts": 77,
   "correct_answers": 53,
   "accuracy": 68.83,
+=======
+    "Badge C"
+  ],
+  "debug_persistent": false,
+  "attempts": 37,
+  "correct_answers": 34,
+  "accuracy": 91.89,
+>>>>>>> Stashed changes
   "current_letter_index": 25,
   "current_word_length": 3,
-  "sentence_level": 0,
   "letter_mastery": {
     "A": {
       "attempts": 2,
@@ -226,7 +280,7 @@
       "first_try_correct": 2,
       "hints_used": 0,
       "mastery_score": 0.5,
-      "last_seen": 1781936912,
+      "last_seen": 1782051971,
       "consecutive_correct": 2,
       "confused_with": {}
     },
@@ -237,7 +291,7 @@
       "first_try_correct": 2,
       "hints_used": 0,
       "mastery_score": 0.5,
-      "last_seen": 1781936920,
+      "last_seen": 1782053780,
       "consecutive_correct": 2,
       "confused_with": {}
     },
@@ -248,20 +302,22 @@
       "first_try_correct": 2,
       "hints_used": 0,
       "mastery_score": 0.5,
-      "last_seen": 1781936930,
+      "last_seen": 1782053825,
       "consecutive_correct": 2,
       "confused_with": {}
     },
     "D": {
-      "attempts": 2,
+      "attempts": 3,
       "correct": 2,
-      "wrong": 0,
-      "first_try_correct": 2,
+      "wrong": 1,
+      "first_try_correct": 1,
       "hints_used": 0,
-      "mastery_score": 0.5,
-      "last_seen": 1781937004,
+      "mastery_score": 0.4,
+      "last_seen": 1782053735,
       "consecutive_correct": 2,
-      "confused_with": {}
+      "confused_with": {
+        "F": 1
+      }
     },
     "E": {
       "attempts": 2,
@@ -270,7 +326,7 @@
       "first_try_correct": 2,
       "hints_used": 0,
       "mastery_score": 0.5,
-      "last_seen": 1781937029,
+      "last_seen": 1782053846,
       "consecutive_correct": 2,
       "confused_with": {}
     },
@@ -281,7 +337,7 @@
       "first_try_correct": 2,
       "hints_used": 0,
       "mastery_score": 0.5,
-      "last_seen": 1781937078,
+      "last_seen": 1782053866,
       "consecutive_correct": 2,
       "confused_with": {}
     },
@@ -291,6 +347,7 @@
       "wrong": 0,
       "first_try_correct": 2,
       "hints_used": 0,
+<<<<<<< Updated upstream
       "mastery_score": 0.5,
       "last_seen": 1781949933,
       "consecutive_correct": 2,
@@ -306,6 +363,25 @@
       "last_seen": 1781950019,
       "consecutive_correct": 2,
       "confused_with": {}
+=======
+      "mastery_score": 0.25,
+      "last_seen": 1782053739,
+      "consecutive_correct": 1,
+      "confused_with": {}
+    },
+    "H": {
+      "attempts": 3,
+      "correct": 2,
+      "wrong": 1,
+      "first_try_correct": 1,
+      "hints_used": 0,
+      "mastery_score": 0.4,
+      "last_seen": 1782053758,
+      "consecutive_correct": 2,
+      "confused_with": {
+        "D": 1
+      }
+>>>>>>> Stashed changes
     },
     "I": {
       "attempts": 1,
@@ -314,7 +390,7 @@
       "first_try_correct": 1,
       "hints_used": 0,
       "mastery_score": 0.25,
-      "last_seen": 1781936928,
+      "last_seen": 1782053753,
       "consecutive_correct": 1,
       "confused_with": {}
     },
@@ -325,7 +401,7 @@
       "first_try_correct": 1,
       "hints_used": 0,
       "mastery_score": 0.25,
-      "last_seen": 1781936932,
+      "last_seen": 1782053763,
       "consecutive_correct": 1,
       "confused_with": {}
     },
@@ -336,7 +412,7 @@
       "first_try_correct": 1,
       "hints_used": 0,
       "mastery_score": 0.25,
-      "last_seen": 1781936949,
+      "last_seen": 1782053770,
       "consecutive_correct": 1,
       "confused_with": {}
     },
@@ -347,7 +423,7 @@
       "first_try_correct": 1,
       "hints_used": 0,
       "mastery_score": 0.25,
-      "last_seen": 1781937002,
+      "last_seen": 1782053775,
       "consecutive_correct": 1,
       "confused_with": {}
     },
@@ -358,20 +434,22 @@
       "first_try_correct": 1,
       "hints_used": 0,
       "mastery_score": 0.25,
-      "last_seen": 1781937006,
+      "last_seen": 1782053785,
       "consecutive_correct": 1,
       "confused_with": {}
     },
     "N": {
-      "attempts": 1,
-      "correct": 1,
-      "wrong": 0,
+      "attempts": 3,
+      "correct": 2,
+      "wrong": 1,
       "first_try_correct": 1,
       "hints_used": 0,
-      "mastery_score": 0.25,
-      "last_seen": 1781937012,
-      "consecutive_correct": 1,
-      "confused_with": {}
+      "mastery_score": 0.4,
+      "last_seen": 1782053804,
+      "consecutive_correct": 2,
+      "confused_with": {
+        "O": 1
+      }
     },
     "O": {
       "attempts": 1,
@@ -380,22 +458,20 @@
       "first_try_correct": 1,
       "hints_used": 0,
       "mastery_score": 0.25,
-      "last_seen": 1781937019,
+      "last_seen": 1782053800,
       "consecutive_correct": 1,
       "confused_with": {}
     },
     "P": {
-      "attempts": 3,
-      "correct": 2,
-      "wrong": 1,
+      "attempts": 1,
+      "correct": 1,
+      "wrong": 0,
       "first_try_correct": 1,
       "hints_used": 0,
-      "mastery_score": 0.4,
-      "last_seen": 1781937058,
-      "consecutive_correct": 2,
-      "confused_with": {
-        "O": 1
-      }
+      "mastery_score": 0.25,
+      "last_seen": 1782053809,
+      "consecutive_correct": 1,
+      "confused_with": {}
     },
     "Q": {
       "attempts": 1,
@@ -404,7 +480,7 @@
       "first_try_correct": 1,
       "hints_used": 0,
       "mastery_score": 0.25,
-      "last_seen": 1781937038,
+      "last_seen": 1782053814,
       "consecutive_correct": 1,
       "confused_with": {}
     },
@@ -415,7 +491,7 @@
       "first_try_correct": 1,
       "hints_used": 0,
       "mastery_score": 0.25,
-      "last_seen": 1781937050,
+      "last_seen": 1782053819,
       "consecutive_correct": 1,
       "confused_with": {}
     },
@@ -426,7 +502,7 @@
       "first_try_correct": 1,
       "hints_used": 0,
       "mastery_score": 0.25,
-      "last_seen": 1781937064,
+      "last_seen": 1782053829,
       "consecutive_correct": 1,
       "confused_with": {}
     },
@@ -437,7 +513,7 @@
       "first_try_correct": 1,
       "hints_used": 0,
       "mastery_score": 0.25,
-      "last_seen": 1781937067,
+      "last_seen": 1782053834,
       "consecutive_correct": 1,
       "confused_with": {}
     },
@@ -448,7 +524,7 @@
       "first_try_correct": 1,
       "hints_used": 0,
       "mastery_score": 0.25,
-      "last_seen": 1781937075,
+      "last_seen": 1782053841,
       "consecutive_correct": 1,
       "confused_with": {}
     },
@@ -459,22 +535,20 @@
       "first_try_correct": 1,
       "hints_used": 0,
       "mastery_score": 0.25,
-      "last_seen": 1781937080,
+      "last_seen": 1782053851,
       "consecutive_correct": 1,
       "confused_with": {}
     },
     "W": {
-      "attempts": 4,
-      "correct": 2,
-      "wrong": 2,
+      "attempts": 1,
+      "correct": 1,
+      "wrong": 0,
       "first_try_correct": 1,
       "hints_used": 0,
-      "mastery_score": 0.4,
-      "last_seen": 1781946054,
-      "consecutive_correct": 2,
-      "confused_with": {
-        "X": 2
-      }
+      "mastery_score": 0.25,
+      "last_seen": 1782053856,
+      "consecutive_correct": 1,
+      "confused_with": {}
     },
     "X": {
       "attempts": 1,
@@ -483,7 +557,7 @@
       "first_try_correct": 1,
       "hints_used": 0,
       "mastery_score": 0.25,
-      "last_seen": 1781946064,
+      "last_seen": 1782053862,
       "consecutive_correct": 1,
       "confused_with": {}
     },
@@ -494,7 +568,7 @@
       "first_try_correct": 1,
       "hints_used": 0,
       "mastery_score": 0.25,
-      "last_seen": 1781946068,
+      "last_seen": 1782053871,
       "consecutive_correct": 1,
       "confused_with": {}
     },
@@ -504,6 +578,7 @@
       "wrong": 0,
       "first_try_correct": 5,
       "hints_used": 0,
+<<<<<<< Updated upstream
       "mastery_score": 1.0,
       "last_seen": 1781950032,
       "consecutive_correct": 5,
@@ -511,4 +586,13 @@
     }
   },
   "curriculum_letters_since_review": 1
+=======
+      "mastery_score": 0.25,
+      "last_seen": 1782053876,
+      "consecutive_correct": 1,
+      "confused_with": {}
+    }
+  },
+  "curriculum_letters_since_review": 2
+>>>>>>> Stashed changes
 }

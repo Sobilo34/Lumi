@@ -11,7 +11,7 @@ import pytest
 from config import PROJECT_DIR, SCREEN_HEIGHT, SCREEN_WIDTH
 from engine.game_engine import GAMEPLAY_HITBOX_SCREEN_IDS, GameEngine, LEGACY_WORD_ACTIONS
 from engine.screen_registry import ScreenRegistry
-from ui.chunk_manifest import card_slot_offset_px, card_slot_rects, get_screen_spec
+from ui.chunk_manifest import card_slot_rects, get_screen_spec
 from engine.learner_model import LearnerModel
 from engine.personal_tutor import ALPHABET
 from engine.sfx_generator import generate_default_sfx
@@ -80,7 +80,8 @@ def test_letter_island_next_round_syncs_target_and_slots(engine: GameEngine) -> 
     slot_index = _slot_for_target(engine, first_target)
     engine.set_screen("letter_island_game")
     engine._handle_letter_island_action(f"select_letter_slot_{slot_index}")
-    assert engine.state.current_screen_id == "letter_correct_feedback"
+    assert engine.state.current_screen_id == "letter_island_game"
+    assert engine.state.answer_popup_kind == "correct"
     assert engine.state.pending_letter_curriculum_advance is True
     assert engine.state.completed_letter_target == first_target
     assert first_target in engine.state.completed_letter_choices
@@ -89,8 +90,9 @@ def test_letter_island_next_round_syncs_target_and_slots(engine: GameEngine) -> 
     assert success_view.target_letter == first_target
     assert first_target in success_view.slot_letters
 
-    engine._handle_action("next_activity")
+    engine._resolve_answer_popup()
     assert engine.state.current_screen_id == "letter_island_game"
+    assert engine.state.answer_popup_kind == ""
     assert engine.state.pending_letter_curriculum_advance is False
 
     next_target = str(engine.state.current_task_target or "A").upper()
@@ -103,7 +105,7 @@ def test_letter_island_next_round_syncs_target_and_slots(engine: GameEngine) -> 
         assert next_slots != first_slots
 
 
-def test_mastering_j_unlocks_badge_a_and_returns_to_success_screen(engine: GameEngine) -> None:
+def test_mastering_j_unlocks_badge_a_and_returns_to_gameplay(engine: GameEngine) -> None:
     engine.learner.current_letter_index = ALPHABET.index("J")
     engine.learner.weak_letters = {}
     engine.learner.badges = []
@@ -120,8 +122,7 @@ def test_mastering_j_unlocks_badge_a_and_returns_to_success_screen(engine: GameE
     assert "Badge A" in engine.learner.badges
 
     engine._handle_action("continue_from_badge")
-    assert engine.state.current_screen_id == "letter_correct_feedback"
-    assert engine.state.completed_letter_target == "J"
+    assert engine.state.current_screen_id == "letter_island_game"
 
 
 def test_mastering_z_shows_progress_complete_after_badge_c(engine: GameEngine) -> None:
@@ -188,8 +189,9 @@ def test_letter_island_correct_increments_attempts(engine: GameEngine) -> None:
 
     assert engine.learner.attempts == before_attempts + 1
     assert engine.learner.correct_answers == before_correct + 1
-    assert engine.state.current_screen_id == "letter_correct_feedback"
-    assert target.upper() in engine.state.last_letter_feedback_message
+    assert engine.state.current_screen_id == "letter_island_game"
+    assert engine.state.answer_popup_kind == "correct"
+    assert engine.state.last_letter_feedback_message == "Correct"
 
 
 def test_word_garden_selects_visible_target(engine: GameEngine) -> None:
@@ -205,40 +207,17 @@ def test_word_garden_selects_visible_target(engine: GameEngine) -> None:
 def test_word_garden_dog_wrong_for_cat_target(engine: GameEngine) -> None:
     engine.learner.completed_worlds = ["letter_island"]
     engine.learner.save_profile()
+    engine.set_screen("word_garden_game")
     engine.state.current_task_target = "cat"
     engine.state.current_task_prompt = "Touch the cat."
-    engine.set_screen("word_garden_game")
+    engine.state.word_choice_slots = ["cat", "dog", "sun", "ball"]
 
     engine._handle_word_garden_selection("dog")
 
-    assert engine.state.current_screen_id == "word_mistake_hint"
+    assert engine.state.current_screen_id == "word_garden_game"
+    assert engine.state.answer_popup_kind == "wrong"
     assert engine.state.last_word_selected == "dog"
-
-
-def test_word_garden_feedback_screens_use_chunk_backgrounds(engine: GameEngine) -> None:
-    from ui.chunk_composer import ChunkComposer
-    from ui.chunk_manifest import get_screen_spec
-
-    success_bg = PROJECT_DIR / "assets" / "ui_chunks" / "word_garden_game" / "success_background.png"
-    failure_bg = PROJECT_DIR / "assets" / "ui_chunks" / "word_garden_game" / "failure_background.png"
-    if not success_bg.is_file() or not failure_bg.is_file():
-        pytest.skip("Word Garden feedback backgrounds are not installed")
-
-    engine.state.current_task_target = "cat"
-    engine.state.word_choice_slots = ["cat", "dog", "sun", "ball"]
-    composer = ChunkComposer(engine.asset_manager)
-
-    for screen_id in ("word_correct_feedback", "word_mistake_hint"):
-        spec = get_screen_spec(screen_id, fallback_image=engine.registry.get_image_filename(screen_id))
-        view = replace(
-            engine._scene_view(),
-            screen_id=screen_id,
-            target_word="cat",
-            slot_words=("cat", "dog", "sun", "ball"),
-        )
-        surface = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
-        composer.compose(surface, spec, view)
-        assert surface.get_at((640, 360)).a == 255
+    assert engine.state.answer_popup_next_screen == "word_garden_game"
 
 
 def test_word_garden_hitboxes_use_neutral_actions() -> None:
@@ -266,25 +245,28 @@ def test_letter_island_skips_mastered_weak_review(engine: GameEngine) -> None:
     assert engine.state.current_task_target == "A"
 
 
-def test_letter_wrong_non_bd_stays_on_gameplay(engine: GameEngine) -> None:
+def test_letter_wrong_non_bd_shows_try_again_popup(engine: GameEngine) -> None:
     engine._configure_letter_island_task()
     target = engine.state.current_task_target or "A"
     wrong_slot = next(i for i, letter in enumerate(engine.state.letter_choice_slots) if letter.upper() != target.upper())
     engine.state.current_screen_id = "letter_island_game"
     engine._handle_letter_island_action(f"select_letter_slot_{wrong_slot}")
     assert engine.state.current_screen_id == "letter_island_game"
+    assert engine.state.answer_popup_kind == "wrong"
     assert engine.state.last_mistake_type == "letter_confusion"
     assert target.upper() in engine.state.last_letter_feedback_message
+    assert engine.state.answer_popup_next_screen == "letter_island_game"
 
 
-def test_letter_bd_confusion_shows_hint_screen(engine: GameEngine) -> None:
+def test_letter_bd_confusion_shows_try_again_popup(engine: GameEngine) -> None:
     engine.state.current_task_target = "B"
     engine.state.current_task_prompt = "Find the letter B."
     engine.state.letter_choice_slots = ["B", "D", "P", "A"]
     engine.state.current_screen_id = "letter_island_game"
     engine._handle_letter_island_action("select_letter_slot_1")
     assert engine.state.last_mistake_type == "bd_confusion"
-    assert engine.state.current_screen_id == "letter_mistake_hint"
+    assert engine.state.current_screen_id == "letter_island_game"
+    assert engine.state.answer_popup_kind == "wrong"
     assert "belly" in engine.state.last_letter_feedback_message.lower()
 
 
@@ -297,60 +279,70 @@ def test_word_garden_hud_hitboxes_include_settings() -> None:
 def test_gameplay_screens_refresh_hitboxes_on_entry(engine: GameEngine) -> None:
     engine.state.current_task_target = "cat"
     engine.state.word_choice_slots = ["cat", "dog", "sun", "ball"]
-    engine.set_screen("word_mistake_hint")
-    hitboxes = engine.screens["word_mistake_hint"].hitboxes
-    assert any(box.action == "play_target_word_sound" for box in hitboxes)
+    engine.learner.completed_worlds = ["letter_island"]
+    engine.learner.save_profile()
+    engine.set_screen("word_garden_game")
+    hitboxes = engine.screens["word_garden_game"].hitboxes
+    assert any(box.action.startswith("select_word_slot_") for box in hitboxes)
     assert GAMEPLAY_HITBOX_SCREEN_IDS >= {
         "word_garden_game",
-        "word_mistake_hint",
         "letter_island_game",
     }
 
 
 def test_word_mistake_try_again_preserves_round(engine: GameEngine) -> None:
+    engine.learner.completed_worlds = ["letter_island"]
+    engine.learner.save_profile()
     engine.state.current_task_target = "sun"
     engine.state.word_choice_slots = ["sun", "cat", "dog", "ball"]
-    engine.state.current_screen_id = "word_mistake_hint"
-    engine._handle_action("try_again")
+    engine.state.current_screen_id = "word_garden_game"
+    engine._show_word_mistake_feedback("Good try. Listen and try again.")
+    assert engine.state.answer_popup_kind == "wrong"
+    engine._resolve_answer_popup()
     assert engine.state.current_screen_id == "word_garden_game"
     assert engine.state.current_task_target == "sun"
 
 
 def test_word_correct_next_starts_new_round(engine: GameEngine) -> None:
+    engine.learner.completed_worlds = ["letter_island"]
+    engine.learner.save_profile()
     engine.state.current_task_target = "cat"
     engine.state.word_choice_slots = ["cat", "dog", "sun", "ball"]
-    engine.state.current_screen_id = "word_correct_feedback"
-    engine._handle_action("next_word_round")
+    engine.state.current_screen_id = "word_garden_game"
+    engine._show_word_correct_feedback("Great job!")
+    assert engine.state.answer_popup_kind == "correct"
+    engine._resolve_answer_popup()
     assert engine.state.current_screen_id == "word_garden_game"
     assert engine.state.current_hint_level == 0
 
 
-def test_word_mistake_dynamic_speaker_hitbox_follows_target(engine: GameEngine) -> None:
+def test_word_garden_dynamic_word_slots_follow_target(engine: GameEngine) -> None:
     engine.state.current_task_target = "dog"
     engine.state.word_choice_slots = ["cat", "dog", "sun", "ball"]
-    hitboxes = engine._hitboxes_for_screen("word_mistake_hint")
-    speaker = next(box for box in hitboxes if box.action == "play_target_word_sound")
+    hitboxes = engine._hitboxes_for_screen("word_garden_game")
     dog_slot = next(
         index
         for index, word in enumerate(engine.state.word_choice_slots)
         if word == "dog"
     )
+    slot = next(box for box in hitboxes if box.action == f"select_word_slot_{dog_slot}")
     spec = get_screen_spec(
-        "word_mistake_hint",
-        fallback_image=engine.registry.get_image_filename("word_mistake_hint"),
+        "word_garden_game",
+        fallback_image=engine.registry.get_image_filename("word_garden_game"),
     )
     cards = spec.dynamic.get("word_cards") or {}
     x, y, w, h = card_slot_rects(cards)[dog_slot]
-    offset_x, offset_y = card_slot_offset_px(cards, dog_slot)
-    assert speaker.rect.x == x + 8 + offset_x
-    assert speaker.rect.y == y + 8 + offset_y
+    assert slot.rect.x == x
+    assert slot.rect.y == y
 
 
 def test_letter_mistake_try_again_preserves_task(engine: GameEngine) -> None:
     engine.state.current_task_target = "F"
     engine.state.letter_choice_slots = ["F", "E", "P", "T"]
-    engine.state.current_screen_id = "letter_mistake_hint"
-    engine._handle_action("try_again")
+    engine.state.current_screen_id = "letter_island_game"
+    engine._show_letter_mistake_feedback("Good try. You can do it!")
+    assert engine.state.answer_popup_kind == "wrong"
+    engine._resolve_answer_popup()
     assert engine.state.current_screen_id == "letter_island_game"
     assert engine.state.current_task_target == "F"
 

@@ -12,7 +12,6 @@ from engine.learner_model import LearnerModel
 from engine.personal_tutor import ALPHABET
 from engine.world_progression import (
     WORLD_LETTER_ISLAND,
-    WORLD_SENTENCE_CASTLE,
     WORLD_WORD_GARDEN,
     letter_island_complete,
     letter_island_curriculum_complete,
@@ -20,7 +19,6 @@ from engine.world_progression import (
     maybe_complete_word_garden,
     prepare_world_practice,
     screen_accessible,
-    sentence_castle_unlocked,
     sync_world_completion,
     word_garden_unlocked,
 )
@@ -38,12 +36,10 @@ def engine(tmp_path: Path) -> GameEngine:
     return game
 
 
-def test_new_profile_locks_word_garden_and_sentence_castle(engine: GameEngine) -> None:
+def test_new_profile_locks_word_garden(engine: GameEngine) -> None:
     assert not word_garden_unlocked(engine.learner)
-    assert not sentence_castle_unlocked(engine.learner)
     assert screen_accessible(engine.learner, "letter_island_game")
     assert not screen_accessible(engine.learner, "word_garden_game")
-    assert not screen_accessible(engine.learner, "sentence_castle_game")
 
 
 def test_badge_c_curriculum_complete_unlocks_word_garden_without_full_mastery(engine: GameEngine) -> None:
@@ -117,7 +113,6 @@ def test_mastering_z_unlocks_word_garden(engine: GameEngine) -> None:
     assert WORLD_LETTER_ISLAND in engine.learner.completed_worlds
     assert word_garden_unlocked(engine.learner)
     assert screen_accessible(engine.learner, "word_garden_game")
-    assert not sentence_castle_unlocked(engine.learner)
 
 
 def test_all_letters_mastered_unlocks_completion_badge(engine: GameEngine) -> None:
@@ -135,15 +130,13 @@ def test_all_letters_mastered_unlocks_completion_badge(engine: GameEngine) -> No
     assert LETTER_ISLAND_COMPLETE_BADGE in engine.learner.badges
 
 
-def test_mastering_all_word_garden_words_unlocks_sentence_castle(engine: GameEngine) -> None:
+def test_mastering_all_word_garden_words_completes_world(engine: GameEngine) -> None:
     engine.learner.completed_worlds = [WORLD_LETTER_ISLAND]
     engine.learner.mastered_words = ["cat", "dog", "sun", "ball"]
     engine.learner.save_profile()
 
     assert maybe_complete_word_garden(engine.learner)
     assert WORLD_WORD_GARDEN in engine.learner.completed_worlds
-    assert sentence_castle_unlocked(engine.learner)
-    assert screen_accessible(engine.learner, "sentence_castle_game")
 
 
 def test_world_map_blocks_locked_navigation(engine: GameEngine) -> None:
@@ -164,7 +157,6 @@ def test_sync_backfills_completed_worlds_from_progress(engine: GameEngine) -> No
     assert WORLD_LETTER_ISLAND in completed
     assert WORLD_WORD_GARDEN in completed
     assert letter_island_complete(engine.learner)
-    assert sentence_castle_unlocked(engine.learner)
 
 
 def test_prepare_world_practice_resets_cursor_keeps_unlocks(engine: GameEngine) -> None:
@@ -197,7 +189,7 @@ def test_practice_again_replays_letter_island_keeps_word_garden_unlocked(engine:
     assert engine.state.current_task_target == "A"
 
 
-def test_practice_again_after_word_garden_keeps_sentence_castle_unlocked(engine: GameEngine) -> None:
+def test_practice_again_after_word_garden_replays_word_garden(engine: GameEngine) -> None:
     engine.learner.completed_worlds = [WORLD_LETTER_ISLAND, WORLD_WORD_GARDEN]
     engine.learner.mastered_letters = list(ALPHABET)
     engine.learner.mastered_words = ["cat", "dog", "sun", "ball"]
@@ -210,4 +202,3 @@ def test_practice_again_after_word_garden_keeps_sentence_castle_unlocked(engine:
 
     assert engine.state.current_screen_id == "word_garden_game"
     assert engine.learner.current_word_length == 3
-    assert screen_accessible(engine.learner, "sentence_castle_game")
