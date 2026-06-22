@@ -15,16 +15,18 @@ from ui.writing_castle_screen import WritingCastleScreen
 from ui.scene_view import SceneView
 from ui.screens import BaseScreen, create_screen_with_hitboxes
 
-# Full reference PNG only — no chunk layers or dynamic overlays.
+# Full reference PNG only — no chunk layers, procedural overlays, or control art.
 IMAGE_ONLY_SCREEN_IDS = frozenset({
     "welcome",
+    "main_menu",
+    "how_to_play",
 })
 
-# Menu / flow / info screens have no dedicated image components, so they are
-# drawn with the procedural component renderers. These paint the shared app
-# background and clean vector components on top (kid-friendly, simple to read).
+# Screens that use image-only backgrounds and should not draw control button overlays.
+IMAGE_ONLY_SCREEN_IDS_NO_CONTROL_OVERLAY = IMAGE_ONLY_SCREEN_IDS
+
+# Menu / flow / info screens drawn with procedural component renderers.
 PROCEDURAL_SCREEN_IDS = frozenset({
-    "main_menu",
     "world_map",
     "bd_practice",
     "progress_complete",

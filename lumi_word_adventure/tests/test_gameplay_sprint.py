@@ -200,29 +200,29 @@ def test_word_garden_selects_visible_target(engine: GameEngine) -> None:
     engine._configure_word_garden_task()
 
     assert engine.state.current_task_target == "sun"
-    assert engine.state.current_task_prompt == "Touch the sun."
-    assert engine._word_garden_voice_prompt() == "Touch the sun."
+    assert engine.state.current_task_prompt == "Touch the Sun."
+    assert engine._word_garden_voice_prompt() == "Touch the Sun."
 
 
-def test_word_garden_dog_wrong_for_cat_target(engine: GameEngine) -> None:
+def test_word_garden_bird_wrong_for_sun_target(engine: GameEngine) -> None:
     engine.learner.completed_worlds = ["letter_island"]
     engine.learner.save_profile()
     engine.set_screen("word_garden_game")
-    engine.state.current_task_target = "cat"
-    engine.state.current_task_prompt = "Touch the cat."
-    engine.state.word_choice_slots = ["cat", "dog", "sun", "ball"]
+    engine.state.current_task_target = "sun"
+    engine.state.current_task_prompt = "Touch the Sun."
+    engine.state.word_choice_slots = ["sun", "bird", "apple", "cup"]
 
-    engine._handle_word_garden_selection("dog")
+    engine._handle_word_garden_selection("bird")
 
     assert engine.state.current_screen_id == "word_garden_game"
     assert engine.state.answer_popup_kind == "wrong"
-    assert engine.state.last_word_selected == "dog"
+    assert engine.state.last_word_selected == "bird"
     assert engine.state.answer_popup_next_screen == "word_garden_game"
 
 
 def test_word_garden_hitboxes_use_neutral_actions() -> None:
-    assert LEGACY_WORD_ACTIONS["select_word_cat"] == "cat"
-    assert LEGACY_WORD_ACTIONS["select_word_dog"] == "dog"
+    assert LEGACY_WORD_ACTIONS["select_word_sun"] == "sun"
+    assert LEGACY_WORD_ACTIONS["select_word_bird"] == "bird"
 
 
 def test_letter_island_slots_are_dynamic(engine: GameEngine) -> None:

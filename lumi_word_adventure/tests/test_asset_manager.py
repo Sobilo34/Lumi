@@ -43,21 +43,35 @@ def test_existing_reference_image_is_scaled(tmp_path: Path) -> None:
     assert surface.get_size() == (SCREEN_WIDTH, SCREEN_HEIGHT)
 
 
-def test_word_garden_object_chunks_drop_export_padding() -> None:
-    source = PROJECT_DIR / "assets" / "ui_chunks" / "word_garden_game" / "objects" / "cat.png"
-    marker = PROJECT_DIR / "assets" / "ui_chunks" / "word_garden_game" / ".shipped_ready"
+def test_word_garden_object_chunks_keep_boxed_tile_size() -> None:
+    source = PROJECT_DIR / "assets" / "ui_chunks" / "word_garden_game" / "objects" / "sun.png"
     if not source.is_file():
         pytest.skip("Word Garden object assets are not installed")
 
     raw = pygame.image.load(str(source)).convert_alpha()
     manager = AssetManager()
-    loaded = manager.load_chunk("word_garden_game", "objects/cat.png")
+    manager.invalidate_word_garden_assets()
+    loaded = manager.load_chunk("word_garden_game", "objects/sun.png")
     assert loaded is not None
-    if marker.is_file():
-        assert loaded.get_size() == raw.get_size()
-        return
-    assert loaded.get_width() < raw.get_width() - 100
-    assert loaded.get_height() < raw.get_height() - 100
+    assert loaded.get_size() == raw.get_size()
+    assert loaded.get_at((0, 0)).a == 0
+
+
+def test_word_garden_object_fit_inside_layout_slots() -> None:
+    object_path = PROJECT_DIR / "assets" / "ui_chunks" / "word_garden_game" / "objects" / "sun.png"
+    if not object_path.is_file():
+        pytest.skip("Word Garden object assets are not installed")
+
+    manager = AssetManager()
+    manager.invalidate_word_garden_assets()
+    obj = manager.scaled_word_object("word_garden_game", "sun", 182, 227, fit="fill")
+    assert obj is not None
+    assert obj.get_size() == (182, 227)
+
+
+def test_non_boxed_word_object_is_not_loaded() -> None:
+    manager = AssetManager()
+    assert manager.load_word_object("word_garden_game", "cat") is None
 
 
 def test_word_garden_feedback_backgrounds_stay_opaque() -> None:
@@ -76,19 +90,3 @@ def test_word_garden_feedback_backgrounds_stay_opaque() -> None:
     )
     sampled = ((loaded.get_width() + 7) // 8) * ((loaded.get_height() + 7) // 8)
     assert transparent / sampled < 0.02
-
-
-def test_word_garden_prompt_and_object_fit_inside_layout_slots() -> None:
-    object_path = PROJECT_DIR / "assets" / "ui_chunks" / "word_garden_game" / "objects" / "cat.png"
-    if not object_path.is_file():
-        pytest.skip("Word Garden object assets are not installed")
-
-    manager = AssetManager()
-    prompt = manager.scaled_word_prompt("word_garden_game", "cat", 112, 29, fit="contain")
-    obj = manager.scaled_word_object("word_garden_game", "cat", 182, 227, fit="contain")
-    assert prompt is not None
-    assert obj is not None
-    assert prompt.get_width() <= 112
-    assert prompt.get_height() <= 29
-    assert obj.get_width() <= 182
-    assert obj.get_height() <= 227

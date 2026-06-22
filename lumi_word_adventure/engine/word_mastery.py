@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from config import PROJECT_DIR
+from engine.word_object_tiles import BOXED_WORD_GARDEN_WORDS, is_boxed_object_tile_path, word_garden_objects_dir
 from engine.adaptive_ai import log_ai_decision
 
 WORD_MASTERY_THRESHOLD = 0.80
@@ -18,22 +19,8 @@ WORD_MASTERY_PENALTY_WRONG = 0.14
 WORD_MASTERY_PENALTY_HINT = 0.05
 WORD_RECENTLY_SEEN_SECONDS = 90
 
-# Fallback when no object/prompt PNG pairs are installed yet.
-WORD_GARDEN_WORDS_DEFAULT: tuple[str, ...] = (
-    "cat",
-    "dog",
-    "sun",
-    "ball",
-    "hat",
-    "fish",
-    "tree",
-    "apple",
-    "bird",
-    "cup",
-    "frog",
-    "star",
-    "duck",
-)
+# Fallback when no boxed object tiles are installed yet.
+WORD_GARDEN_WORDS_DEFAULT: tuple[str, ...] = BOXED_WORD_GARDEN_WORDS
 
 
 def empty_word_mastery_record() -> dict[str, Any]:
@@ -67,22 +54,17 @@ def _lower_word(word: str) -> str:
 
 
 def discover_installed_word_garden_words(chunks_root: Path | str | None = None) -> tuple[str, ...]:
-    """Words with both object and prompt PNGs installed under word_garden_game."""
-    if chunks_root is None:
-        root = PROJECT_DIR / "assets" / "ui_chunks" / "word_garden_game"
-    elif isinstance(chunks_root, str):
-        root = PROJECT_DIR / "assets" / "ui_chunks" / chunks_root
-    else:
-        root = chunks_root
-    objects_dir = root / "objects"
-    prompts_dir = root / "prompts"
-    if not objects_dir.is_dir() or not prompts_dir.is_dir():
+    """Words with a shipped boxed object tile (1024² card frame, transparent corners)."""
+    objects_dir = word_garden_objects_dir(chunks_root)
+    if not objects_dir.is_dir():
         return WORD_GARDEN_WORDS_DEFAULT
 
     words: list[str] = []
     for object_path in sorted(objects_dir.glob("*.png")):
         word = object_path.stem.strip().lower()
-        if word and (prompts_dir / f"{word}.png").is_file():
+        if not word:
+            continue
+        if is_boxed_object_tile_path(object_path):
             words.append(word)
     return tuple(words) if words else WORD_GARDEN_WORDS_DEFAULT
 

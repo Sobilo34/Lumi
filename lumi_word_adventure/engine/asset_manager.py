@@ -7,10 +7,11 @@ import pygame
 
 from config import BABY_PINK, REFERENCE_INTERFACES_DIR, SCREEN_HEIGHT, SCREEN_WIDTH, UI_CHUNKS_DIR
 from engine.letter_tile_bg import knock_out_letter_backdrop
+from engine.word_object_tiles import is_boxed_object_tile_path
 
 # Install scripts write this marker after offline PNG processing is complete.
 SHIPPED_ASSETS_MARKER = ".shipped_ready"
-SHIPPED_ASSETS_VERSION = "1"
+SHIPPED_ASSETS_VERSION = "2"
 
 
 def _letter_tile_needs_cleanup(image: pygame.Surface) -> bool:
@@ -38,6 +39,20 @@ def _prepare_letter_tile_surface(image: pygame.Surface) -> pygame.Surface:
         return pygame.image.frombuffer(cleaned.tobytes(), (width, height), "RGBA").convert_alpha()
     except Exception:
         return image.convert_alpha()
+
+
+def _word_object_tile_ready(image: pygame.Surface) -> bool:
+    """Pre-shipped object tiles keep the card frame; outer corners are transparent."""
+    width, height = image.get_size()
+    if width <= 0 or height <= 0:
+        return False
+    for x, y in ((0, 0), (width - 1, 0), (0, height - 1), (width - 1, height - 1)):
+        if image.get_at((x, y)).a > 8:
+            return False
+    return True
+
+
+_prepare_word_object_surface = _prepare_letter_tile_surface
 
 
 def _is_flat_backdrop(r: int, g: int, b: int, a: int) -> bool:
@@ -400,7 +415,7 @@ def _process_word_garden_chunk(image: pygame.Surface, *, crop: bool = False) -> 
     return _crop_to_opaque_bbox(surface)
 
 
-WORD_GARDEN_TRIM_CACHE_VERSION = "v8"
+WORD_GARDEN_TRIM_CACHE_VERSION = "v10"
 
 
 def write_shipped_assets_marker(chunks_dir: Path, screen_id: str, *, version: str = SHIPPED_ASSETS_VERSION) -> None:
@@ -420,9 +435,9 @@ def _shipped_assets_version(chunks_dir: Path, screen_id: str) -> str | None:
 def _word_garden_trim_cache_stale(filename: str, surface: pygame.Surface, source: pygame.Surface) -> bool:
     """Ignore old caches from previous processing pipelines."""
     if filename.startswith("objects/"):
-        return (
-            surface.get_width() >= min(450, source.get_width() - 80)
-            and surface.get_height() >= min(450, source.get_height() - 80)
+        # Boxed tiles are 1024²; stripped legacy art was much smaller.
+        return surface.get_width() >= min(900, source.get_width() - 40) and surface.get_height() >= min(
+            900, source.get_height() - 40
         )
     if filename.startswith("prompts/"):
         return surface.get_width() >= min(850, source.get_width() - 40)
@@ -479,7 +494,10 @@ class AssetManager:
         image = pygame.image.load(str(image_path))
         image = self._prepare_surface(image)
         if filename.startswith("objects/"):
-            image = _process_word_garden_object(image)
+            if _word_object_tile_ready(image):
+                image = _prepare_word_object_surface(image)
+            else:
+                image = _process_word_garden_object(image)
         elif filename.startswith("prompts/"):
             image = _process_word_garden_chunk(image, crop=False)
         elif filename.startswith("badges/"):
@@ -612,6 +630,14 @@ class AssetManager:
                 if key.startswith(needle):
                     del cache[key]
         self._shipped_ready.pop(asset_root, None)
+        trim_root = self.chunks_dir / ".trim_cache"
+        if trim_root.is_dir():
+            import shutil
+
+            for version_dir in trim_root.iterdir():
+                target = version_dir / asset_root
+                if target.is_dir():
+                    shutil.rmtree(target, ignore_errors=True)
 
     def prewarm_gameplay_assets(
         self,
@@ -774,7 +800,7 @@ class AssetManager:
     ) -> pygame.Surface | None:
         if width <= 0 or height <= 0:
             return None
-        key = str(word or "cat").strip().lower()
+        key = str(word or "sun").strip().lower()
         cache_key = f"{asset_root}/prompts/{key}@{width}x{height}@{fit}"
         if cache_key in self._scaled_cache:
             return self._scaled_cache[cache_key]
@@ -788,6 +814,9 @@ class AssetManager:
     def load_word_object(self, asset_root: str, word: str) -> pygame.Surface | None:
         key = str(word or "").strip().lower()
         if not key:
+            return None
+        image_path = self.chunks_dir / asset_root / "objects" / f"{key}.png"
+        if not is_boxed_object_tile_path(image_path):
             return None
         return self.load_chunk(asset_root, f"objects/{key}.png")
 
@@ -804,7 +833,7 @@ class AssetManager:
     ) -> pygame.Surface | None:
         if width <= 0 or height <= 0:
             return None
-        key = str(word or "cat").strip().lower()
+        key = str(word or "sun").strip().lower()
         scale = selected_scale if selected else 1.0
         fit_w = max(1, int(width * scale))
         fit_h = max(1, int(height * scale))

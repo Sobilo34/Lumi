@@ -17,7 +17,7 @@ class SceneView:
     target_letter: str = "A"
     slot_letters: tuple[str, ...] = ()
     held_letter: str = ""
-    target_word: str = "cat"
+    target_word: str = "sun"
     slot_words: tuple[str, ...] = ()
     voice_target: str = "apple"
     voice_listening: bool = False

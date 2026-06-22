@@ -310,49 +310,46 @@
       ],
       "dynamic": {
         "touch_prompt": {
-          "type": "touch_word_png",
+          "type": "touch_word",
           "field": "target_word",
-          "anchor": "topleft",
-          "x_pct": 0.612,
-          "y_pct": 0.291,
-          "w_pct": 0.0867,
-          "h_pct": 0.0403,
-          "fit": "contain",
-          "valign": "middle",
-          "halign": "left"
+          "anchor": "center",
+          "x_pct": 0.5,
+          "y_pct": 0.17,
+          "h_pct": 0.10,
+          "max_w_pct": 0.58,
+          "font_size": 52
         },
         "word_cards": {
           "type": "word_object_cards",
           "tile_variant": "normal",
-          "fit": "contain",
+          "fit": "fill",
           "pad_x_pct": 0.0,
           "pad_y_pct": 0.0,
-          "shrink_px": 5,
-          "offset_x_px": [84, 64, 64, 24],
+          "shrink_px": 0,
           "slots": [
             {
-              "x_pct": 0.176,
-              "y_pct": 0.385,
-              "w_pct": 0.142,
-              "h_pct": 0.315
+              "x_pct": 0.08,
+              "y_pct": 0.34,
+              "w_pct": 0.20,
+              "h_pct": 0.46
             },
             {
-              "x_pct": 0.31,
-              "y_pct": 0.385,
-              "w_pct": 0.142,
-              "h_pct": 0.315
+              "x_pct": 0.29,
+              "y_pct": 0.34,
+              "w_pct": 0.20,
+              "h_pct": 0.46
             },
             {
-              "x_pct": 0.482,
-              "y_pct": 0.385,
-              "w_pct": 0.128,
-              "h_pct": 0.315
+              "x_pct": 0.50,
+              "y_pct": 0.34,
+              "w_pct": 0.20,
+              "h_pct": 0.46
             },
             {
-              "x_pct": 0.652,
-              "y_pct": 0.385,
-              "w_pct": 0.108,
-              "h_pct": 0.315
+              "x_pct": 0.71,
+              "y_pct": 0.34,
+              "w_pct": 0.20,
+              "h_pct": 0.46
             }
           ]
         }
@@ -374,19 +371,14 @@
         }
       ],
       "dynamic": {
-        "say_prompt": {
-          "type": "touch_word_png",
-          "field": "voice_target",
-          "anchor": "topleft",
-          "x_pct": 0.535,
-          "y_pct": 0.162,
-          "w_pct": 0.155,
-          "h_pct": 0.048,
-          "fit": "contain",
-          "valign": "middle",
-          "halign": "left",
-          "offset_x_px": -20,
-          "offset_y_px": 42
+        "voice_question": {
+          "type": "letter_voice_prompt",
+          "text": "What is this?",
+          "anchor": "center",
+          "x_pct": 0.5,
+          "y_pct": 0.18,
+          "w_pct": 0.72,
+          "h_pct": 0.12
         },
         "say_object": {
           "type": "word_object_focus",
@@ -419,19 +411,14 @@
         }
       ],
       "dynamic": {
-        "say_prompt": {
-          "type": "touch_word_png",
-          "field": "voice_target",
-          "anchor": "topleft",
-          "x_pct": 0.535,
-          "y_pct": 0.162,
-          "w_pct": 0.155,
-          "h_pct": 0.048,
-          "fit": "contain",
-          "valign": "middle",
-          "halign": "left",
-          "offset_x_px": -20,
-          "offset_y_px": 42
+        "voice_question": {
+          "type": "letter_voice_prompt",
+          "text": "What is this?",
+          "anchor": "center",
+          "x_pct": 0.5,
+          "y_pct": 0.18,
+          "w_pct": 0.72,
+          "h_pct": 0.12
         },
         "say_object": {
           "type": "word_object_focus",

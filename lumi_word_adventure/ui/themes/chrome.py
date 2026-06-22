@@ -28,14 +28,8 @@ from ui.components.primitives import (
 
 
 def draw_corner_nav(surface: pygame.Surface, *, show_home: bool = True, show_settings: bool = True) -> None:
-    if show_home:
-        c = (int(SCREEN_WIDTH * 0.04), int(SCREEN_HEIGHT * 0.07))
-        draw_circle_button(surface, c, 30, BUTTON_PINK)
-        draw_icon_home(surface, c)
-    if show_settings:
-        c = (int(SCREEN_WIDTH * 0.95), int(SCREEN_HEIGHT * 0.07))
-        draw_circle_button(surface, c, 30, BUTTON_PINK)
-        draw_icon_gear(surface, c)
+    """Corner nav is drawn from shipped control art via hitbox overlay in game_engine."""
+    return
 
 
 def draw_lumi_hud(

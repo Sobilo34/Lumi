@@ -20,7 +20,7 @@ WORLD_PRACTICE_ENTRY: dict[str, str] = {
     WORLD_WRITING_CASTLE: "writing_castle_game",
 }
 
-WORD_GARDEN_REQUIRED_WORDS = ("cat", "dog", "sun", "ball")
+WORD_GARDEN_REQUIRED_WORDS = ("sun", "apple", "fish", "bird")
 
 SCREEN_TO_WORLD = {
     "word_garden_game": WORLD_WORD_GARDEN,

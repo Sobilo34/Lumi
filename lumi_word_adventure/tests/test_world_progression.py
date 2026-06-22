@@ -132,7 +132,7 @@ def test_all_letters_mastered_unlocks_completion_badge(engine: GameEngine) -> No
 
 def test_mastering_all_word_garden_words_completes_world(engine: GameEngine) -> None:
     engine.learner.completed_worlds = [WORLD_LETTER_ISLAND]
-    engine.learner.mastered_words = ["cat", "dog", "sun", "ball"]
+    engine.learner.mastered_words = ["sun", "apple", "fish", "bird"]
     engine.learner.save_profile()
 
     assert maybe_complete_word_garden(engine.learner)
@@ -149,7 +149,7 @@ def test_world_map_blocks_locked_navigation(engine: GameEngine) -> None:
 def test_sync_backfills_completed_worlds_from_progress(engine: GameEngine) -> None:
     engine.learner.mastered_letters = list(ALPHABET)
     engine.learner.current_letter_index = len(ALPHABET) - 1
-    engine.learner.mastered_words = ["cat", "dog", "sun", "ball"]
+    engine.learner.mastered_words = ["sun", "apple", "fish", "bird"]
     engine.learner.completed_worlds = []
     engine.learner.save_profile()
 
@@ -192,7 +192,7 @@ def test_practice_again_replays_letter_island_keeps_word_garden_unlocked(engine:
 def test_practice_again_after_word_garden_replays_word_garden(engine: GameEngine) -> None:
     engine.learner.completed_worlds = [WORLD_LETTER_ISLAND, WORLD_WORD_GARDEN]
     engine.learner.mastered_letters = list(ALPHABET)
-    engine.learner.mastered_words = ["cat", "dog", "sun", "ball"]
+    engine.learner.mastered_words = ["sun", "apple", "fish", "bird"]
     engine.learner.current_word_length = 5
     engine.learner.save_profile()
     engine.state.last_completed_world_id = WORLD_WORD_GARDEN

@@ -27,7 +27,7 @@ class GameState:
     preserve_writing_castle_task: bool = False
     gameplay_refresh_pending: bool = False
     letter_choice_slots: list[str] = field(default_factory=lambda: ["B", "D", "P", "A"])
-    word_choice_slots: list[str] = field(default_factory=lambda: ["cat", "dog", "sun", "ball"])
+    word_choice_slots: list[str] = field(default_factory=lambda: ["sun", "apple", "fish", "bird"])
     letter_review_mode: bool = False
     pending_letter_curriculum_advance: bool = False
     completed_letter_target: str = ""

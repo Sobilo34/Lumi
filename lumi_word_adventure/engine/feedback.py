@@ -251,7 +251,7 @@ def get_lumi_speech(screen_id: str, current_task: str | None = None) -> str:
     if screen == "sentence_castle_game":
         return f"Put the sentence together, {task}." if task else "Put the sentence together."
     if screen == "voice_challenge":
-        return "What word is this?"
+        return "What is this?"
     if screen == "letter_voice_challenge":
         return LETTER_VOICE_PROMPT
     if screen == "letter_listening_state":

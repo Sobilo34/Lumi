@@ -10,7 +10,7 @@ from engine.adaptive_ai import pick_letter_round_target, reset_review_spacing
 ALPHABET = tuple("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
 LETTER_SLOT_COUNT = 4
 WORD_SLOT_COUNT = 4
-VISIBLE_WORD_FALLBACK = ("cat", "dog", "sun", "ball")
+VISIBLE_WORD_FALLBACK = ("sun", "apple", "fish", "bird")
 # Four tap slots on 07_letter_island_gameplay.png — letters shown there change each round.
 LETTER_ISLAND_SLOT_COUNT = 4
 

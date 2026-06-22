@@ -23,9 +23,12 @@ def learner(tmp_path: Path) -> LearnerModel:
 
 def test_discover_installed_words_from_assets() -> None:
     pool = discover_installed_word_garden_words()
-    assert len(pool) >= 13
-    assert "dog" in pool
-    assert "cat" in pool
+    assert len(pool) == 10
+    assert "sun" in pool
+    assert "bird" in pool
+    assert "cat" not in pool
+    assert "dog" not in pool
+    assert "ball" not in pool
     assert pool == get_word_garden_pool()
 
 
@@ -33,7 +36,7 @@ def test_build_word_garden_round_for_target_builds_four_object_choices(learner: 
     pool = get_word_garden_pool()
     round_data = build_word_garden_round_for_target(learner, "tree", pool=pool)
     assert round_data["target"] == "tree"
-    assert round_data["prompt"] == "Touch the tree."
+    assert round_data["prompt"] == "Touch the Tree."
     assert len(round_data["choices"]) == WORD_SLOT_COUNT
     assert "tree" in round_data["choices"]
     assert all(choice in pool for choice in round_data["choices"])
@@ -45,27 +48,27 @@ def test_build_word_garden_round_returns_four_choices(learner: LearnerModel) -> 
     assert len(round_data["choices"]) == WORD_SLOT_COUNT
     assert round_data["target"] in round_data["choices"]
     assert round_data["target"] in pool
-    assert round_data["prompt"] == f"Touch the {round_data['target']}."
+    assert round_data["prompt"] == f"Touch the {round_data['target'].capitalize()}."
 
 
 def test_build_word_garden_round_avoids_immediate_repeat(learner: LearnerModel) -> None:
     pool = get_word_garden_pool()
-    learner.weak_words = {"dog": 8}
-    learner.mastered_words = ["cat", "dog"]
+    learner.weak_words = {"fish": 8}
+    learner.mastered_words = ["sun", "fish"]
     learner.save_profile()
-    round_data = build_word_garden_round(learner, pool=pool, last_target="dog")
-    assert round_data["target"] != "dog"
+    round_data = build_word_garden_round(learner, pool=pool, last_target="fish")
+    assert round_data["target"] != "fish"
 
 
 def test_pick_word_garden_target_rotates_with_weighted_randomness(learner: LearnerModel) -> None:
-    pool = ("dog", "sun", "ball", "fish")
-    learner.weak_words = {"dog": 8}
+    pool = ("fish", "sun", "apple", "bird")
+    learner.weak_words = {"fish": 8}
     learner.save_profile()
     picks = {
-        pick_word_garden_target(learner, pool, last_target="dog", rng=random.Random(seed))[0]
+        pick_word_garden_target(learner, pool, last_target="fish", rng=random.Random(seed))[0]
         for seed in range(40)
     }
-    assert "dog" not in picks
+    assert "fish" not in picks
     assert len(picks) >= 2
 
 
@@ -77,11 +80,12 @@ def test_word_mastery_tracks_attempts(learner: LearnerModel) -> None:
 
 
 def test_word_mastery_records_confusion(learner: LearnerModel) -> None:
-    learner.record_word_mastery_attempt("cat", correct=False, confused_with="dog")
-    record = learner.get_word_mastery_record("cat")
+    learner.record_word_mastery_attempt("sun", correct=False, confused_with="fish")
+    record = learner.get_word_mastery_record("sun")
     assert record["wrong"] == 1
-    assert record["confused_with"].get("dog") == 1
+    assert record["confused_with"].get("fish") == 1
 
 
-def test_default_pool_has_thirteen_words() -> None:
-    assert len(WORD_GARDEN_WORDS_DEFAULT) == 13
+def test_default_pool_has_ten_boxed_words() -> None:
+    assert len(WORD_GARDEN_WORDS_DEFAULT) == 10
+    assert "cat" not in WORD_GARDEN_WORDS_DEFAULT

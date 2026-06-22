@@ -26,6 +26,7 @@ import csv
 import os
 from datetime import datetime
 from pathlib import Path
+from engine.control_assets import ControlAssets
 from engine.adaptive_ai import (
     choose_next_question,
     choose_hint,
@@ -96,12 +97,15 @@ from ui.report_overlay import draw_teacher_report_overlays
 from ui.settings_overlay import draw_settings_overlay
 from ui.badge_overlay import draw_badge_unlock_overlay
 from ui.voice_pronunciation_overlay import draw_voice_pronunciation_overlay
-from ui.voice_mic_prompt_overlay import draw_voice_mic_prompt_overlay
-from ui.answer_popup_overlay import LETTER_ISLAND_POPUP_ANCHOR_Y_PCT, draw_answer_popup_overlay
-from ui.control_buttons_overlay import (
-    PLACEHOLDER_CONTROL_SCREENS,
-    draw_control_button_placeholders,
+from ui.voice_mic_prompt_overlay import (
+    MIC_HINT_MESSAGE,
+    draw_mic_hint_badge,
+    mic_hint_badge_rect,
+    mic_hitbox_from_hitboxes,
 )
+from ui.answer_popup_overlay import LETTER_ISLAND_POPUP_ANCHOR_Y_PCT, draw_answer_popup_overlay
+from ui.control_buttons_overlay import draw_control_button_placeholders
+from ui.screen_factory import IMAGE_ONLY_SCREEN_IDS_NO_CONTROL_OVERLAY
 from ui.world_map_overlay import draw_world_map_overlay
 from ui.screen_factory import create_game_screen
 from ui.writing_castle_screen import WritingCastleScreen
@@ -130,7 +134,7 @@ from voice.voice_checker import check_spoken_answer, guess_spoken_letter
 
 
 LETTER_VOICE_QUESTION = "What letter is this?"
-WORD_VOICE_QUESTION = "What word is this?"
+WORD_VOICE_QUESTION = "What is this?"
 VOICE_LISTEN_DELAY_MS = 2500
 VOICE_PRONUNCIATION_FEEDBACK_MS = 2400
 VOICE_CORRECT_ADVANCE_DELAY_MS = 2400
@@ -151,14 +155,14 @@ SCREEN_SPECIFIC_PROMPT_ACTIONS = frozenset({
     "writing_castle_game",
 })
 LEGACY_WORD_ACTIONS = {
-    "select_word_cat": "cat",
-    "select_word_dog": "dog",
     "select_word_sun": "sun",
-    "select_word_ball": "ball",
-    "answer_cat_correct": "cat",
-    "answer_dog_wrong": "dog",
-    "answer_sun_wrong": "sun",
-    "answer_ball_wrong": "ball",
+    "select_word_bird": "bird",
+    "select_word_apple": "apple",
+    "select_word_cup": "cup",
+    "answer_sun_correct": "sun",
+    "answer_bird_wrong": "bird",
+    "answer_apple_wrong": "apple",
+    "answer_cup_wrong": "cup",
 }
 
 
@@ -168,6 +172,7 @@ class GameEngine:
         self.clock = pygame.time.Clock()
         self.running = True
         self.asset_manager = AssetManager()
+        self.control_assets = ControlAssets()
         self.registry = ScreenRegistry()
         self.settings = SettingsManager()
         self.sound = SoundManager()
@@ -409,7 +414,7 @@ class GameEngine:
         if screen_id in {"letter_voice_challenge", "letter_listening_state"}:
             voice_target = self._letter_voice_target().lower()
         elif screen_id not in {"voice_challenge", "listening_state"}:
-            voice_target = str(self.state.current_task_target or "cat").lower()
+            voice_target = str(self.state.current_task_target or "sun").lower()
 
         teacher_report = dict(self.state.teacher_report or {})
         if screen_id == "teacher_report" and not teacher_report:
@@ -429,7 +434,7 @@ class GameEngine:
             target_letter=target_letter,
             slot_letters=slot_letters,
             held_letter=target_letter,
-            target_word=str(self.state.current_task_target or "cat").lower(),
+            target_word=str(self.state.current_task_target or "sun").lower(),
             slot_words=tuple(str(word).lower() for word in self.state.word_choice_slots[:4]),
             voice_target=voice_target,
             voice_listening=screen_id in {"listening_state", "letter_listening_state"},
@@ -648,6 +653,17 @@ class GameEngine:
         if str(self.state.voice_round_advance_pending or "").strip():
             return False
         return True
+
+    def _handle_mic_hint_badge_click(self, position: tuple[int, int]) -> bool:
+        if not self._should_show_voice_mic_prompt():
+            return False
+        mic_rect = mic_hitbox_from_hitboxes(list(getattr(self.current_screen, "hitboxes", []) or []))
+        if mic_rect is None:
+            return False
+        if mic_hint_badge_rect(mic_rect).collidepoint(position):
+            self.voice.speak(MIC_HINT_MESSAGE, tone="instruct")
+            return True
+        return False
 
     def _schedule_auto_voice_listen(self) -> None:
         if not is_stt_ready():
@@ -1087,14 +1103,16 @@ class GameEngine:
         return LEGACY_WORD_ACTIONS.get(action)
 
     def _word_garden_pool(self) -> tuple[str, ...]:
-        return get_word_garden_pool("word_garden_game")
+        return get_word_garden_pool()
 
-    def _pick_visible_word(self, preferred: str, fallback: str = "cat") -> str:
+    def _pick_visible_word(self, preferred: str, fallback: str = "sun") -> str:
         pool = self._word_garden_pool()
         cleaned = preferred.strip().lower()
         if cleaned in pool:
             return cleaned
-        return fallback if fallback in pool else (pool[0] if pool else "cat")
+        if fallback in pool:
+            return fallback
+        return pool[0] if pool else "sun"
 
     def _build_word_garden_round(self) -> dict:
         last_target = str(
@@ -1170,27 +1188,38 @@ class GameEngine:
 
     def _apply_word_garden_round(self, round_data: dict) -> None:
         """Keep voice, prompt text, and card images on the same target word."""
-        target_word = str(round_data.get("target") or "cat").strip().lower()
-        choices = [str(word).strip().lower() for word in round_data.get("choices") or [] if str(word).strip()]
-        if len(choices) < WORD_SLOT_COUNT:
+        pool = self._word_garden_pool()
+        target_word = str(round_data.get("target") or "sun").strip().lower()
+        if target_word not in pool:
+            target_word = pool[0] if pool else "sun"
+        choices = [
+            str(word).strip().lower()
+            for word in round_data.get("choices") or []
+            if str(word).strip().lower() in pool
+        ]
+        if len(choices) < WORD_SLOT_COUNT or target_word not in choices:
             round_data = build_word_garden_round_for_target(
                 self.learner,
                 target_word,
-                pool=self._word_garden_pool(),
+                pool=pool,
                 vocabulary_data=self.word_questions,
             )
             target_word = str(round_data.get("target") or target_word).lower()
-            choices = [str(word).strip().lower() for word in round_data.get("choices") or []]
+            choices = [
+                str(word).strip().lower()
+                for word in round_data.get("choices") or []
+                if str(word).strip().lower() in pool
+            ]
         if target_word not in choices:
             choices = [target_word, *[word for word in choices if word != target_word]]
             choices = choices[:WORD_SLOT_COUNT]
             while len(choices) < WORD_SLOT_COUNT:
-                for filler in self._word_garden_pool():
+                for filler in pool:
                     if filler not in choices:
                         choices.append(filler)
                     if len(choices) >= WORD_SLOT_COUNT:
                         break
-        prompt = f"Touch the {target_word}."
+        prompt = f"Touch the {target_word.capitalize()}."
         self.state.current_task_target = target_word
         self.state.current_task_prompt = prompt
         self.state.word_choice_slots = choices[:WORD_SLOT_COUNT]
@@ -1448,7 +1477,7 @@ class GameEngine:
             first = str(self.state.word_choice_slots[0] or "").strip().lower()
             if first in pool:
                 return first
-        return self._pick_visible_word(candidate or "cat")
+        return self._pick_visible_word(candidate or "sun")
 
     def _reset_all_progress(self) -> None:
         """Reset saved learner progress and clear in-memory gameplay state."""
@@ -1531,7 +1560,7 @@ class GameEngine:
         self.set_screen("badge_unlock")
 
     def _handle_word_garden_selection(self, selected_word: str) -> None:
-        target_word = self.state.current_task_target or "cat"
+        target_word = self.state.current_task_target or "sun"
         self.state.last_word_selected = selected_word
         hints_used = int(self.state.current_hint_level or 0)
         first_try = hints_used == 0
@@ -1617,7 +1646,8 @@ class GameEngine:
                 target = "D"
             self._configure_bd_practice(target)
         elif screen_id == "word_garden_game":
-            self._start_word_practice("cat")
+            pool = self._word_garden_pool()
+            self._start_word_practice(pool[0] if pool else "sun")
         self.set_screen(screen_id)
 
     def _handle_teacher_report_action(self, action: str) -> bool:
@@ -1745,7 +1775,7 @@ class GameEngine:
         )
 
     def _voice_voice_try_again_line(self, target_word: str | None = None, spoken: str = "") -> str:
-        word = str(target_word or self._voice_challenge_target() or "cat").strip().lower()
+        word = str(target_word or self._voice_challenge_target() or "sun").strip().lower()
         self.state.current_hint_level += 1
         self.learner.record_hint_usage(self.state.current_hint_level)
         if spoken:
@@ -1763,7 +1793,7 @@ class GameEngine:
         )
 
     def _voice_help_line(self, target_word: str | None = None, *, heard: str = "") -> str:
-        word = str(target_word or self._voice_challenge_target() or "cat").strip().lower()
+        word = str(target_word or self._voice_challenge_target() or "sun").strip().lower()
         level = max(1, int(getattr(self.state, "current_hint_level", 0) or 0))
         return self.hint_engine.word_speaking_hint(
             word, level=level, heard=heard, profile=self.learner
@@ -1788,7 +1818,7 @@ class GameEngine:
         self.set_screen("voice_challenge")
 
     def _word_target_sound_line(self) -> str:
-        target_word = str(self.state.current_task_target or "cat").strip().lower()
+        target_word = str(self.state.current_task_target or "sun").strip().lower()
         sound_lines = {
             "cat": "Cat says meow.",
             "dog": "Dog says woof.",
@@ -1800,11 +1830,11 @@ class GameEngine:
         return sound_lines.get(target_word, f"{target_word.capitalize()}.")
 
     def _word_garden_voice_prompt(self) -> str:
-        target_word = str(self.state.current_task_target or "cat").strip().lower()
-        return f"Touch the {target_word}."
+        target_word = str(self.state.current_task_target or "sun").strip().lower()
+        return f"Touch the {target_word.capitalize()}."
 
     def _word_garden_hint_message(self) -> str:
-        target_word = self.state.current_task_target or "cat"
+        target_word = self.state.current_task_target or "sun"
         level = max(1, int(self.state.current_hint_level or 0))
         return self.hint_engine.word_hint(
             target_word,
@@ -1815,11 +1845,11 @@ class GameEngine:
         )
 
     def _word_garden_correct_message(self) -> str:
-        target_word = self.state.current_task_target or "cat"
+        target_word = self.state.current_task_target or "sun"
         return f"Wonderful! {target_word.capitalize()}."
 
     def _word_garden_mistake_message(self, selected_word: str) -> str:
-        target_word = self.state.current_task_target or "cat"
+        target_word = self.state.current_task_target or "sun"
         if self.state.last_mistake_type == "same_category_vocabulary_confusion" or {
             target_word,
             selected_word,
@@ -1880,6 +1910,9 @@ class GameEngine:
         if event.type == pygame.KEYDOWN and event.key == pygame.K_LEFT:
             self.previous_screen()
             return
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            if self._handle_mic_hint_badge_click(event.pos):
+                return
         action = self.current_screen.handle_event(event)
         if action:
             self._handle_action(action)
@@ -2037,7 +2070,7 @@ class GameEngine:
                 if self.state.microphone_test_mode:
                     self._finish_microphone_test()
                     return
-                self.voice.speak("Listening stopped. What word is this?")
+                self.voice.speak("Listening stopped. What is this?")
                 self.set_screen("voice_challenge")
                 return
         if self.state.current_screen_id == "letter_listening_state":
@@ -2159,8 +2192,9 @@ class GameEngine:
             self._configure_bd_practice("D")
             self.set_screen("bd_practice")
             return
-        if action == "practice_word_cat":
-            self._start_word_practice("cat")
+        if action == "practice_word_cat" or action == "practice_word_sun":
+            pool = self._word_garden_pool()
+            self._start_word_practice(pool[0] if pool else "sun")
             return
         if action == "toggle_hitbox_persistent":
             self._toggle_debug_persistent()
@@ -2512,11 +2546,13 @@ class GameEngine:
                 pass
 
         screen_id = self.state.current_screen_id
-        if screen_id in PLACEHOLDER_CONTROL_SCREENS:
+        if screen_id not in IMAGE_ONLY_SCREEN_IDS_NO_CONTROL_OVERLAY:
             try:
                 draw_control_button_placeholders(
                     self.screen,
                     list(getattr(self.current_screen, "hitboxes", []) or []),
+                    self.control_assets,
+                    writing_mode=str(self.state.writing_mode or "letters"),
                 )
             except Exception:
                 pass
@@ -2570,11 +2606,13 @@ class GameEngine:
             "listening_state",
         }:
             try:
+                mic_rect = None
                 if self._should_show_voice_mic_prompt():
-                    draw_voice_mic_prompt_overlay(
-                        self.screen,
-                        shown_at_ms=int(self.state.voice_mic_prompt_at_ms or 0),
+                    mic_rect = mic_hitbox_from_hitboxes(
+                        list(getattr(self.current_screen, "hitboxes", []) or [])
                     )
+                    if mic_rect is not None:
+                        draw_mic_hint_badge(self.screen, mic_rect)
                 draw_voice_pronunciation_overlay(
                     self.screen,
                     feedback=self.state.voice_pronunciation_feedback,

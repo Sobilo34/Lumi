@@ -1,17 +1,19 @@
 {
   "child_name": "Test",
-  "total_stars": 131,
-  "total_points": 1795,
+  "total_stars": 165,
+  "total_points": 2217,
   "best_streak": 34,
   "lumi_energy": 100,
   "current_world": "main_menu",
   "difficulty": 3,
-  "correct_streak": 10,
+  "correct_streak": 7,
   "wrong_streak": 0,
   "weak_letters": {},
-  "weak_words": {},
+  "weak_words": {
+    "apple": 1
+  },
   "hint_usage": {
-    "level_1": 1,
+    "level_1": 6,
     "level_2": 0,
     "level_3": 0
   },
@@ -25,10 +27,18 @@
     "G",
     "H",
     "Z",
-    "I"
+    "I",
+    "J"
   ],
   "mastered_words": [
-    "duck"
+    "duck",
+    "cup",
+    "fish",
+    "sun",
+    "star",
+    "bird",
+    "tree",
+    "frog"
   ],
   "word_mastery": {
     "apple": {
@@ -54,15 +64,17 @@
       "confused_with": {}
     },
     "bird": {
-      "attempts": 0,
-      "correct": 0,
-      "wrong": 0,
+      "attempts": 2,
+      "correct": 1,
+      "wrong": 1,
       "first_try_correct": 0,
-      "hints_used": 0,
-      "mastery_score": 0.0,
-      "last_seen": 0,
-      "consecutive_correct": 0,
-      "confused_with": {}
+      "hints_used": 2,
+      "mastery_score": 0.13,
+      "last_seen": 1782118321,
+      "consecutive_correct": 1,
+      "confused_with": {
+        "duck": 1
+      }
     },
     "cat": {
       "attempts": 0,
@@ -76,14 +88,14 @@
       "confused_with": {}
     },
     "cup": {
-      "attempts": 0,
-      "correct": 0,
+      "attempts": 1,
+      "correct": 1,
       "wrong": 0,
-      "first_try_correct": 0,
+      "first_try_correct": 1,
       "hints_used": 0,
-      "mastery_score": 0.0,
-      "last_seen": 0,
-      "consecutive_correct": 0,
+      "mastery_score": 0.3,
+      "last_seen": 1782106823,
+      "consecutive_correct": 1,
       "confused_with": {}
     },
     "dog": {
@@ -111,25 +123,27 @@
       }
     },
     "fish": {
-      "attempts": 0,
-      "correct": 0,
-      "wrong": 0,
+      "attempts": 2,
+      "correct": 1,
+      "wrong": 1,
       "first_try_correct": 0,
-      "hints_used": 0,
-      "mastery_score": 0.0,
-      "last_seen": 0,
-      "consecutive_correct": 0,
-      "confused_with": {}
+      "hints_used": 1,
+      "mastery_score": 0.13,
+      "last_seen": 1782106878,
+      "consecutive_correct": 1,
+      "confused_with": {
+        "tree": 1
+      }
     },
     "frog": {
-      "attempts": 0,
-      "correct": 0,
+      "attempts": 1,
+      "correct": 1,
       "wrong": 0,
       "first_try_correct": 0,
-      "hints_used": 0,
-      "mastery_score": 0.0,
-      "last_seen": 0,
-      "consecutive_correct": 0,
+      "hints_used": 1,
+      "mastery_score": 0.13,
+      "last_seen": 1782118852,
+      "consecutive_correct": 1,
       "confused_with": {}
     },
     "hat": {
@@ -144,40 +158,44 @@
       "confused_with": {}
     },
     "star": {
-      "attempts": 0,
-      "correct": 0,
-      "wrong": 0,
+      "attempts": 2,
+      "correct": 1,
+      "wrong": 1,
       "first_try_correct": 0,
-      "hints_used": 0,
-      "mastery_score": 0.0,
-      "last_seen": 0,
-      "consecutive_correct": 0,
-      "confused_with": {}
+      "hints_used": 1,
+      "mastery_score": 0.13,
+      "last_seen": 1782118304,
+      "consecutive_correct": 1,
+      "confused_with": {
+        "sun": 1
+      }
     },
     "sun": {
-      "attempts": 0,
-      "correct": 0,
-      "wrong": 0,
-      "first_try_correct": 0,
-      "hints_used": 0,
-      "mastery_score": 0.0,
-      "last_seen": 0,
-      "consecutive_correct": 0,
-      "confused_with": {}
+      "attempts": 4,
+      "correct": 2,
+      "wrong": 2,
+      "first_try_correct": 1,
+      "hints_used": 2,
+      "mastery_score": 0.43,
+      "last_seen": 1782113800,
+      "consecutive_correct": 2,
+      "confused_with": {
+        "bird": 2
+      }
     },
     "tree": {
-      "attempts": 0,
-      "correct": 0,
+      "attempts": 1,
+      "correct": 1,
       "wrong": 0,
-      "first_try_correct": 0,
+      "first_try_correct": 1,
       "hints_used": 0,
-      "mastery_score": 0.0,
-      "last_seen": 0,
-      "consecutive_correct": 0,
+      "mastery_score": 0.3,
+      "last_seen": 1782118831,
+      "consecutive_correct": 1,
       "confused_with": {}
     }
   },
-  "last_word_garden_target": "star",
+  "last_word_garden_target": "apple",
   "completed_worlds": [
     "letter_island"
   ],
@@ -186,12 +204,13 @@
     "Badge A",
     "Badge B",
     "Badge C",
-    "Great Learner"
+    "Great Learner",
+    "Word Explorer"
   ],
   "debug_persistent": false,
-  "attempts": 46,
-  "correct_answers": 44,
-  "accuracy": 95.65,
+  "attempts": 66,
+  "correct_answers": 57,
+  "accuracy": 86.36,
   "current_letter_index": 25,
   "current_word_length": 3,
   "letter_mastery": {
@@ -295,14 +314,14 @@
       "confused_with": {}
     },
     "J": {
-      "attempts": 1,
-      "correct": 1,
+      "attempts": 2,
+      "correct": 2,
       "wrong": 0,
-      "first_try_correct": 1,
+      "first_try_correct": 2,
       "hints_used": 0,
-      "mastery_score": 0.25,
-      "last_seen": 1782092201,
-      "consecutive_correct": 1,
+      "mastery_score": 0.5,
+      "last_seen": 1782118770,
+      "consecutive_correct": 2,
       "confused_with": {}
     },
     "K": {
@@ -471,24 +490,26 @@
       "confused_with": {}
     },
     "Z": {
-      "attempts": 6,
-      "correct": 6,
+      "attempts": 8,
+      "correct": 8,
       "wrong": 0,
-      "first_try_correct": 6,
+      "first_try_correct": 8,
       "hints_used": 0,
       "mastery_score": 1.0,
-      "last_seen": 1782101465,
-      "consecutive_correct": 6,
+      "last_seen": 1782118765,
+      "consecutive_correct": 8,
       "confused_with": {}
     }
   },
-  "curriculum_letters_since_review": 1,
-  "writing_letter_index": 3,
+  "curriculum_letters_since_review": 0,
+  "writing_letter_index": 5,
   "writing_word_index": 0,
   "mastered_writing_letters": [
     "A",
     "B",
-    "C"
+    "C",
+    "D",
+    "E"
   ],
   "mastered_writing_words": []
 }

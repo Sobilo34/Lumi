@@ -29,6 +29,7 @@ from ui.components.primitives import (
     STAR_YELLOW,
     TEXT_DARK,
     blit_fitted_text,
+    blit_outlined_text,
     draw_circle_button,
     draw_dashed_rounded_rect,
     display_font,
@@ -189,7 +190,7 @@ def _wrap(text: str, max_width: int, *, size: int = 24, bold: bool = True) -> li
 
 
 def _safe_word_slots(slot_words: tuple[str, ...]) -> tuple[str, str, str, str]:
-    fallback = ("cat", "dog", "sun", "ball")
+    fallback = ("sun", "apple", "fish", "bird")
     if len(slot_words) >= 4:
         return tuple(str(word or "").lower() for word in slot_words[:4])  # type: ignore[return-value]
     merged = list(str(word or "").lower() for word in slot_words)
@@ -371,10 +372,6 @@ def render_main_menu(surface: pygame.Surface, view: SceneView) -> None:
     draw_menu_button(surface, pct_rect(0.57, 0.40, 0.33, 0.16), "Practice", accent=(168, 201, 244))
     draw_menu_button(surface, pct_rect(0.57, 0.59, 0.33, 0.15), "Report", accent=(196, 174, 241))
     draw_menu_button(surface, pct_rect(0.57, 0.76, 0.33, 0.15), "Settings", accent=(255, 166, 186))
-    draw_circle_button(surface, (int(SCREEN_WIDTH * 0.05), int(SCREEN_HEIGHT * 0.09)), 30, BUTTON_PINK)
-    draw_icon_refresh(surface, (int(SCREEN_WIDTH * 0.05), int(SCREEN_HEIGHT * 0.09)))
-    draw_circle_button(surface, (int(SCREEN_WIDTH * 0.92), int(SCREEN_HEIGHT * 0.08)), 30, BUTTON_PINK)
-    draw_icon_home(surface, (int(SCREEN_WIDTH * 0.92), int(SCREEN_HEIGHT * 0.08)))
     if view.feedback_message:
         draw_speech_bubble(surface, view.feedback_message, x_pct=0.10, y_pct=0.20, w_pct=0.34)
 
@@ -401,46 +398,42 @@ def render_how_to_play(surface: pygame.Surface, view: SceneView) -> None:
 
 def render_world_map(surface: pygame.Surface, view: SceneView) -> None:
     paint_pink_sky(surface)
-    draw_corner_nav(surface, show_home=True, show_settings=False)
-    _draw_soft_hills(surface, ((145, 194, 233), (167, 212, 245), (197, 232, 255)))
-    path = [
-        (int(SCREEN_WIDTH * 0.16), int(SCREEN_HEIGHT * 0.60)),
-        (int(SCREEN_WIDTH * 0.34), int(SCREEN_HEIGHT * 0.52)),
-        (int(SCREEN_WIDTH * 0.52), int(SCREEN_HEIGHT * 0.57)),
-        (int(SCREEN_WIDTH * 0.70), int(SCREEN_HEIGHT * 0.50)),
-        (int(SCREEN_WIDTH * 0.84), int(SCREEN_HEIGHT * 0.57)),
-    ]
-    pygame.draw.lines(surface, (255, 255, 255), False, path, 10)
-    pygame.draw.lines(surface, (247, 194, 141), False, path, 4)
-    _draw_world_node(surface, 0.20, 0.52, "Letter Island", (255, 202, 136))
-    _draw_world_node(surface, 0.45, 0.52, "Word Garden", (178, 230, 164))
-    _draw_world_node(surface, 0.70, 0.52, "Writing Castle", (198, 172, 241))
-    points_chip = pct_rect(0.40, 0.02, 0.20, 0.11)
-    draw_rounded_rect(surface, points_chip, (255, 255, 255), radius=16, border=(255, 198, 96), border_width=3)
-    _text(surface, f"{view.points_emoji} {int(view.total_points)} pts", 24, points_chip.center, (227, 144, 56))
-    words_chip = pct_rect(0.87, 0.12, 0.08, 0.13)
-    draw_rounded_rect(surface, words_chip, (255, 255, 255), radius=16, border=HUD_PINK, border_width=3)
-    _text(surface, "My\nWords", 18, words_chip.center, HUD_PINK_DARK)
+    chip = pct_rect(0.34, 0.016, 0.32, 0.085)
+    radius = chip.height // 2
+    draw_rounded_rect(
+        surface,
+        chip,
+        (255, 255, 255),
+        radius=radius,
+        border=(255, 198, 96),
+        border_width=4,
+    )
+    points_label = f"{view.points_emoji} {int(view.total_points)} Points"
+    blit_outlined_text(
+        surface,
+        points_label,
+        chip.center,
+        34,
+        (227, 120, 48),
+        outline=(255, 255, 255),
+        outline_width=3,
+    )
     if view.progress_text:
-        chip = pct_rect(0.30, 0.86, 0.40, 0.07)
-        draw_rounded_rect(surface, chip, (255, 255, 255), radius=16, border=HUD_PINK, border_width=2)
-        _text(surface, view.progress_text, 24, chip.center, TEXT_DARK)
+        status = pct_rect(0.30, 0.86, 0.40, 0.07)
+        draw_rounded_rect(surface, status, (255, 255, 255), radius=16, border=HUD_PINK, border_width=2)
+        _text(surface, view.progress_text, 24, status.center, TEXT_DARK)
 
 
 def render_writing_castle_game(surface: pygame.Surface, view: SceneView) -> None:
     from ui.app_background import paint_app_background
     from ui.writing_layout import (
         WRITING_BOARD_RECT,
-        WRITING_BTN_CLEAR,
-        WRITING_BTN_SWITCH,
-        WRITING_BTN_VERIFY,
         WRITING_PREVIEW_RECT,
         WRITING_PROMPT_Y,
     )
 
     if not paint_app_background(surface, "writing_castle_game"):
         paint_pink_sky(surface)
-    draw_corner_nav(surface, show_home=True, show_settings=True)
 
     prompt = str(view.writing_prompt or view.current_task_prompt or "Write on the board.")
     _dramatic_text(
@@ -506,13 +499,6 @@ def render_writing_castle_game(surface: pygame.Surface, view: SceneView) -> None
             surface.blit(hint, hint.get_rect(midtop=(WRITING_PREVIEW_RECT.centerx, y)))
             y += 22
 
-    switch_label = "Switch to words" if str(view.writing_mode) == "letters" else "Switch to letters"
-    draw_menu_button(surface, WRITING_BTN_VERIFY, "Verify", accent=BUTTON_YELLOW)
-    draw_menu_button(surface, WRITING_BTN_CLEAR, "Clear", accent=BUTTON_BLUE)
-    draw_menu_button(surface, WRITING_BTN_SWITCH, switch_label, accent=BUTTON_PURPLE)
-    draw_circle_button(surface, (int(SCREEN_WIDTH * 0.855), int(SCREEN_HEIGHT * 0.11)), 28, BUTTON_PURPLE)
-    draw_icon_speaker(surface, (int(SCREEN_WIDTH * 0.855), int(SCREEN_HEIGHT * 0.11)))
-
 
 def render_letter_island_game(surface: pygame.Surface, view: SceneView) -> None:
     render_letter_island_gameplay(surface, _letter_island_view(view))
@@ -527,15 +513,10 @@ def render_bd_practice(surface: pygame.Surface, view: SceneView) -> None:
     answer_d = pct_rect(0.53, 0.78, 0.24, 0.13)
     draw_cta_button(surface, answer_b, "B")
     draw_menu_button(surface, answer_d, "D", accent=(160, 202, 133))
-    draw_circle_button(surface, (int(SCREEN_WIDTH * 0.855), int(SCREEN_HEIGHT * 0.11)), 28, BUTTON_PURPLE)
-    draw_icon_refresh(surface, (int(SCREEN_WIDTH * 0.855), int(SCREEN_HEIGHT * 0.11)))
-    draw_circle_button(surface, (int(SCREEN_WIDTH * 0.945), int(SCREEN_HEIGHT * 0.11)), 28, BUTTON_YELLOW)
-    draw_icon_bulb(surface, (int(SCREEN_WIDTH * 0.945), int(SCREEN_HEIGHT * 0.11)))
 
 
 def render_word_garden_game(surface: pygame.Surface, view: SceneView) -> None:
     _paint_word_garden_background(surface)
-    draw_corner_nav(surface, show_home=True, show_settings=False)
     draw_lumi_hud(
         surface,
         child_name=view.child_name or "Lumi",
@@ -546,7 +527,7 @@ def render_word_garden_game(surface: pygame.Surface, view: SceneView) -> None:
     )
     outer = pct_rect(0.18, 0.18, 0.66, 0.50)
     inner = draw_stitched_panel(surface, outer, border_color=BOARD_BORDER)
-    prompt_text = f"Touch the {str(view.target_word or 'cat').lower()}"
+    prompt_text = f"Touch the {str(view.target_word or 'sun').capitalize()}"
     _text(surface, prompt_text, 48, (inner.centerx, inner.y + 56), PROMPT_BROWN)
     slot_words = _safe_word_slots(view.slot_words)
     card_rects = (
@@ -558,7 +539,6 @@ def render_word_garden_game(surface: pygame.Surface, view: SceneView) -> None:
     for idx, rect in enumerate(card_rects):
         style = CARD_STYLES[idx % len(CARD_STYLES)]
         _draw_word_card(surface, rect, slot_words[idx], style)
-    _draw_footer_action_triplet(surface)
 
 
 def render_voice_challenge(surface: pygame.Surface, view: SceneView) -> None:
@@ -569,13 +549,6 @@ def render_voice_challenge(surface: pygame.Surface, view: SceneView) -> None:
     target_word = str(view.voice_target or view.target_word or "apple").lower()
     _text(surface, "Say:", 44, (prompt_inner.centerx, prompt_inner.y + 58), PROMPT_BROWN)
     _text(surface, target_word, 84, (prompt_inner.centerx, prompt_inner.centery + 26), PROMPT_ACCENT)
-    draw_circle_button(surface, (prompt_inner.centerx, int(SCREEN_HEIGHT * 0.78)), 62, BUTTON_BLUE)
-    draw_icon_mic(surface, (prompt_inner.centerx, int(SCREEN_HEIGHT * 0.78)))
-    draw_circle_button(surface, (int(SCREEN_WIDTH * 0.335), int(SCREEN_HEIGHT * 0.875)), 34, BUTTON_PURPLE)
-    draw_icon_refresh(surface, (int(SCREEN_WIDTH * 0.335), int(SCREEN_HEIGHT * 0.875)))
-    draw_circle_button(surface, (int(SCREEN_WIDTH * 0.655), int(SCREEN_HEIGHT * 0.875)), 34, BUTTON_YELLOW)
-    draw_icon_bulb(surface, (int(SCREEN_WIDTH * 0.655), int(SCREEN_HEIGHT * 0.875)))
-    _text(surface, "Skip", 24, (int(SCREEN_WIDTH * 0.74), int(SCREEN_HEIGHT * 0.88)), TEXT_DARK)
 
 
 def render_listening_state(surface: pygame.Surface, view: SceneView) -> None:

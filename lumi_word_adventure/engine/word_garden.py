@@ -58,7 +58,7 @@ def build_word_garden_round_for_target(
     words = tuple(str(word).strip().lower() for word in (pool or get_word_garden_pool()) if str(word).strip())
     target = str(target_word or "").strip().lower()
     if target not in words:
-        target = words[0] if words else "cat"
+        target = words[0] if words else "sun"
     randomizer = random.Random()
     distractors = pick_word_distractors(
         target,
@@ -72,7 +72,7 @@ def build_word_garden_round_for_target(
     return {
         "target": target,
         "choices": choices,
-        "prompt": f"Touch the {target}.",
+        "prompt": f"Touch the {target.capitalize()}.",
         "reason": "word_practice",
     }
 
@@ -108,6 +108,6 @@ def build_word_garden_round(
     return {
         "target": target_word,
         "choices": choices,
-        "prompt": f"Touch the {target_word}.",
+        "prompt": f"Touch the {target_word.capitalize()}.",
         "reason": reason,
     }

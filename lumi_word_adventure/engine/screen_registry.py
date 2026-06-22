@@ -4,6 +4,43 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from ui.hitboxes import Hitbox
+from ui.voice_footer_layout import footer_slots
+from ui.writing_footer_layout import writing_footer_slots
+
+
+def _footer_hitboxes(
+    *,
+    names: tuple[str, ...],
+    actions: tuple[str, ...],
+) -> tuple[HitboxDefinition, ...]:
+    slots = footer_slots(len(names))
+    return tuple(
+        HitboxDefinition(name, x_pct, y_pct, w_pct, h_pct, action=action)
+        for name, (x_pct, y_pct, w_pct, h_pct), action in zip(names, slots, actions)
+    )
+
+
+def _voice_footer_hitboxes(
+    *,
+    repeat_action: str,
+    speak_action: str,
+    hint_action: str,
+    skip_action: str,
+) -> tuple[HitboxDefinition, ...]:
+    return _footer_hitboxes(
+        names=("Repeat", "Speak", "Hint", "Skip"),
+        actions=(repeat_action, speak_action, hint_action, skip_action),
+    )
+
+
+def _writing_footer_hitboxes() -> tuple[HitboxDefinition, ...]:
+    slots = writing_footer_slots()
+    names = ("Verify", "Clear", "Switch mode")
+    actions = ("verify_writing", "clear_writing", "toggle_writing_mode")
+    return tuple(
+        HitboxDefinition(name, x_pct, y_pct, w_pct, h_pct, action=action)
+        for name, (x_pct, y_pct, w_pct, h_pct), action in zip(names, slots, actions)
+    )
 
 
 @dataclass(frozen=True)
@@ -48,20 +85,19 @@ class ScreenRegistry:
                 "main_menu",
                 "04_main_menu.png",
                 (
-                    HitboxDefinition("Play", 0.57, 0.19, 0.33, 0.17, target="world_map"),
-                    HitboxDefinition("Practice", 0.57, 0.4, 0.33, 0.16, target="practice_weak_skills"),
-                    HitboxDefinition("Report", 0.57, 0.59, 0.33, 0.15, target="teacher_report"),
-                    HitboxDefinition("Settings", 0.57, 0.76, 0.33, 0.15, target="settings"),
-                    HitboxDefinition("Speaker", 0.02, 0.04, 0.07, 0.1, action="replay_main_menu_audio"),
-                    HitboxDefinition("Profile", 0.88, 0.03, 0.07, 0.1, action="show_profile"),
+                    HitboxDefinition("Play", 0.48, 0.20, 0.46, 0.14, target="world_map"),
+                    HitboxDefinition("Practice", 0.48, 0.36, 0.46, 0.14, target="practice_weak_skills"),
+                    HitboxDefinition("Report", 0.48, 0.52, 0.46, 0.14, target="teacher_report"),
+                    HitboxDefinition("Settings", 0.48, 0.68, 0.46, 0.14, target="settings"),
+                    HitboxDefinition("Speaker", 0.02, 0.03, 0.09, 0.11, action="replay_main_menu_audio"),
+                    HitboxDefinition("Profile", 0.89, 0.03, 0.09, 0.11, action="show_profile"),
                 ),
             ),
             ScreenDefinition(
                 "how_to_play",
                 "05_instruction_how_to_play.png",
                 (
-                    HitboxDefinition("Let's Go", 0.34, 0.82, 0.31, 0.13, target="world_map"),
-                    HitboxDefinition("Speaker", 0.7, 0.82, 0.08, 0.13, action="replay_instruction_audio"),
+                    HitboxDefinition("Let's Go", 0.28, 0.76, 0.44, 0.16, target="world_map"),
                 ),
             ),
             ScreenDefinition(
@@ -69,11 +105,10 @@ class ScreenRegistry:
                 "06_world_map.png",
                 (
                     HitboxDefinition("Home", 0.01, 0.02, 0.06, 0.1, target="main_menu"),
-                    HitboxDefinition("My Points", 0.40, 0.02, 0.20, 0.11, target="points_page"),
-                    HitboxDefinition("My Words", 0.87, 0.12, 0.08, 0.13, target="practice_weak_skills"),
-                    HitboxDefinition("Letter Island", 0.12, 0.4, 0.22, 0.33, target="letter_island_game"),
-                    HitboxDefinition("Word Garden", 0.39, 0.38, 0.22, 0.35, target="word_garden_game"),
-                    HitboxDefinition("Writing Castle", 0.66, 0.38, 0.24, 0.36, target="writing_castle_game"),
+                    HitboxDefinition("My Points", 0.34, 0.016, 0.32, 0.085, target="points_page"),
+                    HitboxDefinition("Letter Island", 0.11, 0.30, 0.22, 0.36, target="letter_island_game"),
+                    HitboxDefinition("Word Garden", 0.39, 0.30, 0.22, 0.36, target="word_garden_game"),
+                    HitboxDefinition("Writing Castle", 0.67, 0.30, 0.22, 0.36, target="writing_castle_game"),
                 ),
             ),
             ScreenDefinition(
@@ -82,10 +117,7 @@ class ScreenRegistry:
                 (
                     HitboxDefinition("Home", 0.01, 0.02, 0.06, 0.10, action="home"),
                     HitboxDefinition("Settings", 0.92, 0.02, 0.06, 0.10, target="settings"),
-                    HitboxDefinition("Verify", 0.18, 0.76, 0.16, 0.10, action="verify_writing"),
-                    HitboxDefinition("Clear", 0.42, 0.76, 0.16, 0.10, action="clear_writing"),
-                    HitboxDefinition("Switch mode", 0.66, 0.76, 0.16, 0.10, action="toggle_writing_mode"),
-                    HitboxDefinition("Repeat", 0.855, 0.11, 0.06, 0.06, action="repeat_prompt"),
+                    *_writing_footer_hitboxes(),
                 ),
             ),
             ScreenDefinition(
@@ -98,9 +130,10 @@ class ScreenRegistry:
                     HitboxDefinition("Card D", 0.43, 0.41, 0.13, 0.25, action="select_letter_slot_1"),
                     HitboxDefinition("Card P", 0.57, 0.41, 0.13, 0.25, action="select_letter_slot_2"),
                     HitboxDefinition("Card A", 0.71, 0.41, 0.13, 0.25, action="select_letter_slot_3"),
-                    HitboxDefinition("Repeat", 0.31, 0.77, 0.1, 0.18, action="repeat_prompt"),
-                    HitboxDefinition("Hint", 0.45, 0.77, 0.11, 0.18, action="show_hint"),
-                    HitboxDefinition("Speak", 0.6, 0.77, 0.1, 0.18, action="voice_or_speak_mode"),
+                    *_footer_hitboxes(
+                        names=("Repeat", "Hint", "Speak"),
+                        actions=("repeat_prompt", "show_hint", "voice_or_speak_mode"),
+                    ),
                 ),
             ),
             ScreenDefinition(
@@ -120,10 +153,12 @@ class ScreenRegistry:
                 (
                     HitboxDefinition("Home", 0.01, 0.02, 0.06, 0.1, target="world_map"),
                     HitboxDefinition("Settings", 0.92, 0.02, 0.06, 0.1, target="settings"),
-                    HitboxDefinition("Repeat", 0.29, 0.79, 0.09, 0.17, action="repeat_letter"),
-                    HitboxDefinition("Microphone", 0.43, 0.77, 0.16, 0.18, action="start_letter_listening"),
-                    HitboxDefinition("Skip", 0.61, 0.79, 0.09, 0.17, action="skip_letter_voice"),
-                    HitboxDefinition("Help", 0.72, 0.79, 0.09, 0.17, action="letter_voice_help"),
+                    *_voice_footer_hitboxes(
+                        repeat_action="repeat_letter",
+                        speak_action="start_letter_listening",
+                        hint_action="letter_voice_help",
+                        skip_action="skip_letter_voice",
+                    ),
                 ),
             ),
             ScreenDefinition(
@@ -146,9 +181,10 @@ class ScreenRegistry:
                     HitboxDefinition("Card dog", 0.4, 0.39, 0.14, 0.27, action="select_word_slot_1"),
                     HitboxDefinition("Card sun", 0.56, 0.39, 0.14, 0.27, action="select_word_slot_2"),
                     HitboxDefinition("Card ball", 0.72, 0.39, 0.14, 0.27, action="select_word_slot_3"),
-                    HitboxDefinition("Repeat", 0.31, 0.77, 0.1, 0.18, action="repeat_prompt"),
-                    HitboxDefinition("Hint", 0.45, 0.77, 0.11, 0.18, action="show_hint"),
-                    HitboxDefinition("Speak", 0.6, 0.77, 0.1, 0.18, action="voice_mode"),
+                    *_footer_hitboxes(
+                        names=("Repeat", "Hint", "Speak"),
+                        actions=("repeat_prompt", "show_hint", "voice_mode"),
+                    ),
                 ),
             ),
             ScreenDefinition(
@@ -156,10 +192,12 @@ class ScreenRegistry:
                 "14_voice_say_apple.png",
                 (
                     HitboxDefinition("Home", 0.91, 0.02, 0.07, 0.1, target="world_map"),
-                    HitboxDefinition("Repeat", 0.29, 0.79, 0.09, 0.17, action="repeat_word"),
-                    HitboxDefinition("Microphone", 0.43, 0.77, 0.16, 0.18, action="start_listening"),
-                    HitboxDefinition("Skip", 0.61, 0.79, 0.09, 0.17, action="skip_voice"),
-                    HitboxDefinition("Help", 0.72, 0.79, 0.09, 0.17, action="voice_help"),
+                    *_voice_footer_hitboxes(
+                        repeat_action="repeat_word",
+                        speak_action="start_listening",
+                        hint_action="voice_help",
+                        skip_action="skip_voice",
+                    ),
                 ),
             ),
             ScreenDefinition(

@@ -16,6 +16,7 @@ from ui.components.primitives import (
     blit_fitted_text,
     blit_outlined_text,
     content_rect,
+    display_font,
     draw_rounded_rect,
     draw_sparkle,
     fit_font_size,
@@ -338,11 +339,49 @@ def _draw_word_cards(surface: pygame.Surface, spec: dict[str, Any], view: SceneV
 
 
 def _draw_touch_word(surface: pygame.Surface, spec: dict[str, Any], view: SceneView) -> None:
-    word = _field(view, str(spec.get("field") or "target_word"), "cat").lower()
-    cx = int(SCREEN_WIDTH * (float(spec.get("x_pct") or 0.34) + 0.16))
-    cy = int(SCREEN_HEIGHT * (float(spec.get("y_pct") or 0.22) + 0.03))
-    text = f"Touch the {word}"
-    blit_outlined_text(surface, text, (cx, cy), 42, PROMPT_BROWN, outline=(255, 255, 255), outline_width=2)
+    word = _field(view, str(spec.get("field") or "target_word"), "sun").strip().lower()
+    label = f"Touch the {word.capitalize()}"
+    size = int(spec.get("font_size") or 52)
+    f = display_font(size)
+    text_rect = f.render(label, True, (255, 120, 72)).get_rect()
+    pad_x, pad_y = 40, 18
+    max_panel_w = int(SCREEN_WIDTH * float(spec.get("max_w_pct") or 0.62))
+    panel_w = min(max_panel_w, text_rect.width + pad_x * 2)
+    panel_h = max(
+        int(SCREEN_HEIGHT * float(spec.get("h_pct") or 0.10)),
+        text_rect.height + pad_y * 2,
+    )
+    anchor = str(spec.get("anchor") or "center").lower()
+    if anchor == "center":
+        cx = int(SCREEN_WIDTH * float(spec.get("x_pct") or 0.5))
+        cy = int(SCREEN_HEIGHT * float(spec.get("y_pct") or 0.17))
+        panel = pygame.Rect(0, 0, panel_w, panel_h)
+        panel.center = (cx, cy)
+    else:
+        x, y, w, h = slot_rect(spec)
+        panel = pygame.Rect(x, y, min(w, panel_w), max(h, panel_h))
+    draw_rounded_rect(
+        surface,
+        panel,
+        (255, 255, 255),
+        radius=22,
+        border=(255, 198, 96),
+        border_width=4,
+    )
+    cx, cy = panel.centerx, panel.centery
+    outline = (92, 48, 120)
+    accent = (255, 120, 72)
+    outline_width = max(3, size // 14)
+    for dx in range(-outline_width, outline_width + 1):
+        for dy in range(-outline_width, outline_width + 1):
+            if dx * dx + dy * dy > outline_width * outline_width:
+                continue
+            if dx == 0 and dy == 0:
+                continue
+            layer = f.render(label, True, outline)
+            surface.blit(layer, layer.get_rect(center=(cx + dx, cy + dy)))
+    text = f.render(label, True, accent)
+    surface.blit(text, text.get_rect(center=(cx, cy)))
 
 
 def _draw_touch_word_png(
@@ -353,7 +392,7 @@ def _draw_touch_word_png(
     asset_root: str,
 ) -> None:
     """Place only the target-word art beside the baked-in 'Touch the' on the background."""
-    word = _field(view, str(spec.get("field") or "target_word"), "cat").lower()
+    word = _field(view, str(spec.get("field") or "target_word"), "sun").lower()
     x, y, w, h = slot_rect(spec)
     offset_x = int(spec.get("offset_x_px") or 0)
     offset_y = int(spec.get("offset_y_px") or 0)
@@ -651,9 +690,14 @@ def _draw_word_object_cards(
                 fit=fit,
             )
             if tile is not None:
-                draw_x = inner.x + (inner.width - tile.get_width()) // 2 + offset_x
-                draw_y = inner.y + (inner.height - tile.get_height()) // 2 + offset_y
-                surface.blit(tile, (draw_x, draw_y))
+                if fit == "fill":
+                    if tile.get_size() != (inner.width, inner.height):
+                        tile = pygame.transform.smoothscale(tile, (inner.width, inner.height))
+                    surface.blit(tile, (inner.x + offset_x, inner.y + offset_y))
+                else:
+                    draw_x = inner.x + (inner.width - tile.get_width()) // 2 + offset_x
+                    draw_y = inner.y + (inner.height - tile.get_height()) // 2 + offset_y
+                    surface.blit(tile, (draw_x, draw_y))
 
 
 def _draw_speech_bubble(surface: pygame.Surface, spec: dict[str, Any], view: SceneView) -> None:

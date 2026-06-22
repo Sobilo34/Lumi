@@ -4,6 +4,7 @@ from __future__ import annotations
 import pygame
 
 from ui.components.primitives import pct_rect
+from ui.writing_footer_layout import writing_footer_slots
 
 
 def cv_board_to_surface(board) -> pygame.Surface | None:
@@ -31,7 +32,7 @@ WRITING_PROMPT_Y = int(720 * 0.10)
 WRITING_BRUSH_RADIUS = 7
 WRITING_INK_COLOR = (25, 25, 35)
 
-# Three evenly spaced bottom buttons (Verify, Clear, Switch mode).
-WRITING_BTN_VERIFY = pct_rect(0.18, 0.76, 0.16, 0.10)
-WRITING_BTN_CLEAR = pct_rect(0.42, 0.76, 0.16, 0.10)
-WRITING_BTN_SWITCH = pct_rect(0.66, 0.76, 0.16, 0.10)
+_writing_slots = writing_footer_slots()
+WRITING_BTN_VERIFY = pct_rect(*_writing_slots[0])
+WRITING_BTN_CLEAR = pct_rect(*_writing_slots[1])
+WRITING_BTN_SWITCH = pct_rect(*_writing_slots[2])

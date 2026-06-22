@@ -247,17 +247,7 @@ def _draw_lumi_mascot(surface: pygame.Surface, held_letter: str) -> None:
 
 
 def _draw_top_hud(surface: pygame.Surface, view: LetterIslandView) -> None:
-    # Home
-    home_c = (int(SCREEN_WIDTH * 0.04), int(SCREEN_HEIGHT * 0.07))
-    draw_circle_button(surface, home_c, 30, BUTTON_PINK)
-    draw_icon_home(surface, home_c)
-
-    # Settings
-    gear_c = (int(SCREEN_WIDTH * 0.95), int(SCREEN_HEIGHT * 0.07))
-    draw_circle_button(surface, gear_c, 30, BUTTON_PINK)
-    draw_icon_gear(surface, gear_c)
-
-    # Lumi profile pill
+    # Home and settings are drawn from shipped control art via hitbox overlay.
     hud = pct_rect(0.075, 0.018, 0.195, 0.095)
     draw_rounded_rect(surface, hud, HUD_CREAM, radius=20, border=HUD_PINK, border_width=2)
     avatar = pygame.Rect(hud.x + 8, hud.y + 10, 42, 42)
@@ -363,16 +353,8 @@ def _draw_letter_card(surface: pygame.Surface, rect: pygame.Rect, letter: str, s
 
 
 def _draw_action_buttons(surface: pygame.Surface) -> None:
-    specs = (
-        (ACTION_CENTERS[0], BUTTON_PURPLE, draw_icon_refresh, "Repeat", BUTTON_PURPLE),
-        (ACTION_CENTERS[1], BUTTON_YELLOW, draw_icon_bulb, "Hint", (230, 155, 55)),
-        (ACTION_CENTERS[2], BUTTON_BLUE, draw_icon_mic, "Speak", BUTTON_BLUE),
-    )
-    for center, color, icon_fn, label, label_color in specs:
-        draw_circle_button(surface, center, 42, color)
-        icon_fn(surface, center)
-        text = font(17, bold=True).render(label, True, label_color)
-        surface.blit(text, text.get_rect(center=(center[0], center[1] + 58)))
+    """Repeat, hint, and speak buttons are drawn via hitbox overlay."""
+    return
 
 
 def _draw_speech_bubble(surface: pygame.Surface, message: str) -> None:
