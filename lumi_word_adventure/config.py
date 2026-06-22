@@ -21,6 +21,11 @@ FONTS_DIR = ASSETS_DIR / "fonts"
 UI_CHUNKS_DIR = ASSETS_DIR / "ui_chunks"
 UI_CONTROLS_DIR = ASSETS_DIR / "ui_controls"
 
+# Looping background music (replaces old theme music; controlled by Settings → Music).
+BACKGROUND_MUSIC_FILE = "background.mp3"
+BACKGROUND_MUSIC_NORMAL_VOLUME = 0.72
+BACKGROUND_MUSIC_DUCK_VOLUME = 0.20
+
 # Single soft background used across the whole app (kids 2-4 friendly).
 # Two pages keep their original art: the start page and the
 # "listen, tap and speak" how-to page.

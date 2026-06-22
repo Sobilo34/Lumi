@@ -1,13 +1,13 @@
 {
   "child_name": "Test",
-  "total_stars": 168,
-  "total_points": 2244,
+  "total_stars": 183,
+  "total_points": 2399,
   "best_streak": 34,
   "lumi_energy": 100,
   "current_world": "main_menu",
   "difficulty": 3,
-  "correct_streak": 0,
-  "wrong_streak": 3,
+  "correct_streak": 5,
+  "wrong_streak": 0,
   "weak_letters": {},
   "weak_words": {
     "apple": 3,
@@ -30,7 +30,8 @@
     "H",
     "Z",
     "I",
-    "J"
+    "J",
+    "K"
   ],
   "mastered_words": [
     "duck",
@@ -214,9 +215,9 @@
     "Word Explorer"
   ],
   "debug_persistent": false,
-  "attempts": 74,
-  "correct_answers": 58,
-  "accuracy": 78.38,
+  "attempts": 79,
+  "correct_answers": 63,
+  "accuracy": 79.75,
   "current_letter_index": 25,
   "current_word_length": 3,
   "letter_mastery": {
@@ -331,14 +332,14 @@
       "confused_with": {}
     },
     "K": {
-      "attempts": 1,
-      "correct": 1,
+      "attempts": 2,
+      "correct": 2,
       "wrong": 0,
-      "first_try_correct": 1,
+      "first_try_correct": 2,
       "hints_used": 0,
-      "mastery_score": 0.25,
-      "last_seen": 1782092210,
-      "consecutive_correct": 1,
+      "mastery_score": 0.5,
+      "last_seen": 1782137845,
+      "consecutive_correct": 2,
       "confused_with": {}
     },
     "L": {
@@ -496,18 +497,18 @@
       "confused_with": {}
     },
     "Z": {
-      "attempts": 8,
-      "correct": 8,
+      "attempts": 12,
+      "correct": 12,
       "wrong": 0,
-      "first_try_correct": 8,
+      "first_try_correct": 12,
       "hints_used": 0,
       "mastery_score": 1.0,
-      "last_seen": 1782118765,
-      "consecutive_correct": 8,
+      "last_seen": 1782137849,
+      "consecutive_correct": 12,
       "confused_with": {}
     }
   },
-  "curriculum_letters_since_review": 0,
+  "curriculum_letters_since_review": 1,
   "writing_letter_index": 5,
   "writing_word_index": 0,
   "mastered_writing_letters": [

@@ -1,0 +1,19 @@
+{
+  "child_name": "Test",
+  "stars_earned": 168,
+  "accuracy_percent": 78,
+  "strong_skill": "Letter recognition",
+  "needs_practice": "None",
+  "weak_letters": {},
+  "weak_words": {
+    "apple": 3,
+    "frog": 1,
+    "cup": 1
+  },
+  "recommended_next_activity": "World Map",
+  "recommended_screen_id": "06_world_map",
+  "generated_at": "2026-06-22T13:54:21+00:00",
+  "attempts": 74,
+  "correct_answers": 58,
+  "difficulty": 3
+}

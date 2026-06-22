@@ -28,6 +28,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from engine.control_assets import ControlAssets
+from engine import audio_ducking
 from engine.adaptive_ai import (
     choose_next_question,
     choose_hint,
@@ -186,6 +187,7 @@ class GameEngine:
         self.registry = ScreenRegistry()
         self.settings = SettingsManager()
         self.sound = SoundManager()
+        audio_ducking.bind(self.sound)
         self.voice = TextToSpeech(enabled=VOICE_ENABLED_DEFAULT)
         self.hint_engine = get_hint_engine()
         self.learner = LearnerModel()
@@ -644,6 +646,8 @@ class GameEngine:
                 self._refresh_screen_hitboxes("settings")
             if screen_id == "badge_unlock":
                 self._refresh_screen_hitboxes("badge_unlock")
+            if previous_screen_id == "welcome" and screen_id != "welcome":
+                self.sound.allow_background_playback()
             self.state.current_screen_id = screen_id
             self.current_screen = self.screens[screen_id]
             self.state.history.append(screen_id)

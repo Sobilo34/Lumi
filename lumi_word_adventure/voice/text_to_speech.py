@@ -192,6 +192,9 @@ class TextToSpeech:
                 continue
 
             try:
+                from engine import audio_ducking
+
+                audio_ducking.duck("tts")
                 self._engine.setProperty("rate", item.rate)
                 try:
                     self._engine.setProperty("volume", item.volume)
@@ -201,6 +204,13 @@ class TextToSpeech:
                 self._engine.runAndWait()
             except Exception as error:
                 print(f"[Lumi Voice] TTS playback failed safely: {error}")
+            finally:
+                try:
+                    from engine import audio_ducking
+
+                    audio_ducking.unduck("tts")
+                except Exception:
+                    pass
 
     def clear_pending(self) -> None:
         """Drop queued lines without touching the pyttsx3 engine (thread-safe)."""
