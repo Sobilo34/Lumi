@@ -94,8 +94,6 @@ from engine.asset_manager import AssetManager
 from reports.report_generator import generate_report, resolve_engine_screen_id
 from ui.microphone_overlay import draw_microphone_check_overlay
 from ui.offline_overlay import draw_offline_overlay
-from ui.report_overlay import draw_teacher_report_overlays
-from ui.settings_overlay import draw_settings_overlay
 from ui.badge_overlay import draw_badge_unlock_overlay
 from ui.voice_pronunciation_overlay import draw_voice_pronunciation_overlay
 from ui.voice_mic_prompt_overlay import (
@@ -2603,29 +2601,11 @@ class GameEngine:
                 )
             except Exception:
                 pass
-        if screen_id == "teacher_report":
-            try:
-                if not self.state.teacher_report:
-                    self._configure_teacher_report()
-                draw_teacher_report_overlays(self.screen, self.state.teacher_report or {})
-            except Exception:
-                pass
         if screen_id == "world_map":
             try:
                 draw_world_map_overlay(
                     self.screen,
                     status_message=self._world_map_status_text(),
-                )
-            except Exception:
-                pass
-        if screen_id == "settings":
-            try:
-                draw_settings_overlay(
-                    self.screen,
-                    music_enabled=bool(self.state.music_enabled),
-                    voice_enabled=bool(self.state.voice_enabled),
-                    difficulty_mode=self._current_difficulty_mode(),
-                    status_message=self._settings_status_text(),
                 )
             except Exception:
                 pass

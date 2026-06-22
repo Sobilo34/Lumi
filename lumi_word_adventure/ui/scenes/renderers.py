@@ -39,6 +39,7 @@ from ui.components.primitives import (
     draw_icon_refresh,
     draw_icon_speaker,
     draw_rounded_rect,
+    draw_rect_shadow,
     font,
     pct_rect,
 )
@@ -325,6 +326,77 @@ def _draw_toggle(surface: pygame.Surface, rect: pygame.Rect, enabled: bool) -> N
 def _report_value(report: dict[str, Any], key: str, fallback: str) -> str:
     value = report.get(key, fallback)
     return str(value if value not in (None, "") else fallback)
+
+
+def _draw_section_title(
+    surface: pygame.Surface,
+    text: str,
+    center: tuple[int, int],
+    *,
+    size: int = 30,
+    color: tuple[int, int, int] = HUD_PINK_DARK,
+) -> None:
+    blit_outlined_text(
+        surface,
+        text,
+        center,
+        size,
+        color,
+        outline=(255, 255, 255),
+        outline_width=3,
+    )
+
+
+def _draw_report_stat_row(
+    surface: pygame.Surface,
+    panel: pygame.Rect,
+    y: int,
+    label: str,
+    value: str,
+    *,
+    accent: tuple[int, int, int],
+) -> None:
+    row = pygame.Rect(panel.x + 16, y, panel.width - 32, 58)
+    draw_rect_shadow(surface, row, radius=14, offset=(0, 3), alpha=22)
+    draw_rounded_rect(surface, row, (255, 255, 255), radius=14, border=accent, border_width=2)
+    label_font = font(20, bold=True)
+    value_font = font(22, bold=True)
+    label_surf = label_font.render(label, True, PROMPT_BROWN)
+    value_surf = value_font.render(value, True, HUD_PINK_DARK)
+    surface.blit(label_surf, (row.x + 16, row.centery - label_surf.get_height() // 2))
+    surface.blit(value_surf, (row.right - value_surf.get_width() - 16, row.centery - value_surf.get_height() // 2))
+
+
+def _draw_settings_row(
+    surface: pygame.Surface,
+    panel: pygame.Rect,
+    title: str,
+    subtitle: str,
+    control_rect: pygame.Rect,
+    *,
+    accent: tuple[int, int, int],
+    control_value: str | None = None,
+    toggle_on: bool | None = None,
+    show_divider: bool = True,
+) -> None:
+    label_x = panel.x + 28
+    title_font = font(26, bold=True)
+    title_surf = title_font.render(title, True, HUD_PINK_DARK)
+    surface.blit(title_surf, (label_x, control_rect.centery - title_surf.get_height() // 2))
+    if show_divider:
+        pygame.draw.line(
+            surface,
+            accent,
+            (panel.x + 22, control_rect.bottom + 10),
+            (panel.right - 22, control_rect.bottom + 10),
+            2,
+        )
+    if toggle_on is not None:
+        _draw_toggle(surface, control_rect, toggle_on)
+        state = "ON" if toggle_on else "OFF"
+        _text(surface, state, 20, control_rect.center, (255, 255, 255))
+    elif control_value is not None:
+        draw_menu_button(surface, control_rect, control_value, accent=accent)
 
 
 def render_splash_loading(surface: pygame.Surface, view: SceneView) -> None:
@@ -625,55 +697,120 @@ def render_practice_weak_skills(surface: pygame.Surface, view: SceneView) -> Non
 
 
 def render_teacher_report(surface: pygame.Surface, view: SceneView) -> None:
-    paint_pink_sky(surface)
-    draw_corner_nav(surface, show_home=True, show_settings=False)
-    title = pct_rect(0.26, 0.08, 0.48, 0.10)
-    draw_rounded_rect(surface, title, (255, 255, 255), radius=18, border=HUD_PINK, border_width=3)
-    _text(surface, "Teacher Report", 44, title.center, HUD_PINK_DARK)
-    left = pct_rect(0.11, 0.22, 0.42, 0.60)
-    right = pct_rect(0.58, 0.22, 0.33, 0.62)
+    _paint_room_background(surface)
+    title = pct_rect(0.26, 0.06, 0.48, 0.11)
+    draw_rect_shadow(surface, title, radius=20, offset=(0, 5), alpha=28)
+    draw_rounded_rect(surface, title, (255, 255, 255), radius=20, border=HUD_PINK, border_width=3)
+    _draw_section_title(surface, "Teacher Report", title.center, size=42)
+
+    left = pct_rect(0.08, 0.20, 0.44, 0.62)
+    right = pct_rect(0.56, 0.20, 0.36, 0.62)
     left_inner = draw_stitched_panel(surface, left, border_color=(174, 199, 247))
     right_inner = draw_stitched_panel(surface, right, border_color=(198, 172, 241))
+    _draw_section_title(
+        surface,
+        "Your Progress",
+        (left_inner.centerx, left_inner.y + 28),
+        size=26,
+        color=PROMPT_BROWN,
+    )
+    _draw_section_title(
+        surface,
+        "Recommended Next",
+        (right_inner.centerx, right_inner.y + 28),
+        size=26,
+        color=PROMPT_BROWN,
+    )
+
     report = view.teacher_report or {}
-    lines = [
-        f"Stars earned: {_report_value(report, 'stars_earned', '0')}",
-        f"Accuracy: {_report_value(report, 'accuracy_percent', '0')}%",
-        f"Strong skill: {_report_value(report, 'strong_skill', 'In progress')}",
-        f"Needs practice: {_report_value(report, 'needs_practice', 'None')}",
-        f"Recommended: {_report_value(report, 'recommended_next_activity', 'World Map')}",
-    ]
-    _blit_lines(surface, lines, (left_inner.x + 20, left_inner.y + 24), size=28, line_gap=12, color=PROMPT_BROWN)
-    rec_label = _report_value(report, "recommended_next_activity", "Practice")
+    stats = (
+        ("Stars earned", _report_value(report, "stars_earned", "0"), STAR_YELLOW),
+        ("Accuracy", f"{_report_value(report, 'accuracy_percent', '0')}%", BUTTON_BLUE),
+        ("Strong skill", _report_value(report, "strong_skill", "In progress"), (125, 202, 134)),
+        ("Needs practice", _report_value(report, "needs_practice", "None"), BUTTON_PURPLE),
+    )
+    row_y = left_inner.y + 58
+    for label, value, accent in stats:
+        _draw_report_stat_row(surface, left_inner, row_y, label, value, accent=accent)
+        row_y += 68
+
+    rec_label = _report_value(report, "recommended_next_activity", "World Map")
     rec_btn = pct_rect(0.60, 0.60, 0.28, 0.25)
+    draw_rect_shadow(surface, rec_btn, radius=20, offset=(0, 5), alpha=30)
     draw_menu_button(surface, rec_btn, rec_label, accent=(255, 195, 111))
+    hint_rect = rec_btn.inflate(-24, -int(rec_btn.height * 0.42))
+    _text(surface, "Tap here to practice", 20, (rec_btn.centerx, hint_rect.bottom + 8), PROMPT_BROWN, bold=False)
+
     refresh_btn = pct_rect(0.87, 0.77, 0.11, 0.12)
     draw_menu_button(surface, refresh_btn, "Refresh", accent=(172, 196, 245))
 
 
 def render_settings(surface: pygame.Surface, view: SceneView) -> None:
     _paint_room_background(surface)
-    draw_corner_nav(surface, show_home=True, show_settings=False)
-    panel_outer = pct_rect(0.21, 0.14, 0.58, 0.76)
+    panel_outer = pct_rect(0.18, 0.12, 0.64, 0.78)
+    draw_rect_shadow(surface, panel_outer, radius=24, offset=(0, 6), alpha=26)
     panel_inner = draw_stitched_panel(surface, panel_outer, border_color=(215, 183, 233))
-    _text(surface, "Settings", 50, (panel_inner.centerx, panel_inner.y + 46), PROMPT_BROWN)
-    rows = (
-        ("Music", "ON" if view.music_enabled else "OFF", pct_rect(0.59, 0.19, 0.13, 0.09)),
-        ("Voice", "ON" if view.voice_enabled else "OFF", pct_rect(0.59, 0.34, 0.14, 0.08)),
-        ("Difficulty", str(view.difficulty_mode or "Medium"), pct_rect(0.57, 0.505, 0.15, 0.075)),
+    _draw_section_title(surface, "Settings", (panel_inner.centerx, panel_inner.y + 42), size=48)
+    hint_font = font(20, bold=False)
+    hint = hint_font.render("Tap a row to change it", True, PROMPT_BROWN)
+    surface.blit(hint, hint.get_rect(center=(panel_inner.centerx, panel_inner.y + 78)))
+
+    music_rect = pct_rect(0.59, 0.19, 0.13, 0.09)
+    voice_rect = pct_rect(0.59, 0.34, 0.14, 0.08)
+    mic_rect = pct_rect(0.58, 0.395, 0.14, 0.07)
+    difficulty_rect = pct_rect(0.57, 0.505, 0.15, 0.075)
+    reset_rect = pct_rect(0.62, 0.585, 0.17, 0.11)
+
+    _draw_settings_row(
+        surface,
+        panel_inner,
+        "Music",
+        "Play cheerful background music",
+        music_rect,
+        accent=(255, 166, 186),
+        toggle_on=bool(view.music_enabled),
     )
-    row_y = [0.19, 0.34, 0.505]
-    for idx, (title_text, value, control_rect) in enumerate(rows):
-        y = int(SCREEN_HEIGHT * row_y[idx])
-        _text(surface, title_text, 34, (int(SCREEN_WIDTH * 0.38), y + 30), PROMPT_BROWN)
-        if title_text in {"Music", "Voice"}:
-            _draw_toggle(surface, control_rect, value == "ON")
-            _text(surface, value, 22, (control_rect.centerx, control_rect.centery), (255, 255, 255))
-        else:
-            draw_menu_button(surface, control_rect, value, accent=(172, 196, 245))
-    draw_menu_button(surface, pct_rect(0.58, 0.395, 0.14, 0.07), "Test Mic", accent=(255, 195, 111))
-    draw_menu_button(surface, pct_rect(0.62, 0.585, 0.17, 0.11), "Reset", accent=(255, 166, 186))
+    _draw_settings_row(
+        surface,
+        panel_inner,
+        "Voice",
+        "Let Lumi speak hints and praise",
+        voice_rect,
+        accent=(172, 196, 245),
+        toggle_on=bool(view.voice_enabled),
+    )
+    _draw_settings_row(
+        surface,
+        panel_inner,
+        "Microphone",
+        "Check that speech input works",
+        mic_rect,
+        accent=(255, 195, 111),
+        control_value="Test Mic",
+    )
+    _draw_settings_row(
+        surface,
+        panel_inner,
+        "Difficulty",
+        "Adjust challenge for your learner",
+        difficulty_rect,
+        accent=(198, 172, 241),
+        control_value=str(view.difficulty_mode or "Medium"),
+    )
+    _draw_settings_row(
+        surface,
+        panel_inner,
+        "Reset Progress",
+        "Start fresh but keep settings",
+        reset_rect,
+        accent=(255, 146, 170),
+        control_value="Reset",
+        show_divider=False,
+    )
+
     if view.settings_status:
         status = pct_rect(0.28, 0.84, 0.44, 0.07)
+        draw_rect_shadow(surface, status, radius=12, offset=(0, 3), alpha=24)
         draw_rounded_rect(surface, status, (255, 255, 255), radius=12, border=HUD_PINK, border_width=2)
         _text(surface, view.settings_status, 22, status.center, HUD_PINK_DARK)
 

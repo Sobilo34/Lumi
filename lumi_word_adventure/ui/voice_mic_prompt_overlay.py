@@ -22,10 +22,14 @@ def mic_hint_badge_x_inset(screen_id: str) -> int:
     if str(screen_id or "").strip().lower() == "voice_challenge":
         return _BADGE_X_INSET_WORD_VOICE
     return _BADGE_X_INSET_LETTER_VOICE
+
+
+def mic_hitbox_from_hitboxes(hitboxes: list) -> pygame.Rect | None:
+    """Return the Speak/Mic hitbox rect when present."""
     for box in hitboxes:
         action = (getattr(box, "action", "") or "").lower()
         name = (getattr(box, "name", "") or "").lower()
-        if action in {"start_letter_listening", "start_listening"} or name in {"microphone", "mic"}:
+        if action in {"start_letter_listening", "start_listening"} or name in {"microphone", "mic", "speak"}:
             return pygame.Rect(box.rect)
     return None
 
