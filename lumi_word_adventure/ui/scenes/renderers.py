@@ -412,8 +412,9 @@ def render_world_map(surface: pygame.Surface, view: SceneView) -> None:
     ]
     pygame.draw.lines(surface, (255, 255, 255), False, path, 10)
     pygame.draw.lines(surface, (247, 194, 141), False, path, 4)
-    _draw_world_node(surface, 0.24, 0.52, "Letter Island", (255, 202, 136))
-    _draw_world_node(surface, 0.50, 0.52, "Word Garden", (178, 230, 164))
+    _draw_world_node(surface, 0.20, 0.52, "Letter Island", (255, 202, 136))
+    _draw_world_node(surface, 0.45, 0.52, "Word Garden", (178, 230, 164))
+    _draw_world_node(surface, 0.70, 0.52, "Writing Castle", (198, 172, 241))
     points_chip = pct_rect(0.40, 0.02, 0.20, 0.11)
     draw_rounded_rect(surface, points_chip, (255, 255, 255), radius=16, border=(255, 198, 96), border_width=3)
     _text(surface, f"{view.points_emoji} {int(view.total_points)} pts", 24, points_chip.center, (227, 144, 56))
@@ -424,6 +425,93 @@ def render_world_map(surface: pygame.Surface, view: SceneView) -> None:
         chip = pct_rect(0.30, 0.86, 0.40, 0.07)
         draw_rounded_rect(surface, chip, (255, 255, 255), radius=16, border=HUD_PINK, border_width=2)
         _text(surface, view.progress_text, 24, chip.center, TEXT_DARK)
+
+
+def render_writing_castle_game(surface: pygame.Surface, view: SceneView) -> None:
+    from ui.app_background import paint_app_background
+    from ui.writing_layout import (
+        WRITING_BOARD_RECT,
+        WRITING_BTN_CLEAR,
+        WRITING_BTN_SWITCH,
+        WRITING_BTN_VERIFY,
+        WRITING_PREVIEW_RECT,
+        WRITING_PROMPT_Y,
+    )
+
+    if not paint_app_background(surface, "writing_castle_game"):
+        paint_pink_sky(surface)
+    draw_corner_nav(surface, show_home=True, show_settings=True)
+
+    prompt = str(view.writing_prompt or view.current_task_prompt or "Write on the board.")
+    _dramatic_text(
+        surface,
+        prompt,
+        56,
+        (SCREEN_WIDTH // 2, WRITING_PROMPT_Y),
+        (255, 255, 255),
+        outline=(92, 48, 120),
+    )
+
+    label_outline = (70, 35, 95)
+    label_fill = (255, 255, 255)
+    for rect, title in ((WRITING_BOARD_RECT, "Draw here"), (WRITING_PREVIEW_RECT, "Your writing")):
+        draw_stitched_panel(surface, rect.inflate(8, 8), border_color=(255, 198, 96))
+        inner = rect.inflate(-6, -6)
+        draw_rounded_rect(surface, inner, (255, 255, 255), radius=18, border=BOARD_BORDER, border_width=2)
+        label_font = display_font(30)
+        label = label_font.render(title, True, label_fill)
+        lx, ly = rect.centerx, rect.y - 30
+        for dx, dy in ((-2, 0), (2, 0), (0, -2), (0, 2)):
+            shadow = label_font.render(title, True, label_outline)
+            surface.blit(shadow, shadow.get_rect(midtop=(lx + dx, ly + dy)))
+        surface.blit(label, label.get_rect(midtop=(lx, ly)))
+
+    if view.writing_canvas is not None:
+        canvas = view.writing_canvas
+        target = canvas.get_rect()
+        target.size = (
+            max(1, WRITING_BOARD_RECT.width - 12),
+            max(1, WRITING_BOARD_RECT.height - 12),
+        )
+        target.center = WRITING_BOARD_RECT.center
+        if canvas.get_size() != target.size:
+            canvas = pygame.transform.smoothscale(canvas, target.size)
+        surface.blit(canvas, canvas.get_rect(center=WRITING_BOARD_RECT.center))
+
+    preview_inner = WRITING_PREVIEW_RECT.inflate(-10, -10)
+    if view.writing_preview is not None:
+        preview = view.writing_preview
+        scaled = pygame.transform.smoothscale(
+            preview,
+            (max(1, preview_inner.width), max(1, preview_inner.height)),
+        )
+        surface.blit(scaled, scaled.get_rect(center=preview_inner.center))
+    elif view.writing_result_text:
+        result = display_font(72).render(str(view.writing_result_text), True, (227, 144, 56))
+        surface.blit(result, result.get_rect(center=(preview_inner.centerx, preview_inner.centery - 40)))
+
+    if view.writing_result_text:
+        result_label = font(28, bold=True).render(f"Read: {view.writing_result_text}", True, (255, 255, 255))
+        rx, ry = WRITING_PREVIEW_RECT.centerx, WRITING_PREVIEW_RECT.bottom - 52
+        for dx, dy in ((-2, 0), (2, 0), (0, -2), (0, 2)):
+            shadow = font(28, bold=True).render(f"Read: {view.writing_result_text}", True, label_outline)
+            surface.blit(shadow, shadow.get_rect(midtop=(rx + dx, ry + dy)))
+        surface.blit(result_label, result_label.get_rect(midtop=(rx, ry)))
+
+    if view.writing_hint_text:
+        hint_lines = _wrap(str(view.writing_hint_text), WRITING_PREVIEW_RECT.width - 24, size=18)[:3]
+        y = WRITING_PREVIEW_RECT.bottom - 46
+        for line in hint_lines:
+            hint = font(18).render(line, True, (255, 220, 230))
+            surface.blit(hint, hint.get_rect(midtop=(WRITING_PREVIEW_RECT.centerx, y)))
+            y += 22
+
+    switch_label = "Switch to words" if str(view.writing_mode) == "letters" else "Switch to letters"
+    draw_menu_button(surface, WRITING_BTN_VERIFY, "Verify", accent=BUTTON_YELLOW)
+    draw_menu_button(surface, WRITING_BTN_CLEAR, "Clear", accent=BUTTON_BLUE)
+    draw_menu_button(surface, WRITING_BTN_SWITCH, switch_label, accent=BUTTON_PURPLE)
+    draw_circle_button(surface, (int(SCREEN_WIDTH * 0.855), int(SCREEN_HEIGHT * 0.11)), 28, BUTTON_PURPLE)
+    draw_icon_speaker(surface, (int(SCREEN_WIDTH * 0.855), int(SCREEN_HEIGHT * 0.11)))
 
 
 def render_letter_island_game(surface: pygame.Surface, view: SceneView) -> None:
@@ -721,6 +809,7 @@ SCENE_RENDERERS: dict[str, SceneRenderer] = {
     "main_menu": render_main_menu,
     "how_to_play": render_how_to_play,
     "world_map": render_world_map,
+    "writing_castle_game": render_writing_castle_game,
     "letter_island_game": render_letter_island_game,
     "bd_practice": render_bd_practice,
     "word_garden_game": render_word_garden_game,

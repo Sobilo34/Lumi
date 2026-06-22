@@ -8,3 +8,9 @@ rapidfuzz
 pytest
 matplotlib
 sounddevice
+numpy
+opencv-python
+# TensorFlow: optional in the main venv if RealTime-DigitRecognition/myvenv exists (used as fallback).
+# Otherwise install locally: pip install tensorflow tf-keras
+tensorflow
+tf-keras

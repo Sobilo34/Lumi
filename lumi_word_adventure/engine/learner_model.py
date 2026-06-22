@@ -55,6 +55,10 @@ class LearnerModel:
         "current_word_length",
         "letter_mastery",
         "curriculum_letters_since_review",
+        "writing_letter_index",
+        "writing_word_index",
+        "mastered_writing_letters",
+        "mastered_writing_words",
     )
 
     def __init__(

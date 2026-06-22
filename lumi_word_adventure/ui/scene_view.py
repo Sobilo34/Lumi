@@ -46,3 +46,9 @@ class SceneView:
     current_streak: int = 0
     badges_count: int = 0
     last_points_awarded: int = 0
+    writing_mode: str = "letters"
+    writing_prompt: str = ""
+    writing_result_text: str = ""
+    writing_hint_text: str = ""
+    writing_canvas: Any = None
+    writing_preview: Any = None

@@ -73,6 +73,19 @@ class ScreenRegistry:
                     HitboxDefinition("My Words", 0.87, 0.12, 0.08, 0.13, target="practice_weak_skills"),
                     HitboxDefinition("Letter Island", 0.12, 0.4, 0.22, 0.33, target="letter_island_game"),
                     HitboxDefinition("Word Garden", 0.39, 0.38, 0.22, 0.35, target="word_garden_game"),
+                    HitboxDefinition("Writing Castle", 0.66, 0.38, 0.24, 0.36, target="writing_castle_game"),
+                ),
+            ),
+            ScreenDefinition(
+                "writing_castle_game",
+                "17_sentence_castle_gameplay.png",
+                (
+                    HitboxDefinition("Home", 0.01, 0.02, 0.06, 0.10, action="home"),
+                    HitboxDefinition("Settings", 0.92, 0.02, 0.06, 0.10, target="settings"),
+                    HitboxDefinition("Verify", 0.18, 0.76, 0.16, 0.10, action="verify_writing"),
+                    HitboxDefinition("Clear", 0.42, 0.76, 0.16, 0.10, action="clear_writing"),
+                    HitboxDefinition("Switch mode", 0.66, 0.76, 0.16, 0.10, action="toggle_writing_mode"),
+                    HitboxDefinition("Repeat", 0.855, 0.11, 0.06, 0.06, action="repeat_prompt"),
                 ),
             ),
             ScreenDefinition(

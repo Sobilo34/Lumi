@@ -244,6 +244,8 @@ def get_lumi_speech(screen_id: str, current_task: str | None = None) -> str:
         return "B has a belly. D has a drum."
     if screen == "word_garden_game":
         return f"Touch the word you hear, {task}." if task else "Touch the word you hear."
+    if screen == "writing_castle_game":
+        return f"Write on the board, {task}." if task else "Write on the board."
     if screen == "word_correct_feedback":
         return f"Wonderful! {task.capitalize()}." if task else "Wonderful!"
     if screen == "sentence_castle_game":

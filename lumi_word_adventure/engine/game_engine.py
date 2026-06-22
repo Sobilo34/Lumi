@@ -56,6 +56,7 @@ from engine.word_garden import (
 from engine.world_progression import (
     WORLD_LETTER_ISLAND,
     WORLD_WORD_GARDEN,
+    WORLD_WRITING_CASTLE,
     latest_completed_world,
     locked_world_message,
     maybe_complete_letter_island,
@@ -65,6 +66,13 @@ from engine.world_progression import (
     sync_world_completion,
     word_garden_unlocked,
     world_map_progress_text,
+)
+from engine.writing_progression import (
+    advance_writing_curriculum,
+    build_writing_round,
+    build_writing_round_for_mode,
+    maybe_complete_writing_castle,
+    writing_castle_progress_text,
 )
 from engine.screen_registry import ScreenRegistry
 from engine.settings_manager import SettingsManager, difficulty_mode_to_level
@@ -96,6 +104,13 @@ from ui.control_buttons_overlay import (
 )
 from ui.world_map_overlay import draw_world_map_overlay
 from ui.screen_factory import create_game_screen
+from ui.writing_castle_screen import WritingCastleScreen
+from ui.writing_layout import (
+    WRITING_BOARD_RECT,
+    WRITING_BRUSH_RADIUS,
+    WRITING_INK_COLOR,
+    cv_board_to_surface,
+)
 from ui.scene_view import SceneView
 from ui.chunk_preload import (
     EARLY_SCREEN_IDS,
@@ -124,6 +139,7 @@ LETTER_SLOT_COUNT = 4
 ANSWER_POPUP_DURATION_MS = 1200
 HINT_POPUP_DURATION_MS = 3200
 LETTER_ISLAND_ENTRY_SCREENS = frozenset({"world_map", "main_menu", "how_to_play"})
+WRITING_CASTLE_ENTRY_SCREENS = frozenset({"world_map", "main_menu", "how_to_play", "progress_complete", "badge_unlock"})
 WORD_GARDEN_VISIBLE = get_word_garden_pool()
 GAMEPLAY_HITBOX_SCREEN_IDS = frozenset({
     "letter_island_game",
@@ -132,6 +148,7 @@ GAMEPLAY_HITBOX_SCREEN_IDS = frozenset({
 SCREEN_SPECIFIC_PROMPT_ACTIONS = frozenset({
     "letter_island_game",
     "word_garden_game",
+    "writing_castle_game",
 })
 LEGACY_WORD_ACTIONS = {
     "select_word_cat": "cat",
@@ -163,6 +180,11 @@ class GameEngine:
         self._debug_duration_ms = 20_000
         self._word_questions: list | None = None
         self._letter_questions: list | None = None
+        self._writing_canvas: pygame.Surface | None = None
+        self._writing_draw_on = False
+        self._writing_last_pos: tuple[int, int] | None = None
+        self._writing_preview_surface: pygame.Surface | None = None
+        self._writing_snapshot_path = Path(__file__).resolve().parents[1] / "writing_recognition" / ".writing_snapshot.png"
         self._apply_loaded_settings(self.settings.load_settings())
         self._log_voice_startup_status()
         self.screens = self._build_screens()
@@ -194,13 +216,16 @@ class GameEngine:
         screens: dict = {}
         for screen_id in self.registry.screen_ids:
             hitboxes = self._hitboxes_for_screen(screen_id)
-            screens[screen_id] = create_game_screen(
+            screen = create_game_screen(
                 screen_id,
                 hitboxes,
                 self.registry,
                 self.asset_manager,
                 self._scene_view,
             )
+            if screen_id == "writing_castle_game" and isinstance(screen, WritingCastleScreen):
+                screen._draw_handler = self._handle_writing_draw_event
+            screens[screen_id] = screen
         return screens
 
     def _build_preload_queue(self) -> list[tuple[str, str]]:
@@ -311,8 +336,15 @@ class GameEngine:
     def _notify_world_unlocked(self, world_id: str) -> None:
         messages = {
             WORLD_WORD_GARDEN: "Word Garden unlocked!",
+            WORLD_WRITING_CASTLE: "Writing Castle unlocked!",
         }
         message = messages.get(world_id, "New world unlocked!")
+        self._show_world_map_status(message)
+        if self.state.voice_enabled:
+            self.voice.speak(message)
+
+    def _notify_parallel_worlds_unlocked(self) -> None:
+        message = "Word Garden and Writing Castle unlocked!"
         self._show_world_map_status(message)
         if self.state.voice_enabled:
             self.voice.speak(message)
@@ -333,6 +365,8 @@ class GameEngine:
             return self._letter_progress_text()
         if screen_id.startswith("word"):
             return self._word_progress_text()
+        if screen_id == "writing_castle_game":
+            return writing_castle_progress_text(self.learner)
         return ""
 
     def _scene_view(self) -> SceneView:
@@ -425,6 +459,12 @@ class GameEngine:
             current_streak=int(getattr(self.learner, "correct_streak", 0) or 0),
             badges_count=len(list(getattr(self.learner, "badges", []) or [])),
             last_points_awarded=int(self.state.last_points_awarded or 0),
+            writing_mode=str(self.state.writing_mode or "letters"),
+            writing_prompt=str(self.state.writing_prompt or self.state.current_task_prompt or ""),
+            writing_result_text=str(self.state.writing_result_text or ""),
+            writing_hint_text=str(self.state.writing_hint_text or ""),
+            writing_canvas=self._writing_canvas,
+            writing_preview=self._writing_preview_surface,
         )
 
     @property
@@ -512,7 +552,7 @@ class GameEngine:
         screen.hitboxes = self._hitboxes_for_screen(screen_id)
 
     def change_screen(self, screen_id: str) -> None:
-        if screen_id in {"world_map", "progress_complete", "word_garden_game"}:
+        if screen_id in {"world_map", "progress_complete", "word_garden_game", "writing_castle_game"}:
             sync_world_completion(self.learner)
         if not screen_accessible(self.learner, screen_id):
             self._show_world_locked_feedback(screen_id)
@@ -565,6 +605,19 @@ class GameEngine:
                 screen_id = self._run_microphone_check()
             if screen_id == "world_map":
                 sync_world_completion(self.learner)
+            if screen_id == "writing_castle_game":
+                if self.state.preserve_writing_castle_task:
+                    self.state.preserve_writing_castle_task = False
+                elif (
+                    self.state.gameplay_refresh_pending
+                    or previous_screen_id in WRITING_CASTLE_ENTRY_SCREENS
+                    or not str(self.state.writing_prompt or "").strip()
+                ):
+                    self._configure_writing_castle_task()
+                    self.state.gameplay_refresh_pending = False
+                else:
+                    self._ensure_writing_canvas()
+                self._warm_writing_recognition()
             if screen_id == "progress_complete":
                 sync_world_completion(self.learner)
                 if not self.state.last_completed_world_id:
@@ -916,6 +969,8 @@ class GameEngine:
                 self.state.preserve_letter_island_task = True
             elif next_screen == "word_garden_game":
                 self.state.preserve_word_garden_task = True
+            elif next_screen == "writing_castle_game":
+                self.state.preserve_writing_castle_task = True
         self.set_screen(next_screen)
 
     def _show_letter_mistake_feedback(self, message: str, *, return_screen: str = "letter_island_game") -> None:
@@ -1157,6 +1212,202 @@ class GameEngine:
 
     def _configure_word_garden_task(self) -> None:
         self._apply_word_garden_round(self._build_word_garden_round())
+
+    def _warm_writing_recognition(self) -> None:
+        import threading
+
+        def _run() -> None:
+            try:
+                from writing_recognition.runner import warm_recognition_model
+
+                warm_recognition_model()
+            except Exception:
+                pass
+
+        threading.Thread(target=_run, daemon=True).start()
+
+    def _configure_writing_castle_task(self, *, mode: str | None = None) -> None:
+        if mode is not None:
+            round_data = build_writing_round_for_mode(self.learner, mode)
+        else:
+            round_data = build_writing_round(self.learner)
+        mode_key = str(round_data.get("mode") or "letters")
+        target = str(round_data.get("target") or "A")
+        prompt = str(round_data.get("prompt") or f"Write the letter {target}.")
+        speech = str(round_data.get("speech") or prompt)
+        self.state.writing_mode = mode_key
+        self.state.writing_prompt = prompt
+        self.state.current_task_target = target.upper() if mode_key == "letters" else target.lower()
+        self.state.current_task_prompt = prompt
+        self.state.writing_result_text = ""
+        self.state.writing_hint_text = ""
+        self.state.current_round_wrong_count = 0
+        self.state.current_hint_level = 0
+        self._reset_writing_canvas()
+        self._writing_preview_surface = None
+        self.state.last_spoken_text = speech
+
+    def _toggle_writing_mode(self) -> None:
+        next_mode = "words" if str(self.state.writing_mode or "letters") == "letters" else "letters"
+        self._clear_writing_board()
+        self._configure_writing_castle_task(mode=next_mode)
+        if self.state.voice_enabled:
+            spoken = str(self.state.last_spoken_text or self.state.writing_prompt or "").strip()
+            if spoken:
+                self.voice.speak(spoken, tone="instruct")
+
+    def _ensure_writing_canvas(self) -> pygame.Surface:
+        if self._writing_canvas is None:
+            self._reset_writing_canvas()
+        return self._writing_canvas  # type: ignore[return-value]
+
+    def _reset_writing_canvas(self) -> None:
+        width = max(64, WRITING_BOARD_RECT.width - 12)
+        height = max(64, WRITING_BOARD_RECT.height - 12)
+        self._writing_canvas = pygame.Surface((width, height))
+        self._writing_canvas.fill((255, 255, 255))
+
+    def _clear_writing_board(self) -> None:
+        self._reset_writing_canvas()
+        self.state.writing_result_text = ""
+        self.state.writing_hint_text = ""
+        self._writing_preview_surface = None
+
+    def _writing_board_point(self, position: tuple[int, int]) -> tuple[int, int] | None:
+        canvas = self._ensure_writing_canvas()
+        board_rect = WRITING_BOARD_RECT.inflate(-6, -6)
+        if not board_rect.collidepoint(position):
+            return None
+        local_x = int((position[0] - board_rect.x) * canvas.get_width() / max(1, board_rect.width))
+        local_y = int((position[1] - board_rect.y) * canvas.get_height() / max(1, board_rect.height))
+        local_x = max(0, min(canvas.get_width() - 1, local_x))
+        local_y = max(0, min(canvas.get_height() - 1, local_y))
+        return local_x, local_y
+
+    def _draw_writing_stroke(self, start: tuple[int, int], end: tuple[int, int]) -> None:
+        canvas = self._ensure_writing_canvas()
+        pygame.draw.line(canvas, WRITING_INK_COLOR, start, end, WRITING_BRUSH_RADIUS * 2)
+        pygame.draw.circle(canvas, WRITING_INK_COLOR, end, WRITING_BRUSH_RADIUS)
+
+    def _handle_writing_draw_event(self, event: pygame.event.Event) -> bool:
+        if self.state.current_screen_id != "writing_castle_game":
+            return False
+        if self.state.answer_popup_kind:
+            return False
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            point = self._writing_board_point(event.pos)
+            if point is None:
+                return False
+            self._writing_draw_on = True
+            self._writing_last_pos = point
+            pygame.draw.circle(self._ensure_writing_canvas(), WRITING_INK_COLOR, point, WRITING_BRUSH_RADIUS)
+            return True
+        if event.type == pygame.MOUSEMOTION and self._writing_draw_on:
+            point = self._writing_board_point(event.pos)
+            if point is None or self._writing_last_pos is None:
+                return True
+            self._draw_writing_stroke(self._writing_last_pos, point)
+            self._writing_last_pos = point
+            return True
+        if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+            self._writing_draw_on = False
+            self._writing_last_pos = None
+            return self._writing_board_point(event.pos) is not None
+        return False
+
+    def _save_writing_snapshot(self) -> Path:
+        canvas = self._ensure_writing_canvas()
+        path = self._writing_snapshot_path
+        path.parent.mkdir(parents=True, exist_ok=True)
+        pygame.image.save(canvas, str(path))
+        return path
+
+    def _submit_writing(self) -> None:
+        if self.state.writing_processing:
+            return
+        self.state.writing_processing = True
+        try:
+            from writing_recognition import letter_answer_matches, word_answer_matches
+            from writing_recognition.runner import recognition_available, recognition_error_message, recognize_snapshot
+
+            if not recognition_available():
+                detail = recognition_error_message()
+                message = "Handwriting recognition is not ready yet. Try again soon."
+                if detail:
+                    message = f"{message} ({detail})"
+                self._show_writing_mistake_feedback(message)
+                return
+
+            snapshot = self._save_writing_snapshot()
+            mode = str(self.state.writing_mode or "letters")
+            target = str(self.state.current_task_target or "")
+            board_out = self._writing_snapshot_path.with_name(".recognition_board.png")
+            outcome = recognize_snapshot(snapshot, mode, board_out=board_out)
+
+            try:
+                import cv2
+
+                board = cv2.imread(outcome.board_path)
+                self._writing_preview_surface = cv_board_to_surface(board)
+            except Exception:
+                self._writing_preview_surface = None
+
+            recognized = outcome.recognized
+            hint = outcome.hint
+            self.state.writing_result_text = recognized
+            self.state.writing_hint_text = str(hint or "")
+
+            if mode == "letters":
+                correct = letter_answer_matches(target, recognized)
+            else:
+                correct = word_answer_matches(target, recognized)
+
+            if correct:
+                stars_earned = calculate_stars(True, self.state.current_hint_level)
+                self.learner.attempts = int(self.learner.attempts) + 1
+                self.learner.correct_answers = int(self.learner.correct_answers) + 1
+                self.learner.update_accuracy()
+                self.learner.update_correct_streak()
+                update_score(self.learner, stars_earned)
+                self._award_answer_points(stars_earned)
+                advance_writing_curriculum(self.learner)
+                self.learner.save_profile()
+                if maybe_complete_writing_castle(self.learner):
+                    self._mark_world_completed(WORLD_WRITING_CASTLE)
+                self._show_writing_correct_feedback(stars_earned=stars_earned)
+            else:
+                self.learner.attempts = int(self.learner.attempts) + 1
+                self.learner.update_accuracy()
+                self.learner.update_correct_streak()
+                expected = target.upper() if mode == "letters" else target.lower()
+                got = recognized.upper() if mode == "letters" else recognized.lower()
+                message = f"I read '{got or '?'}'. Try writing {expected} again."
+                self._show_writing_mistake_feedback(message)
+        except Exception as exc:
+            self._show_writing_mistake_feedback(f"Could not read your writing. Try again. ({exc})")
+        finally:
+            self.state.writing_processing = False
+
+    def _show_writing_correct_feedback(self, *, stars_earned: int = 0) -> None:
+        message = get_feedback(True)["message"]
+        self._show_answer_popup(
+            "correct",
+            message,
+            next_screen="writing_castle_game",
+            refresh=True,
+            sfx="correct",
+            stars_earned=stars_earned,
+        )
+
+    def _show_writing_mistake_feedback(self, message: str) -> None:
+        msg = str(message or "").strip() or "Good try. Write it again!"
+        self._show_answer_popup(
+            "wrong",
+            msg,
+            next_screen="writing_castle_game",
+            preserve=True,
+            sfx="wrong",
+        )
 
     def _configure_voice_challenge_task(self) -> None:
         target = self._voice_challenge_target()
@@ -1647,6 +1898,7 @@ class GameEngine:
                 "world_map",
                 "letter_island_game",
                 "word_garden_game",
+                "writing_castle_game",
                 "bd_practice",
             }:
                 self.set_screen("world_map")
@@ -1694,6 +1946,21 @@ class GameEngine:
                 return
             if action in {"play_cat_sound", "play_target_word_sound"}:
                 self._speak_tutor_line(self._word_target_sound_line())
+                return
+        if self.state.current_screen_id == "writing_castle_game":
+            if action == "repeat_prompt":
+                spoken = str(self.state.last_spoken_text or self.state.writing_prompt or self.state.current_task_prompt or "").strip()
+                if spoken:
+                    self._speak_tutor_line(spoken)
+                return
+            if action in {"verify_writing", "complete_writing"}:
+                self._submit_writing()
+                return
+            if action == "clear_writing":
+                self._clear_writing_board()
+                return
+            if action == "toggle_writing_mode":
+                self._toggle_writing_mode()
                 return
         if self.state.current_screen_id == "voice_challenge":
             if action == "repeat_word":
@@ -1973,7 +2240,7 @@ class GameEngine:
         )
         if world_just_completed:
             self._mark_world_completed(WORLD_LETTER_ISLAND)
-            self._notify_world_unlocked(WORLD_WORD_GARDEN)
+            self._notify_parallel_worlds_unlocked()
         island_complete_badge = check_letter_island_complete_badge(self.learner)
         if island_complete_badge:
             self.state.current_hint_level = 0
@@ -2130,6 +2397,12 @@ class GameEngine:
 
         if screen_id == "word_garden_game":
             self.voice.speak(self._word_garden_voice_prompt(), tone="instruct")
+            return
+
+        if screen_id == "writing_castle_game":
+            spoken = str(self.state.last_spoken_text or self.state.writing_prompt or self.state.current_task_prompt or "").strip()
+            if spoken:
+                self.voice.speak(spoken, tone="instruct")
             return
 
         if screen_id == "voice_challenge":

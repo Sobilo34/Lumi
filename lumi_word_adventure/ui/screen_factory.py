@@ -10,6 +10,8 @@ from ui.chunk_manifest import get_screen_spec
 from ui.chunk_screen import ChunkScreen
 from ui.hitboxes import Hitbox
 from ui.scene_factory import create_component_screen
+from ui.scenes.renderers import SCENE_RENDERERS
+from ui.writing_castle_screen import WritingCastleScreen
 from ui.scene_view import SceneView
 from ui.screens import BaseScreen, create_screen_with_hitboxes
 
@@ -27,6 +29,7 @@ PROCEDURAL_SCREEN_IDS = frozenset({
     "bd_practice",
     "progress_complete",
     "practice_weak_skills",
+    "writing_castle_game",
     "teacher_report",
     "settings",
     "microphone_check",
@@ -54,6 +57,12 @@ def create_game_screen(
     composer = ChunkComposer(asset_manager)
 
     if prefer_procedural or screen_id in PROCEDURAL_SCREEN_IDS:
+        if screen_id == "writing_castle_game":
+            return WritingCastleScreen(
+                hitboxes,
+                SCENE_RENDERERS[screen_id],
+                view_fn,
+            )
         return create_component_screen(screen_id, hitboxes, view_fn)
 
     # Image-first: chunk layers when present, otherwise full reference_interfaces PNG.

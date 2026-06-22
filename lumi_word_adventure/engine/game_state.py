@@ -24,6 +24,7 @@ class GameState:
     letter_demo_mode: bool = False
     preserve_word_garden_task: bool = False
     preserve_letter_island_task: bool = False
+    preserve_writing_castle_task: bool = False
     gameplay_refresh_pending: bool = False
     letter_choice_slots: list[str] = field(default_factory=lambda: ["B", "D", "P", "A"])
     word_choice_slots: list[str] = field(default_factory=lambda: ["cat", "dog", "sun", "ball"])
@@ -86,3 +87,8 @@ class GameState:
     answer_popup_next_screen: str = ""
     answer_popup_refresh: bool = False
     answer_popup_preserve: bool = False
+    writing_mode: str = "letters"
+    writing_prompt: str = ""
+    writing_result_text: str = ""
+    writing_hint_text: str = ""
+    writing_processing: bool = False

@@ -1,10 +1,15 @@
-"""World map unlock rules: Letter Island → Word Garden."""
+"""World map unlock rules: Letter Island → Word Garden + Writing Castle."""
 from __future__ import annotations
 
 from copy import deepcopy
 from typing import Any
 
 from engine.adaptive_ai import ALPHABET, all_letters_mastered
+from engine.writing_progression import (
+    WORLD_WRITING_CASTLE,
+    writing_castle_complete,
+    writing_castle_unlocked,
+)
 
 WORLD_LETTER_ISLAND = "letter_island"
 WORLD_WORD_GARDEN = "word_garden"
@@ -12,12 +17,14 @@ WORLD_WORD_GARDEN = "word_garden"
 WORLD_PRACTICE_ENTRY: dict[str, str] = {
     WORLD_LETTER_ISLAND: "letter_island_game",
     WORLD_WORD_GARDEN: "word_garden_game",
+    WORLD_WRITING_CASTLE: "writing_castle_game",
 }
 
 WORD_GARDEN_REQUIRED_WORDS = ("cat", "dog", "sun", "ball")
 
 SCREEN_TO_WORLD = {
     "word_garden_game": WORLD_WORD_GARDEN,
+    "writing_castle_game": WORLD_WRITING_CASTLE,
 }
 
 
@@ -102,6 +109,8 @@ def world_unlocked(profile: Any, world_id: str) -> bool:
         return True
     if key == WORLD_WORD_GARDEN:
         return word_garden_unlocked(profile)
+    if key == WORLD_WRITING_CASTLE:
+        return writing_castle_unlocked(profile)
     return True
 
 
@@ -117,16 +126,20 @@ def locked_world_message(screen_id: str) -> str:
     world_id = SCREEN_TO_WORLD.get(str(screen_id or "").strip(), "")
     if world_id == WORLD_WORD_GARDEN:
         return "Complete Letter Island before unlocking Word Garden!"
+    if world_id == WORLD_WRITING_CASTLE:
+        return "Complete Letter Island before unlocking Writing Castle!"
     return "Complete the previous level to unlock this area."
 
 
 def sync_world_completion(profile: Any) -> list[str]:
-    """Backfill completed_worlds from existing letter/word progress."""
+    """Backfill completed_worlds from existing letter/word/writing progress."""
     newly_completed: list[str] = []
     if letter_island_complete(profile) and mark_world_complete(profile, WORLD_LETTER_ISLAND):
         newly_completed.append(WORLD_LETTER_ISLAND)
     if word_garden_complete(profile) and mark_world_complete(profile, WORLD_WORD_GARDEN):
         newly_completed.append(WORLD_WORD_GARDEN)
+    if writing_castle_complete(profile) and mark_world_complete(profile, WORLD_WRITING_CASTLE):
+        newly_completed.append(WORLD_WRITING_CASTLE)
     return newly_completed
 
 
@@ -148,6 +161,8 @@ def maybe_complete_word_garden(profile: Any) -> bool:
 def latest_completed_world(profile: Any) -> str:
     """Most recently finished world on the map path (for Practice Again)."""
     worlds = _completed_worlds(profile)
+    if WORLD_WRITING_CASTLE in worlds:
+        return WORLD_WRITING_CASTLE
     if WORLD_WORD_GARDEN in worlds:
         return WORLD_WORD_GARDEN
     if WORLD_LETTER_ISLAND in worlds:
@@ -162,11 +177,23 @@ def prepare_world_practice(profile: Any, world_id: str) -> str:
         profile.current_letter_index = 0
     elif key == WORLD_WORD_GARDEN and hasattr(profile, "current_word_length"):
         profile.current_word_length = 3
+    elif key == WORLD_WRITING_CASTLE:
+        if hasattr(profile, "writing_letter_index"):
+            profile.writing_letter_index = 0
+        if hasattr(profile, "writing_word_index"):
+            profile.writing_word_index = 0
     _persist_profile(profile)
     return WORLD_PRACTICE_ENTRY.get(key, "letter_island_game")
 
 
 def world_map_progress_text(profile: Any) -> str:
     if not word_garden_unlocked(profile):
-        return "Complete Letter Island (A–Z) to unlock Word Garden"
-    return "All worlds unlocked — great journey!"
+        return "Complete Letter Island (A–Z) to unlock Word Garden and Writing Castle"
+    unlocked = []
+    if word_garden_unlocked(profile):
+        unlocked.append("Word Garden")
+    if writing_castle_unlocked(profile):
+        unlocked.append("Writing Castle")
+    if len(unlocked) >= 2:
+        return "New worlds unlocked — pick your adventure!"
+    return "Keep exploring your unlocked worlds!"
