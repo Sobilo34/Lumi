@@ -41,8 +41,8 @@ def test_mic_hitbox_lookup_prefers_speak_button() -> None:
     assert rect.x == 200
 
 
-def test_mic_hint_badge_rect_sits_on_top_right() -> None:
+def test_mic_hint_badge_rect_sits_left_of_mic_corner() -> None:
     mic_rect = pygame.Rect(200, 560, 140, 115)
     badge = mic_hint_badge_rect(mic_rect)
-    assert badge.right >= mic_rect.right - 8
+    assert badge.centerx <= mic_rect.right - 40
     assert badge.top <= mic_rect.top + 8

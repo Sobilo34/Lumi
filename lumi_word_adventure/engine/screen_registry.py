@@ -87,8 +87,8 @@ class ScreenRegistry:
                 (
                     HitboxDefinition("Play", 0.48, 0.20, 0.46, 0.14, target="world_map"),
                     HitboxDefinition("Practice", 0.48, 289 / 720, 0.46, 0.14, target="practice_weak_skills"),
-                    HitboxDefinition("Report", 0.48, 424 / 720, 0.46, 0.14, target="teacher_report"),
-                    HitboxDefinition("Settings", 0.48, 560 / 720, 0.46, 0.14, target="settings"),
+                    HitboxDefinition("Report", 0.48, 464 / 720, 0.46, 0.14, target="teacher_report"),
+                    HitboxDefinition("Settings", 0.48, 640 / 720, 0.46, 0.14, target="settings"),
                     HitboxDefinition("Speaker", 0.02, 0.03, 0.09, 0.11, action="replay_main_menu_audio"),
                     HitboxDefinition("Profile", 0.89, 0.03, 0.09, 0.11, action="show_profile"),
                 ),

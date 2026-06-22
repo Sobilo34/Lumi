@@ -102,6 +102,7 @@ from ui.voice_mic_prompt_overlay import (
     MIC_HINT_MESSAGE,
     draw_mic_hint_badge,
     mic_hint_badge_rect,
+    mic_hint_badge_x_inset,
     mic_hitbox_from_hitboxes,
 )
 from ui.answer_popup_overlay import LETTER_ISLAND_POPUP_ANCHOR_Y_PCT, draw_answer_popup_overlay
@@ -673,7 +674,7 @@ class GameEngine:
         mic_rect = mic_hitbox_from_hitboxes(list(getattr(self.current_screen, "hitboxes", []) or []))
         if mic_rect is None:
             return False
-        if mic_hint_badge_rect(mic_rect).collidepoint(position):
+        if mic_hint_badge_rect(mic_rect, x_inset=mic_hint_badge_x_inset(self.state.current_screen_id)).collidepoint(position):
             self.voice.speak(MIC_HINT_MESSAGE, tone="instruct")
             return True
         return False

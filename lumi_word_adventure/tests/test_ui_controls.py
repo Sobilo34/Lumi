@@ -67,3 +67,14 @@ def test_draw_control_buttons_blits_home() -> None:
     home = Hitbox(name="Home", rect=pygame.Rect(20, 20, 80, 80), target="main_menu")
     draw_control_buttons(surface, [home], assets)
     assert surface.get_at((60, 60)).a > 0
+
+
+def test_how_to_play_lets_go_does_not_draw_control_icon() -> None:
+    lets_go = Hitbox(name="Let's Go", rect=pygame.Rect(0, 0, 100, 100), target="world_map")
+    assert control_key_for_hitbox(lets_go) is None
+
+
+def test_how_to_play_is_image_only_without_control_overlay() -> None:
+    from ui.screen_factory import IMAGE_ONLY_SCREEN_IDS_NO_CONTROL_OVERLAY
+
+    assert "how_to_play" in IMAGE_ONLY_SCREEN_IDS_NO_CONTROL_OVERLAY

@@ -399,9 +399,7 @@ def render_how_to_play(surface: pygame.Surface, view: SceneView) -> None:
     for raw in instructions.splitlines():
         wrapped_lines.extend(_wrap(raw, panel_inner.width - 70, size=31))
     _blit_lines(surface, wrapped_lines, (panel_inner.x + 40, panel_inner.y + 34), size=31, line_gap=12, color=PROMPT_BROWN)
-    draw_cta_button(surface, pct_rect(0.34, 0.82, 0.31, 0.13), "Let's Go")
-    draw_circle_button(surface, (int(SCREEN_WIDTH * 0.74), int(SCREEN_HEIGHT * 0.885)), 28, BUTTON_PURPLE)
-    draw_icon_refresh(surface, (int(SCREEN_WIDTH * 0.74), int(SCREEN_HEIGHT * 0.885)))
+    draw_cta_button(surface, pct_rect(0.28, 0.76, 0.44, 0.16), "Let's Go!")
 
 
 def render_world_map(surface: pygame.Surface, view: SceneView) -> None:
