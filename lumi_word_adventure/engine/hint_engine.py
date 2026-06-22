@@ -230,35 +230,8 @@ class HintEngine:
     ) -> str:
         target_word = str(target or "").strip().lower()
         if not target_word:
-            return "Let's look together. You can do it!"
-        selected_word = str(selected or "").strip().lower()
-        mistake = str(mistake_type or "").strip().lower()
-        weak = _profile_weak_count(profile, "word", target_word)
-        lvl = self._effective_level(level, weak)
-
-        first = target_word[0].upper()
-        first_sound = LETTER_SOUND.get(first, "")
-        spelled = self._spell_out(target_word)
-
-        # Famous toddler mix-up: animals that sound alike.
-        if mistake in {"same_category_vocabulary_confusion", "cat_dog_confusion"} or {
-            target_word, selected_word
-        } & {"cat", "dog"}:
-            if target_word == "cat":
-                return "A cat says meow. A dog says woof. Touch the cat."
-            if target_word == "dog":
-                return "A dog says woof. A cat says meow. Touch the dog."
-
-        if lvl <= 1:
-            if first_sound:
-                return f"{target_word.capitalize()} starts with {first}, {first_sound}. Find {target_word}."
-            return f"Find the word {target_word}."
-        if lvl == 2:
-            if spelled:
-                return f"Sound it out: {spelled}. That spells {target_word}. Find {target_word}."
-            return f"Look at the first letter in {target_word}."
-        # level 3+
-        return f"{target_word.capitalize()} is the one you want. Touch it now."
+            return "Touch the picture."
+        return f"Touch the {target_word.capitalize()}."
 
     # ---- letter speaking ---------------------------------------------------
     def letter_speaking_hint(

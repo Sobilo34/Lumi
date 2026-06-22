@@ -127,6 +127,27 @@ def has_crossbar(roi: np.ndarray) -> bool:
     return _ink_density(band) > 0.07
 
 
+def has_top_bar(roi: np.ndarray) -> bool:
+    binary = _binary_roi(roi)
+    height, width = binary.shape
+    band = binary[int(height * 0.05) : int(height * 0.28), int(width * 0.15) : int(width * 0.85)]
+    return _ink_density(band) > 0.07
+
+
+def has_bottom_bar(roi: np.ndarray) -> bool:
+    """True when a wide horizontal stroke sits along the bottom (letter E), not just the stem."""
+    binary = _binary_roi(roi)
+    height, width = binary.shape
+    band = binary[int(height * 0.72) : int(height * 0.92), int(width * 0.15) : int(width * 0.85)]
+    if band.size == 0:
+        return False
+    if _ink_density(band) <= 0.07:
+        return False
+    col_ink = np.sum(band > 127, axis=0)
+    wide_cols = int(np.sum(col_ink >= max(2, int(band.shape[0] * 0.25))))
+    return wide_cols >= int(band.shape[1] * 0.35)
+
+
 def has_top_center_dip(roi: np.ndarray) -> bool:
     binary = _binary_roi(roi)
     height, width = binary.shape
@@ -192,6 +213,18 @@ def disambiguate_letter(
             corrected = "M"
             note = "Top dip detected: M instead of W"
 
+    if letter == "T" and has_crossbar(roi):
+        if has_bottom_bar(roi) and "E" in alternatives:
+            corrected = "E"
+            note = "Three bars detected: E instead of T"
+        else:
+            corrected = "F"
+            note = "Middle bar detected: F instead of T"
+
+    elif letter == "F" and not has_crossbar(roi) and has_top_bar(roi) and "T" in alternatives:
+        corrected = "T"
+        note = "Single top bar: T instead of F"
+
     if corrected != letter:
         updated = list(top_predictions)
         for index, (label, score) in enumerate(updated):
@@ -208,6 +241,51 @@ def disambiguate_letter(
             note = f"{letter} can look like its mirror pair. Draw carefully."
 
     return letter, confidence, top_predictions, note
+
+
+def refine_with_expected_letter(
+    roi: np.ndarray,
+    letter: str,
+    confidence: float,
+    top_predictions: list[tuple[str, float]],
+    expected: str,
+) -> tuple[str, float, list[tuple[str, float]], str | None]:
+    """Use the lesson target when the CNN is unsure but shape cues match."""
+    target = str(expected or "").strip().upper()
+    if len(target) != 1 or not top_predictions:
+        return letter, confidence, top_predictions, None
+
+    if letter == target:
+        return letter, confidence, top_predictions, None
+
+    alt_scores = {label: score for label, score in top_predictions}
+    note = None
+    corrected = letter
+
+    if target == "F" and letter == "T" and has_crossbar(roi):
+        corrected = "F"
+        note = "Middle bar matches F"
+    elif target == "T" and letter == "F" and has_top_bar(roi) and not has_crossbar(roi):
+        corrected = "T"
+        note = "Single top bar matches T"
+    elif confidence < CONFIDENCE_HINT_THRESHOLD and target in alt_scores:
+        target_score = alt_scores[target]
+        if target_score >= confidence - 0.12:
+            corrected = target
+            note = f"Close match for requested {target}"
+
+    if corrected == letter:
+        return letter, confidence, top_predictions, None
+
+    updated = list(top_predictions)
+    for index, (label, score) in enumerate(updated):
+        if label == corrected:
+            updated[index] = (label, max(score, confidence))
+            break
+    else:
+        updated.insert(0, (corrected, max(confidence, CONFIDENCE_HINT_THRESHOLD)))
+    updated.sort(key=lambda item: item[1], reverse=True)
+    return corrected, updated[0][1], updated, note
 
 
 def _confusable_hint(letter: str, alternatives: list[str]) -> str | None:

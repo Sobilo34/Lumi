@@ -62,6 +62,13 @@ _LETTER_VOICE_CHARACTER_HINTS: dict[str, str] = {
 }
 
 
+def _word_touch_prompt(target: str) -> str:
+    word = str(target or "").strip()
+    if not word:
+        return "Touch the picture."
+    return f"Touch the {word.capitalize()}."
+
+
 def _feedback_payload(feedback_type: str, message: str) -> dict[str, str]:
     return {"type": feedback_type, "message": message}
 
@@ -110,16 +117,14 @@ def get_feedback(
         return _feedback_payload("incorrect", "Good try! Let’s look again.")
 
     if mistake_type == "same_category_vocabulary_confusion":
-        if selected:
-            return _feedback_payload("incorrect", f"This is {selected}. A cat says meow. Find the cat.")
-        return _feedback_payload("incorrect", "This is dog. A cat says meow. Find the cat.")
+        if target:
+            return _feedback_payload("incorrect", _word_touch_prompt(target))
+        return _feedback_payload("incorrect", "Good try! Touch the right picture.")
 
     if mistake_type == "word_confusion":
-        if target and selected:
-            return _feedback_payload("incorrect", f"This is {target}. A {selected} says meow.")
         if target:
-            return _feedback_payload("incorrect", f"This is {target}. Let’s look again.")
-        return _feedback_payload("incorrect", "Good try! Let’s look again.")
+            return _feedback_payload("incorrect", _word_touch_prompt(target))
+        return _feedback_payload("incorrect", "Good try! Touch the right picture.")
 
     if mistake_type == "sentence_order":
         if target:
@@ -204,10 +209,10 @@ def get_hint(
 
     if activity == "word":
         if level in {"1", "level_1"}:
-            return f"Find the word {target_text}."
+            return _word_touch_prompt(target_text)
         if level in {"2", "level_2"}:
-            return f"Look at the first letter in {target_text}."
-        return f"You can do it. Try {target_text} again."
+            return _word_touch_prompt(target_text)
+        return _word_touch_prompt(target_text)
 
     if activity == "sentence":
         if level in {"1", "level_1"}:
@@ -243,7 +248,7 @@ def get_lumi_speech(screen_id: str, current_task: str | None = None) -> str:
     if screen == "bd_practice":
         return "B has a belly. D has a drum."
     if screen == "word_garden_game":
-        return f"Touch the word you hear, {task}." if task else "Touch the word you hear."
+        return _word_touch_prompt(task) if task else "Touch the picture."
     if screen == "writing_castle_game":
         return f"Write on the board, {task}." if task else "Write on the board."
     if screen == "word_correct_feedback":

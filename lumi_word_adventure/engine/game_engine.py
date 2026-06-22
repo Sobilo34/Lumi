@@ -1402,7 +1402,12 @@ class GameEngine:
             try:
                 from writing_recognition.runner import recognize_snapshot
 
-                outcome = recognize_snapshot(snapshot, mode, board_out=board_out)
+                outcome = recognize_snapshot(
+                    snapshot,
+                    mode,
+                    board_out=board_out,
+                    expected_letter=target if mode == "letters" else "",
+                )
                 self._writing_job_result = _WritingRecognitionJob(
                     mode=mode,
                     target=target,
@@ -1875,16 +1880,7 @@ class GameEngine:
         self.set_screen("voice_challenge")
 
     def _word_target_sound_line(self) -> str:
-        target_word = str(self.state.current_task_target or "sun").strip().lower()
-        sound_lines = {
-            "cat": "Cat says meow.",
-            "dog": "Dog says woof.",
-            "duck": "Duck says quack.",
-            "bird": "Bird says tweet.",
-            "frog": "Frog says ribbit.",
-            "fish": "Fish says blub.",
-        }
-        return sound_lines.get(target_word, f"{target_word.capitalize()}.")
+        return self._word_garden_voice_prompt()
 
     def _word_garden_voice_prompt(self) -> str:
         target_word = str(self.state.current_task_target or "sun").strip().lower()
@@ -1904,17 +1900,6 @@ class GameEngine:
     def _word_garden_correct_message(self) -> str:
         target_word = self.state.current_task_target or "sun"
         return f"Wonderful! {target_word.capitalize()}."
-
-    def _word_garden_mistake_message(self, selected_word: str) -> str:
-        target_word = self.state.current_task_target or "sun"
-        if self.state.last_mistake_type == "same_category_vocabulary_confusion" or {
-            target_word,
-            selected_word,
-        } == {"cat", "dog"}:
-            return "This is dog. A cat says meow. Find the cat."
-        if target_word == "cat":
-            return f"This is {selected_word}. A cat says meow. Find the cat."
-        return f"This is {selected_word}. Look for {target_word}."
 
     def _advance_bd_practice(self) -> None:
         if self.state.bd_practice_target == "B":

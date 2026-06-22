@@ -732,12 +732,12 @@ def choose_hint(profile: Any, activity_type: str, mistake_type: str, *, target: 
         return "Look for the letter again."
 
     if activity == "word":
+        if target:
+            return f"Touch the {str(target).strip().capitalize()}."
         focus_word = has_repeated_weak_word(profile_dict)
-        if mistake in {"cat_dog_confusion", "same_category_vocabulary_confusion"} or focus_word in {"cat", "dog"}:
-            return "Cat says meow. Dog says woof."
         if focus_word:
-            return f"Look for the word {focus_word}."
-        return "Look for the word again."
+            return f"Touch the {focus_word.capitalize()}."
+        return "Touch the picture."
 
     return "Try again with a careful look."
 

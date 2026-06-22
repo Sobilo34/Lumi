@@ -24,7 +24,7 @@ def test_letter_confusion_feedback_names_selected_and_target() -> None:
 def test_word_confusion_feedback_mentions_target() -> None:
     feedback = get_feedback(False, mistake_type="word_confusion", target="dog", selected="cat")
     assert feedback["type"] == "incorrect"
-    assert feedback["message"] == "This is dog. A cat says meow."
+    assert feedback["message"] == "Touch the Dog."
 
 
 def test_sentence_order_feedback_starts_with_first_word() -> None:
@@ -40,7 +40,7 @@ def test_voice_close_feedback_is_gentle() -> None:
 
 def test_hint_messages_reflect_activity_and_target() -> None:
     assert get_hint("letter", 1, "B") == "Look for the letter B."
-    assert get_hint("word", 2, "cat") == "Look at the first letter in cat."
+    assert get_hint("word", 2, "cat") == "Touch the Cat."
     assert get_hint("sentence", 3, "I see a cat") == "Take your time with I see a cat."
 
 

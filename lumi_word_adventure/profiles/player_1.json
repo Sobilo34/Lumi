@@ -6,11 +6,11 @@
   "lumi_energy": 100,
   "current_world": "main_menu",
   "difficulty": 3,
-  "correct_streak": 7,
-  "wrong_streak": 0,
+  "correct_streak": 0,
+  "wrong_streak": 1,
   "weak_letters": {},
   "weak_words": {
-    "apple": 1
+    "apple": 2
   },
   "hint_usage": {
     "level_1": 6,
@@ -42,15 +42,17 @@
   ],
   "word_mastery": {
     "apple": {
-      "attempts": 0,
+      "attempts": 1,
       "correct": 0,
-      "wrong": 0,
+      "wrong": 1,
       "first_try_correct": 0,
       "hints_used": 0,
       "mastery_score": 0.0,
-      "last_seen": 0,
+      "last_seen": 1782123458,
       "consecutive_correct": 0,
-      "confused_with": {}
+      "confused_with": {
+        "bird": 1
+      }
     },
     "ball": {
       "attempts": 0,
@@ -195,7 +197,7 @@
       "confused_with": {}
     }
   },
-  "last_word_garden_target": "hat",
+  "last_word_garden_target": "apple",
   "completed_worlds": [
     "letter_island"
   ],
@@ -208,9 +210,9 @@
     "Word Explorer"
   ],
   "debug_persistent": false,
-  "attempts": 66,
+  "attempts": 70,
   "correct_answers": 57,
-  "accuracy": 86.36,
+  "accuracy": 81.43,
   "current_letter_index": 25,
   "current_word_length": 3,
   "letter_mastery": {

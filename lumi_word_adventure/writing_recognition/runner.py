@@ -100,9 +100,10 @@ def warm_recognition_model() -> None:
         pass
 
 
-def recognize_snapshot(snapshot: Path, mode: str, *, board_out: Path | None = None) -> RecognitionOutcome:
+def recognize_snapshot(snapshot: Path, mode: str, *, board_out: Path | None = None, expected_letter: str = "") -> RecognitionOutcome:
     mode_key = "words" if str(mode).strip().lower() == "words" else "letters"
     board_path = board_out or (_PACKAGE_DIR / ".recognition_board.png")
+    expected = str(expected_letter or "").strip().upper() if mode_key == "letters" else ""
 
     try:
         from writing_recognition.process_image import recognition_available as local_ready
@@ -110,7 +111,7 @@ def recognize_snapshot(snapshot: Path, mode: str, *, board_out: Path | None = No
 
         if local_ready():
             if mode_key == "letters":
-                board, results = recognize_letters(str(snapshot), single=True)
+                board, results = recognize_letters(str(snapshot), single=True, expected_letter=expected)
                 recognized = str(results[0]["letter"]) if results else ""
                 hint = str(results[0].get("hint") or "") if results else "No letter detected. Try larger, darker strokes."
             else:

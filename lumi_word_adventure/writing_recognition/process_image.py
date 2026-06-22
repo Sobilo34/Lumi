@@ -8,7 +8,7 @@ from pathlib import Path
 import cv2
 import numpy as np
 
-from writing_recognition.hints import disambiguate_letter, index_to_letter, letter_hints, word_hints
+from writing_recognition.hints import disambiguate_letter, index_to_letter, letter_hints, refine_with_expected_letter, word_hints
 
 _PACKAGE_DIR = Path(__file__).resolve().parent
 MODEL_PATH = _PACKAGE_DIR / "cnn_model" / "letter_classifier.h5"
@@ -144,7 +144,7 @@ def put_label(image, label, x, y, hint=None):
     return image
 
 
-def extract_letter_regions(path):
+def extract_letter_regions(path, expected_letter: str = ""):
     img = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
     if img is None:
         return [], None
@@ -159,14 +159,22 @@ def extract_letter_regions(path):
         if w <= 10 or h <= 10:
             continue
 
-        roi = img[y : y + h, x : x + w]
-        roi = cv2.bitwise_not(roi)
-        _, roi = cv2.threshold(roi, 127, 255, cv2.THRESH_BINARY)
+        roi = thresh[y : y + h, x : x + w]
 
         letter, confidence, top_predictions = predict_letter(roi)
         letter, confidence, top_predictions, shape_note = disambiguate_letter(
             roi, letter, confidence, top_predictions
         )
+        if expected_letter:
+            letter, confidence, top_predictions, target_note = refine_with_expected_letter(
+                roi,
+                letter,
+                confidence,
+                top_predictions,
+                expected_letter,
+            )
+            if target_note and not shape_note:
+                shape_note = target_note
         hint = letter_hints(top_predictions, shape_note=shape_note)
         regions.append(
             {
@@ -211,8 +219,8 @@ def build_letter_board(regions, img_org):
     return board, letter_results
 
 
-def recognize_letters(path, single=False):
-    regions, img_org = extract_letter_regions(path)
+def recognize_letters(path, single=False, expected_letter: str = ""):
+    regions, img_org = extract_letter_regions(path, expected_letter=expected_letter)
     if img_org is None:
         return np.zeros((640, 640, 3), dtype=np.uint8), []
 
