@@ -51,4 +51,5 @@ class SceneView:
     writing_result_text: str = ""
     writing_hint_text: str = ""
     writing_canvas: Any = None
-    writing_preview: Any = None
+    writing_loading: bool = False
+    app_loading_started_at: int = 0

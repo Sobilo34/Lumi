@@ -328,12 +328,20 @@ def _report_value(report: dict[str, Any], key: str, fallback: str) -> str:
 
 
 def render_splash_loading(surface: pygame.Surface, view: SceneView) -> None:
+    from ui.loading import draw_spinner
+
     paint_pink_sky(surface)
     draw_logo_banner(surface, y_pct=0.20)
     draw_lumi_mascot_large(surface, x_pct=0.5, y_pct=0.48, scale=1.2)
     bubble_text = view.feedback_message or "Warming up your learning adventure..."
     draw_speech_bubble(surface, bubble_text, x_pct=0.36, y_pct=0.62, w_pct=0.30)
     paint_loading_bar(surface, float(view.loading_progress or 0.0))
+    draw_spinner(
+        surface,
+        (SCREEN_WIDTH // 2, int(SCREEN_HEIGHT * 0.72)),
+        radius=24,
+        started_at_ms=pygame.time.get_ticks(),
+    )
 
 
 def render_welcome(surface: pygame.Surface, view: SceneView) -> None:
@@ -426,11 +434,8 @@ def render_world_map(surface: pygame.Surface, view: SceneView) -> None:
 
 def render_writing_castle_game(surface: pygame.Surface, view: SceneView) -> None:
     from ui.app_background import paint_app_background
-    from ui.writing_layout import (
-        WRITING_BOARD_RECT,
-        WRITING_PREVIEW_RECT,
-        WRITING_PROMPT_Y,
-    )
+    from ui.loading import draw_loading_panel
+    from ui.writing_layout import WRITING_BOARD_RECT, WRITING_PROMPT_Y
 
     if not paint_app_background(surface, "writing_castle_game"):
         paint_pink_sky(surface)
@@ -446,57 +451,49 @@ def render_writing_castle_game(surface: pygame.Surface, view: SceneView) -> None
     )
 
     label_outline = (70, 35, 95)
-    label_fill = (255, 255, 255)
-    for rect, title in ((WRITING_BOARD_RECT, "Draw here"), (WRITING_PREVIEW_RECT, "Your writing")):
-        draw_stitched_panel(surface, rect.inflate(8, 8), border_color=(255, 198, 96))
-        inner = rect.inflate(-6, -6)
-        draw_rounded_rect(surface, inner, (255, 255, 255), radius=18, border=BOARD_BORDER, border_width=2)
-        label_font = display_font(30)
-        label = label_font.render(title, True, label_fill)
-        lx, ly = rect.centerx, rect.y - 30
-        for dx, dy in ((-2, 0), (2, 0), (0, -2), (0, 2)):
-            shadow = label_font.render(title, True, label_outline)
-            surface.blit(shadow, shadow.get_rect(midtop=(lx + dx, ly + dy)))
-        surface.blit(label, label.get_rect(midtop=(lx, ly)))
+    outer = WRITING_BOARD_RECT.inflate(14, 14)
+    from ui.components.primitives import draw_rect_shadow
+
+    draw_rect_shadow(surface, outer, radius=24, offset=(0, 6), alpha=42)
+    draw_stitched_panel(surface, outer, border_color=(255, 198, 96))
+    inner = WRITING_BOARD_RECT.inflate(-10, -10)
+    draw_rounded_rect(surface, inner, (255, 255, 255), radius=22, border=BOARD_BORDER, border_width=3)
 
     if view.writing_canvas is not None:
         canvas = view.writing_canvas
         target = canvas.get_rect()
         target.size = (
-            max(1, WRITING_BOARD_RECT.width - 12),
-            max(1, WRITING_BOARD_RECT.height - 12),
+            max(1, inner.width - 8),
+            max(1, inner.height - 8),
         )
-        target.center = WRITING_BOARD_RECT.center
         if canvas.get_size() != target.size:
             canvas = pygame.transform.smoothscale(canvas, target.size)
-        surface.blit(canvas, canvas.get_rect(center=WRITING_BOARD_RECT.center))
+        surface.blit(canvas, canvas.get_rect(center=inner.center))
 
-    preview_inner = WRITING_PREVIEW_RECT.inflate(-10, -10)
-    if view.writing_preview is not None:
-        preview = view.writing_preview
-        scaled = pygame.transform.smoothscale(
-            preview,
-            (max(1, preview_inner.width), max(1, preview_inner.height)),
+    if view.writing_loading:
+        draw_loading_panel(
+            surface,
+            inner,
+            "Reading your writing...",
+            started_at_ms=int(getattr(view, "app_loading_started_at", 0) or 0),
         )
-        surface.blit(scaled, scaled.get_rect(center=preview_inner.center))
-    elif view.writing_result_text:
-        result = display_font(72).render(str(view.writing_result_text), True, (227, 144, 56))
-        surface.blit(result, result.get_rect(center=(preview_inner.centerx, preview_inner.centery - 40)))
 
-    if view.writing_result_text:
-        result_label = font(28, bold=True).render(f"Read: {view.writing_result_text}", True, (255, 255, 255))
-        rx, ry = WRITING_PREVIEW_RECT.centerx, WRITING_PREVIEW_RECT.bottom - 52
-        for dx, dy in ((-2, 0), (2, 0), (0, -2), (0, 2)):
-            shadow = font(28, bold=True).render(f"Read: {view.writing_result_text}", True, label_outline)
-            surface.blit(shadow, shadow.get_rect(midtop=(rx + dx, ry + dy)))
-        surface.blit(result_label, result_label.get_rect(midtop=(rx, ry)))
+    if view.writing_result_text and not view.writing_loading:
+        strip = pygame.Rect(inner.x + 12, inner.bottom - 52, inner.width - 24, 40)
+        draw_rounded_rect(surface, strip, (255, 248, 235), radius=14, border=(255, 198, 96), border_width=2)
+        result_label = font(24, bold=True).render(f"Read: {view.writing_result_text}", True, (227, 120, 48))
+        surface.blit(result_label, result_label.get_rect(center=strip.center))
 
-    if view.writing_hint_text:
-        hint_lines = _wrap(str(view.writing_hint_text), WRITING_PREVIEW_RECT.width - 24, size=18)[:3]
-        y = WRITING_PREVIEW_RECT.bottom - 46
+    if view.writing_hint_text and not view.writing_loading:
+        hint_lines = _wrap(str(view.writing_hint_text), WRITING_BOARD_RECT.width - 48, size=18)[:2]
+        y = WRITING_BOARD_RECT.bottom + 8
         for line in hint_lines:
-            hint = font(18).render(line, True, (255, 220, 230))
-            surface.blit(hint, hint.get_rect(midtop=(WRITING_PREVIEW_RECT.centerx, y)))
+            hint = font(18).render(line, True, (255, 255, 255))
+            rx = WRITING_BOARD_RECT.centerx
+            for dx, dy in ((-2, 0), (2, 0), (0, -2), (0, 2)):
+                shadow = font(18).render(line, True, label_outline)
+                surface.blit(shadow, shadow.get_rect(midtop=(rx + dx, y + dy)))
+            surface.blit(hint, hint.get_rect(midtop=(rx, y)))
             y += 22
 
 

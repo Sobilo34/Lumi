@@ -92,3 +92,6 @@ class GameState:
     writing_result_text: str = ""
     writing_hint_text: str = ""
     writing_processing: bool = False
+    app_loading: bool = False
+    app_loading_message: str = ""
+    app_loading_started_at: int = 0

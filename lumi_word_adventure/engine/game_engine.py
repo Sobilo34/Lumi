@@ -24,6 +24,7 @@ from config import (
 )
 import csv
 import os
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from engine.control_assets import ControlAssets
@@ -105,6 +106,7 @@ from ui.voice_mic_prompt_overlay import (
 )
 from ui.answer_popup_overlay import LETTER_ISLAND_POPUP_ANCHOR_Y_PCT, draw_answer_popup_overlay
 from ui.control_buttons_overlay import draw_control_button_placeholders
+from ui.loading import draw_fullscreen_loading
 from ui.screen_factory import IMAGE_ONLY_SCREEN_IDS_NO_CONTROL_OVERLAY
 from ui.world_map_overlay import draw_world_map_overlay
 from ui.screen_factory import create_game_screen
@@ -113,7 +115,6 @@ from ui.writing_layout import (
     WRITING_BOARD_RECT,
     WRITING_BRUSH_RADIUS,
     WRITING_INK_COLOR,
-    cv_board_to_surface,
 )
 from ui.scene_view import SceneView
 from ui.chunk_preload import (
@@ -166,6 +167,16 @@ LEGACY_WORD_ACTIONS = {
 }
 
 
+@dataclass
+class _WritingRecognitionJob:
+    mode: str
+    target: str
+    recognized: str = ""
+    hint: str = ""
+    error: str | None = None
+    unavailable_message: str | None = None
+
+
 class GameEngine:
     def __init__(self, screen: pygame.Surface) -> None:
         self.screen = screen
@@ -188,7 +199,8 @@ class GameEngine:
         self._writing_canvas: pygame.Surface | None = None
         self._writing_draw_on = False
         self._writing_last_pos: tuple[int, int] | None = None
-        self._writing_preview_surface: pygame.Surface | None = None
+        self._writing_job_result: _WritingRecognitionJob | None = None
+        self._writing_job_done = False
         self._writing_snapshot_path = Path(__file__).resolve().parents[1] / "writing_recognition" / ".writing_snapshot.png"
         self._apply_loaded_settings(self.settings.load_settings())
         self._log_voice_startup_status()
@@ -469,7 +481,8 @@ class GameEngine:
             writing_result_text=str(self.state.writing_result_text or ""),
             writing_hint_text=str(self.state.writing_hint_text or ""),
             writing_canvas=self._writing_canvas,
-            writing_preview=self._writing_preview_surface,
+            writing_loading=bool(self.state.writing_processing),
+            app_loading_started_at=int(self.state.app_loading_started_at or 0),
         )
 
     @property
@@ -1273,8 +1286,17 @@ class GameEngine:
         self.state.current_round_wrong_count = 0
         self.state.current_hint_level = 0
         self._reset_writing_canvas()
-        self._writing_preview_surface = None
         self.state.last_spoken_text = speech
+
+    def _begin_app_loading(self, message: str) -> None:
+        self.state.app_loading = True
+        self.state.app_loading_message = str(message or "Loading...").strip() or "Loading..."
+        self.state.app_loading_started_at = pygame.time.get_ticks()
+
+    def _end_app_loading(self) -> None:
+        self.state.app_loading = False
+        self.state.app_loading_message = ""
+        self.state.app_loading_started_at = 0
 
     def _toggle_writing_mode(self) -> None:
         next_mode = "words" if str(self.state.writing_mode or "letters") == "letters" else "letters"
@@ -1300,7 +1322,6 @@ class GameEngine:
         self._reset_writing_canvas()
         self.state.writing_result_text = ""
         self.state.writing_hint_text = ""
-        self._writing_preview_surface = None
 
     def _writing_board_point(self, position: tuple[int, int]) -> tuple[int, int] | None:
         canvas = self._ensure_writing_canvas()
@@ -1321,7 +1342,7 @@ class GameEngine:
     def _handle_writing_draw_event(self, event: pygame.event.Event) -> bool:
         if self.state.current_screen_id != "writing_castle_game":
             return False
-        if self.state.answer_popup_kind:
+        if self.state.answer_popup_kind or self.state.writing_processing:
             return False
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             point = self._writing_board_point(event.pos)
@@ -1354,68 +1375,104 @@ class GameEngine:
     def _submit_writing(self) -> None:
         if self.state.writing_processing:
             return
+
+        from writing_recognition.runner import recognition_available, recognition_error_message
+
+        if not recognition_available():
+            detail = recognition_error_message()
+            message = "Handwriting recognition is not ready yet. Try again soon."
+            if detail:
+                message = f"{message} ({detail})"
+            self._show_writing_mistake_feedback(message)
+            return
+
+        import threading
+
+        snapshot = self._save_writing_snapshot()
+        mode = str(self.state.writing_mode or "letters")
+        target = str(self.state.current_task_target or "")
+        board_out = self._writing_snapshot_path.with_name(".recognition_board.png")
+
         self.state.writing_processing = True
-        try:
-            from writing_recognition import letter_answer_matches, word_answer_matches
-            from writing_recognition.runner import recognition_available, recognition_error_message, recognize_snapshot
+        self._begin_app_loading("Reading your writing...")
+        self._writing_job_done = False
+        self._writing_job_result = None
 
-            if not recognition_available():
-                detail = recognition_error_message()
-                message = "Handwriting recognition is not ready yet. Try again soon."
-                if detail:
-                    message = f"{message} ({detail})"
-                self._show_writing_mistake_feedback(message)
-                return
-
-            snapshot = self._save_writing_snapshot()
-            mode = str(self.state.writing_mode or "letters")
-            target = str(self.state.current_task_target or "")
-            board_out = self._writing_snapshot_path.with_name(".recognition_board.png")
-            outcome = recognize_snapshot(snapshot, mode, board_out=board_out)
-
+        def _worker() -> None:
             try:
-                import cv2
+                from writing_recognition.runner import recognize_snapshot
 
-                board = cv2.imread(outcome.board_path)
-                self._writing_preview_surface = cv_board_to_surface(board)
-            except Exception:
-                self._writing_preview_surface = None
+                outcome = recognize_snapshot(snapshot, mode, board_out=board_out)
+                self._writing_job_result = _WritingRecognitionJob(
+                    mode=mode,
+                    target=target,
+                    recognized=str(outcome.recognized or ""),
+                    hint=str(outcome.hint or ""),
+                )
+            except Exception as exc:
+                self._writing_job_result = _WritingRecognitionJob(
+                    mode=mode,
+                    target=target,
+                    error=str(exc),
+                )
+            finally:
+                self._writing_job_done = True
 
-            recognized = outcome.recognized
-            hint = outcome.hint
-            self.state.writing_result_text = recognized
-            self.state.writing_hint_text = str(hint or "")
+        threading.Thread(target=_worker, daemon=True, name="lumi-writing-ocr").start()
 
-            if mode == "letters":
-                correct = letter_answer_matches(target, recognized)
-            else:
-                correct = word_answer_matches(target, recognized)
+    def _poll_writing_recognition(self) -> None:
+        if not self._writing_job_done:
+            return
+        self._writing_job_done = False
+        job = self._writing_job_result
+        self._writing_job_result = None
+        self.state.writing_processing = False
+        self._end_app_loading()
+        if job is None:
+            return
+        if job.error:
+            self._show_writing_mistake_feedback(f"Could not read your writing. Try again. ({job.error})")
+            return
+        if job.unavailable_message:
+            self._show_writing_mistake_feedback(job.unavailable_message)
+            return
+        self._apply_writing_recognition(job)
 
-            if correct:
-                stars_earned = calculate_stars(True, self.state.current_hint_level)
-                self.learner.attempts = int(self.learner.attempts) + 1
-                self.learner.correct_answers = int(self.learner.correct_answers) + 1
-                self.learner.update_accuracy()
-                self.learner.update_correct_streak()
-                update_score(self.learner, stars_earned)
-                self._award_answer_points(stars_earned)
-                advance_writing_curriculum(self.learner)
-                self.learner.save_profile()
-                if maybe_complete_writing_castle(self.learner):
-                    self._mark_world_completed(WORLD_WRITING_CASTLE)
-                self._show_writing_correct_feedback(stars_earned=stars_earned)
-            else:
-                self.learner.attempts = int(self.learner.attempts) + 1
-                self.learner.update_accuracy()
-                self.learner.update_correct_streak()
-                expected = target.upper() if mode == "letters" else target.lower()
-                got = recognized.upper() if mode == "letters" else recognized.lower()
-                message = f"I read '{got or '?'}'. Try writing {expected} again."
-                self._show_writing_mistake_feedback(message)
-        except Exception as exc:
-            self._show_writing_mistake_feedback(f"Could not read your writing. Try again. ({exc})")
-        finally:
-            self.state.writing_processing = False
+    def _apply_writing_recognition(self, job: _WritingRecognitionJob) -> None:
+        from writing_recognition import letter_answer_matches, word_answer_matches
+
+        mode = job.mode
+        target = job.target
+        recognized = job.recognized
+        self.state.writing_result_text = recognized
+        self.state.writing_hint_text = str(job.hint or "")
+
+        if mode == "letters":
+            correct = letter_answer_matches(target, recognized)
+        else:
+            correct = word_answer_matches(target, recognized)
+
+        if correct:
+            stars_earned = calculate_stars(True, self.state.current_hint_level)
+            self.learner.attempts = int(self.learner.attempts) + 1
+            self.learner.correct_answers = int(self.learner.correct_answers) + 1
+            self.learner.update_accuracy()
+            self.learner.update_correct_streak()
+            update_score(self.learner, stars_earned)
+            self._award_answer_points(stars_earned)
+            advance_writing_curriculum(self.learner)
+            self.learner.save_profile()
+            if maybe_complete_writing_castle(self.learner):
+                self._mark_world_completed(WORLD_WRITING_CASTLE)
+            self._show_writing_correct_feedback(stars_earned=stars_earned)
+        else:
+            self.learner.attempts = int(self.learner.attempts) + 1
+            self.learner.update_accuracy()
+            self.learner.update_correct_streak()
+            expected = target.upper() if mode == "letters" else target.lower()
+            got = recognized.upper() if mode == "letters" else recognized.lower()
+            message = f"I read '{got or '?'}'. Try writing {expected} again."
+            self._show_writing_mistake_feedback(message)
 
     def _show_writing_correct_feedback(self, *, stars_earned: int = 0) -> None:
         message = get_feedback(True)["message"]
@@ -1893,6 +1950,9 @@ class GameEngine:
         if event.type == pygame.QUIT:
             self.running = False
             return
+        if self.state.app_loading and event.type != pygame.QUIT:
+            if event.type != pygame.KEYDOWN or event.key not in {pygame.K_ESCAPE}:
+                return
         if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
             self.running = False
             return
@@ -2497,6 +2557,7 @@ class GameEngine:
 
     def update(self) -> None:
         self.current_screen.update()
+        self._poll_writing_recognition()
         self._update_voice_pronunciation_feedback()
         self._maybe_complete_voice_correct_advance()
         self._maybe_start_scheduled_voice_listen()
@@ -2631,6 +2692,16 @@ class GameEngine:
                     message=self.state.answer_popup_message,
                     anchor_y_pct=LETTER_ISLAND_POPUP_ANCHOR_Y_PCT if compact_popup else None,
                     compact=compact_popup,
+                )
+            except Exception:
+                pass
+
+        if self.state.app_loading and self.state.current_screen_id != "writing_castle_game":
+            try:
+                draw_fullscreen_loading(
+                    self.screen,
+                    self.state.app_loading_message,
+                    started_at_ms=int(self.state.app_loading_started_at or 0),
                 )
             except Exception:
                 pass
