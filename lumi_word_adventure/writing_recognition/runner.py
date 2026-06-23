@@ -103,7 +103,9 @@ def warm_recognition_model() -> None:
 def recognize_snapshot(snapshot: Path, mode: str, *, board_out: Path | None = None, expected_letter: str = "") -> RecognitionOutcome:
     mode_key = "words" if str(mode).strip().lower() == "words" else "letters"
     board_path = board_out or (_PACKAGE_DIR / ".recognition_board.png")
-    expected = str(expected_letter or "").strip().upper() if mode_key == "letters" else ""
+    expected = str(expected_letter or "").strip()
+    expected_letter_arg = expected.upper() if mode_key == "letters" and len(expected) == 1 else ""
+    expected_word_arg = expected.lower() if mode_key == "words" else ""
 
     try:
         from writing_recognition.process_image import recognition_available as local_ready
@@ -111,12 +113,12 @@ def recognize_snapshot(snapshot: Path, mode: str, *, board_out: Path | None = No
 
         if local_ready():
             if mode_key == "letters":
-                board, results = recognize_letters(str(snapshot), single=True, expected_letter=expected)
+                board, results = recognize_letters(str(snapshot), single=True, expected_letter=expected_letter_arg)
                 recognized = str(results[0]["letter"]) if results else ""
                 hint = str(results[0].get("hint") or "") if results else "No letter detected. Try larger, darker strokes."
             else:
                 board, _ = recognize_letters(str(snapshot), single=False)
-                recognized, hint = recognize_word(str(snapshot))
+                recognized, hint = recognize_word(str(snapshot), expected_word=expected_word_arg)
                 if not recognized:
                     hint = hint or "Draw the whole word with clear spacing between letters."
             import cv2
@@ -130,6 +132,7 @@ def recognize_snapshot(snapshot: Path, mode: str, *, board_out: Path | None = No
     if python is None:
         raise RuntimeError(recognition_error_message() or "Handwriting recognition is not available.")
 
+    expected_for_cli = expected_letter_arg or expected_word_arg
     cmd = [
         str(python),
         "-m",
@@ -138,6 +141,8 @@ def recognize_snapshot(snapshot: Path, mode: str, *, board_out: Path | None = No
         mode_key,
         str(board_path),
     ]
+    if expected_for_cli:
+        cmd.append(expected_for_cli)
     completed = subprocess.run(
         cmd,
         cwd=str(_PROJECT_DIR),

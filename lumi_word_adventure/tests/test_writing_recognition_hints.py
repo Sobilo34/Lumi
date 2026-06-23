@@ -44,3 +44,20 @@ def test_refine_with_expected_letter_fixes_t_to_f() -> None:
     letter, _, _, note = refine_with_expected_letter(roi, "T", 0.40, tops, "F")
     assert letter == "F"
     assert note is not None
+
+
+def test_disambiguate_corrects_k_to_f_when_bars_present() -> None:
+    roi = _f_like_roi()
+    tops = [("K", 0.81), ("F", 0.12), ("T", 0.05)]
+    letter, _, updated, note = disambiguate_letter(roi, "K", 0.81, tops)
+    assert letter == "F"
+    assert note is not None
+    assert updated[0][0] == "F"
+
+
+def test_refine_with_expected_letter_fixes_k_to_f() -> None:
+    roi = _f_like_roi()
+    tops = [("K", 0.82), ("H", 0.08), ("T", 0.05)]
+    letter, _, _, note = refine_with_expected_letter(roi, "K", 0.82, tops, "F")
+    assert letter == "F"
+    assert note is not None

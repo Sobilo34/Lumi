@@ -27,7 +27,7 @@ CONFUSABLE_LETTERS = {
     "C": ["G", "O", "E"],
     "D": ["O", "P", "B"],
     "E": ["F", "L", "C"],
-    "F": ["E", "P", "T"],
+    "F": ["E", "P", "T", "K"],
     "G": ["C", "Q", "S"],
     "H": ["A", "N", "M"],
     "I": ["J", "L", "T"],
@@ -124,7 +124,14 @@ def has_crossbar(roi: np.ndarray) -> bool:
     col_start = int(width * 0.2)
     col_end = int(width * 0.8)
     band = binary[row_start:row_end, col_start:col_end]
-    return _ink_density(band) > 0.07
+    if band.size == 0 or _ink_density(band) <= 0.07:
+        return False
+    wide_rows = 0
+    min_cols = max(3, int(band.shape[1] * 0.25))
+    for row in band:
+        if int(np.sum(row > 127)) >= min_cols:
+            wide_rows += 1
+    return wide_rows >= 2
 
 
 def has_top_bar(roi: np.ndarray) -> bool:
@@ -161,6 +168,33 @@ def has_top_center_dip(roi: np.ndarray) -> bool:
     center = top_rows[int(width * 0.5)]
     right = top_rows[int(width * 0.8)]
     return center > (left + right) / 2 + height * 0.06
+
+
+def has_k_lower_leg(roi: np.ndarray) -> bool:
+    """True when ink extends diagonally into the bottom-right (K leg, not F)."""
+    binary = _binary_roi(roi)
+    height, width = binary.shape
+    if height < 20 or width < 20:
+        return False
+    y0 = int(height * 0.52)
+    x0 = int(width * 0.38)
+    wedge = binary[y0:, x0:]
+    if wedge.size == 0 or _ink_density(wedge) < 0.10:
+        return False
+    samples: list[tuple[int, int]] = []
+    step = max(1, wedge.shape[0] // 8)
+    for row_idx in range(0, wedge.shape[0], step):
+        cols = np.where(wedge[row_idx] > 127)[0]
+        if len(cols) >= 2:
+            samples.append((row_idx, int(cols[-1])))
+    if len(samples) < 3:
+        return _ink_density(wedge) > 0.18
+    return samples[-1][1] > samples[0][1] + max(4, int(width * 0.12))
+
+
+def looks_like_f(roi: np.ndarray) -> bool:
+    """F has top + middle bars and no K-style lower diagonal."""
+    return has_top_bar(roi) and has_crossbar(roi) and not has_k_lower_leg(roi)
 
 
 def has_bottom_center_peak(roi: np.ndarray) -> bool:
@@ -225,14 +259,22 @@ def disambiguate_letter(
         corrected = "T"
         note = "Single top bar: T instead of F"
 
+    if letter == "K" and looks_like_f(roi):
+        corrected = "F"
+        note = "Horizontal bars detected: F instead of K"
+    elif letter == "F" and has_k_lower_leg(roi) and "K" in alternatives:
+        corrected = "K"
+        note = "Diagonal leg detected: K instead of F"
+
     if corrected != letter:
         updated = list(top_predictions)
+        boosted = max(confidence + 0.08, updated[0][1] + 0.01)
         for index, (label, score) in enumerate(updated):
             if label == corrected:
-                updated[index] = (label, max(score, confidence))
+                updated[index] = (label, max(score, boosted))
                 break
         else:
-            updated.insert(0, (corrected, confidence + 0.05))
+            updated.insert(0, (corrected, boosted))
         updated.sort(key=lambda item: item[1], reverse=True)
         return corrected, updated[0][1], updated, note
 
@@ -265,6 +307,15 @@ def refine_with_expected_letter(
     if target == "F" and letter == "T" and has_crossbar(roi):
         corrected = "F"
         note = "Middle bar matches F"
+    elif target == "F" and letter == "K" and looks_like_f(roi):
+        corrected = "F"
+        note = "Bar shape matches requested F"
+    elif target == "F" and letter != "F" and looks_like_f(roi) and letter in {"K", "T", "E", "P", "H"}:
+        corrected = "F"
+        note = "Shape matches requested F"
+    elif target == "K" and letter == "F" and has_k_lower_leg(roi):
+        corrected = "K"
+        note = "Diagonal leg matches requested K"
     elif target == "T" and letter == "F" and has_top_bar(roi) and not has_crossbar(roi):
         corrected = "T"
         note = "Single top bar matches T"
@@ -278,12 +329,13 @@ def refine_with_expected_letter(
         return letter, confidence, top_predictions, None
 
     updated = list(top_predictions)
+    boosted = max(confidence + 0.08, updated[0][1] + 0.01)
     for index, (label, score) in enumerate(updated):
         if label == corrected:
-            updated[index] = (label, max(score, confidence))
+            updated[index] = (label, max(score, boosted))
             break
     else:
-        updated.insert(0, (corrected, max(confidence, CONFIDENCE_HINT_THRESHOLD)))
+        updated.insert(0, (corrected, max(boosted, CONFIDENCE_HINT_THRESHOLD)))
     updated.sort(key=lambda item: item[1], reverse=True)
     return corrected, updated[0][1], updated, note
 

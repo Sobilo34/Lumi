@@ -8,7 +8,7 @@ from pathlib import Path
 import cv2
 import numpy as np
 
-from writing_recognition.hints import disambiguate_letter, index_to_letter, letter_hints, refine_with_expected_letter, word_hints
+from writing_recognition.hints import close_word_matches, disambiguate_letter, index_to_letter, letter_hints, refine_with_expected_letter, word_hints
 
 _PACKAGE_DIR = Path(__file__).resolve().parent
 MODEL_PATH = _PACKAGE_DIR / "cnn_model" / "letter_classifier.h5"
@@ -231,12 +231,15 @@ def recognize_letters(path, single=False, expected_letter: str = ""):
     return board, letter_results
 
 
-def recognize_word(path):
+def recognize_word(path, expected_word: str = ""):
     regions, _ = extract_letter_regions(path)
     if not regions:
         return "", "Draw a word with clear spacing, then click Complete."
 
     word = "".join(region["letter"] for region in regions)
+    target = str(expected_word or "").strip().lower()
+    if target and close_word_matches(target, word):
+        word = target
     hint = word_hints(word)
     return word, hint
 
