@@ -49,14 +49,16 @@ def test_control_key_for_writing_castle_switch_buttons() -> None:
 def test_control_captions_are_child_friendly() -> None:
     repeat = Hitbox(name="Repeat", rect=pygame.Rect(0, 0, 100, 100), action="repeat_prompt")
     hint = Hitbox(name="Hint", rect=pygame.Rect(0, 0, 100, 100), action="show_hint")
-    speak = Hitbox(name="Speak", rect=pygame.Rect(0, 0, 100, 100), action="start_letter_listening")
+    speak = Hitbox(name="Listen", rect=pygame.Rect(0, 0, 100, 100), action="start_letter_listening")
     listen = Hitbox(name="Speaker", rect=pygame.Rect(0, 0, 100, 100), action="replay_main_menu_audio")
-    mic = Hitbox(name="Speak", rect=pygame.Rect(0, 0, 100, 100), action="start_listening")
+    mic = Hitbox(name="Listen", rect=pygame.Rect(0, 0, 100, 100), action="start_listening")
+    next_word = Hitbox(name="Speak", rect=pygame.Rect(0, 0, 100, 100), action="next_word_voice")
     assert caption_for_control(repeat, "repeat") == "Hear Again"
     assert caption_for_control(hint, "hint") == "Get a Hint"
-    assert caption_for_control(speak, "mic") == "Speak"
+    assert caption_for_control(speak, "mic") == "Listen"
     assert caption_for_control(listen, "speaker") == "Listen"
-    assert caption_for_control(mic, "mic") == "Speak"
+    assert caption_for_control(mic, "mic") == "Listen"
+    assert caption_for_control(next_word, "speaker") == "Speak"
 
 
 def test_draw_control_buttons_blits_home() -> None:

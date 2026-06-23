@@ -82,7 +82,7 @@ def test_letter_island_speak_shows_page_when_stt_unavailable(
     assert engine.state.current_task_target == "B"
 
 
-def test_letter_island_mic_stays_on_speak_page_when_stt_unavailable(
+def test_letter_island_mic_routes_to_settings_when_stt_unavailable(
     engine: GameEngine,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -96,7 +96,8 @@ def test_letter_island_mic_stays_on_speak_page_when_stt_unavailable(
     engine.state.current_task_target = "B"
     engine._handle_action("start_letter_listening")
 
-    assert engine.state.current_screen_id == "letter_voice_challenge"
+    assert engine.state.current_screen_id == "settings"
+    assert "test mic" in engine.state.settings_status_message.lower()
 
 
 def test_word_garden_speak_routes_offline_when_stt_unavailable(
@@ -142,4 +143,8 @@ def test_voice_listening_uses_safe_listen(
     engine._start_voice_listening()
 
     assert engine.state.current_screen_id == "listening_state"
+    for _ in range(200):
+        if called["processed"]:
+            break
+        engine.update()
     assert called["processed"] is True

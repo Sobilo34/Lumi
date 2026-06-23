@@ -6,6 +6,7 @@ from engine.world_progression import screen_accessible, word_garden_unlocked
 from engine.writing_progression import (
     advance_writing_curriculum,
     build_writing_round,
+    skip_writing_curriculum,
     writing_castle_unlocked,
 )
 from writing_recognition.matcher import letter_answer_matches, word_answer_matches
@@ -55,3 +56,19 @@ def test_writing_curriculum_advances_letters_then_words() -> None:
     advance_writing_curriculum(learner)
     assert learner.writing_letter_index == 1
     assert "A" in learner.mastered_writing_letters
+
+
+def test_skip_writing_advances_without_mastering() -> None:
+    learner = LearnerModel(
+        profile_data={
+            "writing_letter_index": 0,
+            "writing_word_index": 0,
+            "mastered_writing_letters": [],
+            "mastered_writing_words": [],
+        }
+    )
+    skip_writing_curriculum(learner)
+    assert learner.writing_letter_index == 1
+    assert learner.mastered_writing_letters == []
+    round_data = build_writing_round(learner)
+    assert round_data["target"] == "B"

@@ -23,20 +23,20 @@ def _footer_hitboxes(
 def _voice_footer_hitboxes(
     *,
     repeat_action: str,
-    speak_action: str,
+    listen_action: str,
     hint_action: str,
-    skip_action: str,
+    next_speak_action: str,
 ) -> tuple[HitboxDefinition, ...]:
     return _footer_hitboxes(
-        names=("Repeat", "Speak", "Hint", "Skip"),
-        actions=(repeat_action, speak_action, hint_action, skip_action),
+        names=("Repeat", "Listen", "Hint", "Speak"),
+        actions=(repeat_action, listen_action, hint_action, next_speak_action),
     )
 
 
 def _writing_footer_hitboxes() -> tuple[HitboxDefinition, ...]:
-    slots = writing_footer_slots()
-    names = ("Verify", "Clear", "Switch mode")
-    actions = ("verify_writing", "clear_writing", "toggle_writing_mode")
+    slots = writing_footer_slots(4)
+    names = ("Verify", "Clear", "Skip", "Switch mode")
+    actions = ("verify_writing", "clear_writing", "skip_writing", "toggle_writing_mode")
     return tuple(
         HitboxDefinition(name, x_pct, y_pct, w_pct, h_pct, action=action)
         for name, (x_pct, y_pct, w_pct, h_pct), action in zip(names, slots, actions)
@@ -87,8 +87,8 @@ class ScreenRegistry:
                 (
                     HitboxDefinition("Play", 0.48, 0.20, 0.46, 0.14, target="world_map"),
                     HitboxDefinition("Practice", 0.48, 289 / 720, 0.46, 0.14, target="practice_weak_skills"),
-                    HitboxDefinition("Report", 0.48, 464 / 720, 0.46, 0.14, target="teacher_report"),
-                    HitboxDefinition("Settings", 0.48, 640 / 720, 0.46, 0.14, target="settings"),
+                    HitboxDefinition("Report", 0.48, 444 / 720, 0.46, 0.14, target="teacher_report"),
+                    HitboxDefinition("Settings", 0.48, 580 / 720, 0.46, 0.14, target="settings"),
                     HitboxDefinition("Speaker", 0.02, 0.03, 0.09, 0.11, action="replay_main_menu_audio"),
                     HitboxDefinition("Profile", 0.89, 0.03, 0.09, 0.11, action="show_profile"),
                 ),
@@ -155,9 +155,9 @@ class ScreenRegistry:
                     HitboxDefinition("Settings", 0.92, 0.02, 0.06, 0.1, target="settings"),
                     *_voice_footer_hitboxes(
                         repeat_action="repeat_letter",
-                        speak_action="start_letter_listening",
+                        listen_action="start_letter_listening",
                         hint_action="letter_voice_help",
-                        skip_action="skip_letter_voice",
+                        next_speak_action="next_letter_voice",
                     ),
                 ),
             ),
@@ -194,9 +194,9 @@ class ScreenRegistry:
                     HitboxDefinition("Home", 0.91, 0.02, 0.07, 0.1, target="world_map"),
                     *_voice_footer_hitboxes(
                         repeat_action="repeat_word",
-                        speak_action="start_listening",
+                        listen_action="start_listening",
                         hint_action="voice_help",
-                        skip_action="skip_voice",
+                        next_speak_action="next_word_voice",
                     ),
                 ),
             ),

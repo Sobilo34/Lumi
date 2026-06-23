@@ -29,13 +29,7 @@ def run_microphone_check(*, listen_timeout: int = 2) -> dict[str, str | bool | N
     heard_text = None
     listen_error = False
     try:
-        from engine import audio_ducking
-
-        audio_ducking.duck("mic")
-        try:
-            heard_text = speech_to_text.listen_once(timeout=listen_timeout)
-        finally:
-            audio_ducking.unduck("mic")
+        heard_text = speech_to_text.listen_once(timeout=listen_timeout)
     except Exception as error:
         listen_error = True
         print(f"[Lumi Mic] listen_once failed safely: {error}")

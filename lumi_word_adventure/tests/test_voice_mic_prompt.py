@@ -37,6 +37,28 @@ def test_mic_prompt_shows_on_idle_speak_screen(
     assert engine._should_show_voice_mic_prompt() is True
 
 
+def test_mic_prompt_shows_when_stt_unavailable(
+    engine: GameEngine,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr("engine.game_engine.is_stt_ready", lambda: False)
+    engine.set_screen("letter_voice_challenge")
+    assert engine._should_show_voice_mic_prompt() is True
+
+
+def test_mic_hint_badge_click_routes_to_settings_when_stt_unavailable(
+    engine: GameEngine,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr("engine.game_engine.is_stt_ready", lambda: False)
+    engine.set_screen("letter_voice_challenge")
+    mic = mic_hitbox_from_hitboxes(list(engine.current_screen.hitboxes))
+    assert mic is not None
+    badge = mic_hint_badge_rect(mic)
+    assert engine._handle_mic_hint_badge_click(badge.center) is True
+    assert engine.state.current_screen_id == "settings"
+
+
 def test_mic_prompt_hides_while_listening(
     engine: GameEngine,
     monkeypatch: pytest.MonkeyPatch,

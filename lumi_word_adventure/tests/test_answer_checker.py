@@ -39,3 +39,5 @@ def test_vosk_ready_with_pyaudio_only(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def test_check_spoken_answer_accepts_word_match() -> None:
     assert check_spoken_answer("cat", "cat") == "correct"
+    assert check_spoken_answer("apple apple", "apple") == "correct"
+    assert check_spoken_answer("it is apple", "apple") == "correct"

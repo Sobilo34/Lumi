@@ -23,6 +23,7 @@ CONTROL_NAMES = frozenset(
         "clear",
         "switch_to_letters",
         "switch_to_word",
+        "exit",
     }
 )
 

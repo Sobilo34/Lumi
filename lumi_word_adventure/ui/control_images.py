@@ -52,8 +52,10 @@ def control_key_for_hitbox(box: Hitbox, *, writing_mode: str = "letters") -> str
         return "repeat"
     if "hint" in action or "help" in action or name in {"hint", "help"}:
         return "hint"
-    if action in {"start_letter_listening", "start_listening"} or name in {"microphone", "mic", "speak"}:
+    if action in {"start_letter_listening", "start_listening"} or name in {"microphone", "mic", "listen"}:
         return "mic"
+    if action in {"next_letter_voice", "next_word_voice"} or name == "speak":
+        return "speaker"
     if action in {"voice_or_speak_mode", "voice_mode", "replay_main_menu_audio"} or name == "speaker":
         return "speaker"
     if "skip" in action or name == "skip":
@@ -72,8 +74,12 @@ def caption_for_control(box: Hitbox, key: str) -> str | None:
     if key == "hint":
         return "Get a Hint"
     if key == "mic":
-        return "Speak"
+        return "Listen"
     if key == "speaker":
+        if action in {"next_letter_voice"}:
+            return "New Letter"
+        if action in {"next_word_voice"}:
+            return "Speak"
         if action in {"voice_mode", "voice_or_speak_mode"}:
             return "Speak"
         return "Listen"

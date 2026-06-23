@@ -6,6 +6,7 @@ import pygame
 from ui.components.primitives import font
 
 MIC_HINT_MESSAGE = "Click the mic to speak."
+MIC_SETUP_SETTINGS_MESSAGE = "Tap Test Mic in Settings to set up your microphone."
 _BADGE_RADIUS = 11
 # Distance from the mic button's right edge to the badge center.
 _BADGE_X_INSET_LETTER_VOICE = 56

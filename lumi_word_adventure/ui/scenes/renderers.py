@@ -450,8 +450,8 @@ def render_main_menu(surface: pygame.Surface, view: SceneView) -> None:
     draw_lumi_mascot_large(surface, x_pct=0.26, y_pct=0.58, scale=1.3)
     draw_menu_button(surface, pct_rect(0.57, 0.19, 0.33, 0.17), "Play", accent=(255, 196, 91))
     draw_menu_button(surface, pct_rect(0.57, 0.40, 0.33, 0.16), "Practice", accent=(168, 201, 244))
-    draw_menu_button(surface, pct_rect(0.57, 0.59, 0.33, 0.15), "Report", accent=(196, 174, 241))
-    draw_menu_button(surface, pct_rect(0.57, 0.76, 0.33, 0.15), "Settings", accent=(255, 166, 186))
+    draw_menu_button(surface, pct_rect(0.57, 0.59 - (20 / 720), 0.33, 0.15), "Report", accent=(196, 174, 241))
+    draw_menu_button(surface, pct_rect(0.57, 0.76 - (60 / 720), 0.33, 0.15), "Settings", accent=(255, 166, 186))
     if view.feedback_message:
         draw_speech_bubble(surface, view.feedback_message, x_pct=0.10, y_pct=0.20, w_pct=0.34)
 
@@ -496,10 +496,7 @@ def render_world_map(surface: pygame.Surface, view: SceneView) -> None:
         outline=(255, 255, 255),
         outline_width=3,
     )
-    if view.progress_text:
-        status = pct_rect(0.30, 0.86, 0.40, 0.07)
-        draw_rounded_rect(surface, status, (255, 255, 255), radius=16, border=HUD_PINK, border_width=2)
-        _text(surface, view.progress_text, 24, status.center, TEXT_DARK)
+    # Bottom progress banner removed — world unlock hints are shown via transient toasts.
 
 
 def render_writing_castle_game(surface: pygame.Surface, view: SceneView) -> None:
