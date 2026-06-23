@@ -1349,6 +1349,7 @@ class GameEngine:
         self.state.current_task_prompt = prompt
         self.state.writing_result_text = ""
         self.state.writing_hint_text = ""
+        self.state.writing_try_again_pending = False
         self.state.current_round_wrong_count = 0
         self.state.current_hint_level = 0
         self._reset_writing_canvas()
@@ -1401,6 +1402,7 @@ class GameEngine:
         self._reset_writing_canvas()
         self.state.writing_result_text = ""
         self.state.writing_hint_text = ""
+        self.state.writing_try_again_pending = False
 
     def _writing_board_point(self, position: tuple[int, int]) -> tuple[int, int] | None:
         canvas = self._ensure_writing_canvas()
@@ -1571,6 +1573,7 @@ class GameEngine:
 
     def _show_writing_mistake_feedback(self, message: str) -> None:
         msg = str(message or "").strip() or "Good try. Write it again!"
+        self.state.writing_try_again_pending = True
         self._show_answer_popup(
             "wrong",
             msg,
@@ -2066,6 +2069,8 @@ class GameEngine:
 
     def _handle_action(self, action: str) -> None:
         if action in self.screens:
+            if action == "practice_weak_skills":
+                return
             self.set_screen(action)
             return
         if self._handle_teacher_report_action(action):
@@ -2656,11 +2661,12 @@ class GameEngine:
 
         if screen_id == "teacher_report":
             report = self.state.teacher_report or generate_report(self.learner.get_profile())
-            recommendation = report.get("recommended_next_activity", "World Map")
             strongest = report.get("strong_skill", "Practice in progress")
             accuracy = report.get("accuracy_percent", 0)
+            stars = report.get("stars_earned", 0)
             self.voice.speak(
-                f"Report ready. Strongest: {strongest}. Accuracy: {accuracy} percent. Next: {recommendation}.",
+                f"Your report is ready. You earned {stars} stars with {accuracy} percent accuracy. "
+                f"Your strongest skill is {strongest}.",
                 tone="encourage",
             )
 
@@ -2724,6 +2730,7 @@ class GameEngine:
                     list(getattr(self.current_screen, "hitboxes", []) or []),
                     self.control_assets,
                     writing_mode=str(self.state.writing_mode or "letters"),
+                    writing_try_again=bool(self.state.writing_try_again_pending),
                 )
             except Exception:
                 pass

@@ -42,6 +42,7 @@ def test_control_key_for_writing_castle_switch_buttons() -> None:
     switch = Hitbox(name="Switch mode", rect=pygame.Rect(0, 0, 100, 100), action="toggle_writing_mode")
     assert control_key_for_hitbox(verify) == "verify"
     assert control_key_for_hitbox(clear) == "clear"
+    assert control_key_for_hitbox(clear, writing_try_again=True) == "try_again"
     assert control_key_for_hitbox(switch, writing_mode="letters") == "switch_to_word"
     assert control_key_for_hitbox(switch, writing_mode="words") == "switch_to_letters"
 

@@ -86,12 +86,12 @@ def test_progress_view_report_back_routes_to_end_session(headless_engine: GameEn
     assert engine.state.end_session_pending is False
 
 
-def test_teacher_report_back_without_pending_goes_to_main_menu(headless_engine: GameEngine) -> None:
+def test_teacher_report_home_without_pending_goes_to_main_menu(headless_engine: GameEngine) -> None:
     engine = headless_engine
     engine.set_screen("teacher_report")
     assert engine.state.end_session_pending is False
 
-    engine._handle_action("back")
+    engine._handle_action("home")
     assert engine.state.current_screen_id == "main_menu"
 
 

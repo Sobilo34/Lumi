@@ -1,12 +1,12 @@
 {
   "child_name": "Test",
-  "total_stars": 101,
-  "total_points": 1395,
+  "total_stars": 110,
+  "total_points": 1600,
   "best_streak": 29,
   "lumi_energy": 100,
   "current_world": "main_menu",
   "difficulty": 3,
-  "correct_streak": 8,
+  "correct_streak": 18,
   "wrong_streak": 0,
   "weak_letters": {},
   "weak_words": {},
@@ -25,7 +25,9 @@
     "G",
     "W"
   ],
-  "mastered_words": [],
+  "mastered_words": [
+    "fish"
+  ],
   "word_mastery": {
     "apple": {
       "attempts": 0,
@@ -72,14 +74,14 @@
       "confused_with": {}
     },
     "fish": {
-      "attempts": 0,
-      "correct": 0,
+      "attempts": 1,
+      "correct": 1,
       "wrong": 0,
-      "first_try_correct": 0,
+      "first_try_correct": 1,
       "hints_used": 0,
-      "mastery_score": 0.0,
-      "last_seen": 0,
-      "consecutive_correct": 0,
+      "mastery_score": 0.3,
+      "last_seen": 1782232646,
+      "consecutive_correct": 1,
       "confused_with": {}
     },
     "frog": {
@@ -138,19 +140,21 @@
       "confused_with": {}
     }
   },
-  "last_word_garden_target": "sun",
+  "last_word_garden_target": "star",
   "completed_worlds": [
     "letter_island"
   ],
   "badges": [
     "Badge A",
     "Badge B",
-    "Badge C"
+    "Badge C",
+    "B and D Master",
+    "Great Learner"
   ],
   "debug_persistent": false,
-  "attempts": 39,
-  "correct_answers": 34,
-  "accuracy": 87.18,
+  "attempts": 49,
+  "correct_answers": 37,
+  "accuracy": 75.51,
   "current_letter_index": 25,
   "current_word_length": 3,
   "letter_mastery": {
@@ -444,9 +448,12 @@
       "confused_with": {}
     }
   },
-  "curriculum_letters_since_review": 3,
-  "writing_letter_index": 0,
+  "curriculum_letters_since_review": 0,
+  "writing_letter_index": 4,
   "writing_word_index": 0,
-  "mastered_writing_letters": [],
+  "mastered_writing_letters": [
+    "C",
+    "D"
+  ],
   "mastered_writing_words": []
 }

@@ -101,15 +101,25 @@ def get_strong_skill(profile: dict[str, Any] | Any) -> str:
 
 
 def get_weak_area(profile: dict[str, Any] | Any) -> str:
-    recommendation = get_recommendation(profile)
-    activity = str(recommendation.get("activity", "")).strip()
-    if activity == "World Map":
+    """Summarize the learner's weakest areas from recorded mistake counts."""
+    data = _profile_dict(profile)
+    weak_letters = _count_map(data.get("weak_letters"))
+    weak_words = _count_map(data.get("weak_words"))
+    if not weak_letters and not weak_words:
         return "None"
-    if activity == "B/D Practice":
-        return "Letters B and D"
-    if activity.startswith("Word Garden"):
-        return "Word: Cat"
-    return "General practice"
+
+    parts: list[str] = []
+    if weak_letters:
+        letter, count = max(weak_letters.items(), key=lambda item: item[1])
+        label = str(letter).strip().upper()
+        if label:
+            parts.append(f"Letter {label}" if count <= 1 else f"Letter {label} ({count})")
+    if weak_words:
+        word, count = max(weak_words.items(), key=lambda item: item[1])
+        label = str(word).strip().title()
+        if label:
+            parts.append(f"Word: {label}" if count <= 1 else f"Word: {label} ({count})")
+    return ", ".join(parts) if parts else "None"
 
 
 def get_recommendation(profile: dict[str, Any] | Any) -> dict[str, str]:

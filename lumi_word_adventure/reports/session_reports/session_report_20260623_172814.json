@@ -1,0 +1,15 @@
+{
+  "child_name": "Test",
+  "stars_earned": 101,
+  "accuracy_percent": 87,
+  "strong_skill": "Letter recognition",
+  "needs_practice": "None",
+  "weak_letters": {},
+  "weak_words": {},
+  "recommended_next_activity": "World Map",
+  "recommended_screen_id": "06_world_map",
+  "generated_at": "2026-06-23T16:28:14+00:00",
+  "attempts": 39,
+  "correct_answers": 34,
+  "difficulty": 3
+}

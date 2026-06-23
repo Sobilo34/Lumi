@@ -29,5 +29,12 @@ def draw_control_button_placeholders(
     controls: ControlAssets | None = None,
     *,
     writing_mode: str = "letters",
+    writing_try_again: bool = False,
 ) -> None:
-    draw_control_buttons(surface, hitboxes, controls, writing_mode=writing_mode)
+    draw_control_buttons(
+        surface,
+        hitboxes,
+        controls,
+        writing_mode=writing_mode,
+        writing_try_again=writing_try_again,
+    )
