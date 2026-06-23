@@ -94,9 +94,9 @@ def letter_island_complete(profile: Any) -> bool:
 def word_garden_complete(profile: Any) -> bool:
     if WORLD_WORD_GARDEN in _completed_worlds(profile):
         return True
-    data = _profile_dict(profile)
-    mastered = {str(item).lower() for item in data.get("mastered_words", [])}
-    return all(word in mastered for word in WORD_GARDEN_REQUIRED_WORDS)
+    from engine.word_mastery import is_word_mastered
+
+    return all(is_word_mastered(profile, word) for word in WORD_GARDEN_REQUIRED_WORDS)
 
 
 def word_garden_unlocked(profile: Any) -> bool:

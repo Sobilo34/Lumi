@@ -31,13 +31,12 @@ from engine.control_assets import ControlAssets
 from engine import audio_ducking
 from engine.adaptive_ai import (
     choose_next_question,
-    choose_hint,
     diagnose_letter_mistake,
     diagnose_word_mistake,
     note_curriculum_letter_completed,
     recommend_practice,
 )
-from engine.feedback import get_feedback, get_hint, get_letter_voice_character_hint, get_lumi_speech
+from engine.feedback import get_feedback, get_letter_voice_character_hint, get_lumi_speech
 from engine.hint_engine import get_hint_engine
 from engine.game_state import GameState
 from engine.learner_model import LearnerModel
@@ -85,6 +84,7 @@ from engine.scoring import (
     badge_unlock_speech_message,
     calculate_stars,
     check_badge_unlocks,
+    check_bd_master_badge,
     check_letter_island_complete_badge,
     check_letter_milestone_badges,
     update_score,
@@ -1261,9 +1261,13 @@ class GameEngine:
     def _configure_bd_practice(self, target_letter: str = "B") -> None:
         self.state.bd_practice_target = target_letter
         self.state.bd_practice_step = 0 if target_letter == "B" else 1
+        self.state.bd_practice_session_wrong = 0
+        self.state.bd_practice_session_hints = 0
         self.state.current_task_target = target_letter
         self.state.current_task_prompt = f"Find the letter {target_letter}."
         self.state.current_hint_level = 0
+        self.state.last_mistake_type = ""
+        self.state.last_selected_letter = ""
 
     def _apply_word_garden_round(self, round_data: dict) -> None:
         """Keep voice, prompt text, and card images on the same target word."""
@@ -1654,6 +1658,8 @@ class GameEngine:
         self.state.word_garden_option_count = 4
         self.state.bd_practice_target = ""
         self.state.bd_practice_step = 0
+        self.state.bd_practice_session_wrong = 0
+        self.state.bd_practice_session_hints = 0
         self.state.bd_confusion_attempts = 0
         self.state.last_unlocked_badges = []
         self.state.badge_return_screen = ""
@@ -1722,7 +1728,6 @@ class GameEngine:
             self.learner.update_accuracy()
             update_score(self.learner, stars_earned)
             self._award_answer_points(stars_earned)
-            self.learner.mark_word_mastered(target_word)
             if maybe_complete_word_garden(self.learner):
                 self._mark_world_completed(WORLD_WORD_GARDEN)
             unlocked = check_badge_unlocks(self.learner)
@@ -1836,12 +1841,14 @@ class GameEngine:
             self.learner.update_accuracy()
             update_score(self.learner, stars_earned)
             self._award_answer_points(stars_earned)
-            self.learner.mark_word_mastered(target_word)
-            completed_worlds = list(self.learner.completed_worlds)
-            if "voice_challenge" not in completed_worlds:
-                completed_worlds.append("voice_challenge")
-                self.learner.completed_worlds = completed_worlds
-                self.learner.save_profile()
+            self.learner.record_word_mastery_attempt(
+                target_word,
+                correct=True,
+                first_try=int(self.state.current_hint_level or 0) <= 0,
+                hints_used=int(self.state.current_hint_level or 0),
+            )
+            self.learner.voice_word_successes = int(self.learner.voice_word_successes or 0) + 1
+            self.learner.save_profile()
             unlocked = check_badge_unlocks(self.learner)
             self.state.current_hint_level = 0
             self.state.last_word_feedback_message = "Correct!"
@@ -1926,11 +1933,13 @@ class GameEngine:
         word = str(target_word or self._voice_challenge_target() or "sun").strip().lower()
         self.state.current_hint_level += 1
         self.learner.record_hint_usage(self.state.current_hint_level)
-        if spoken:
-            mistake = diagnose_word_mistake(word, spoken, self.word_questions)
-            hint = choose_hint(self.learner, "word", mistake, target=word, selected=spoken)
-        else:
-            hint = get_hint("voice", self.state.current_hint_level, word)
+        level = max(1, int(self.state.current_hint_level or 0))
+        hint = self.hint_engine.word_speaking_hint(
+            word,
+            level=level,
+            heard=spoken,
+            profile=self.learner,
+        )
         return f"Try again. {hint}"
 
     def _letter_voice_help_line(self, target_letter: str | None = None, *, heard: str = "") -> str:
@@ -1991,18 +2000,25 @@ class GameEngine:
             self.state.bd_practice_step = 1
             self.state.current_task_target = "D"
             self.state.current_task_prompt = "Now find the letter D."
+            self.state.current_hint_level = 0
             self.voice.speak("Great job! Now find D.")
             return
 
-        self.learner.mark_letter_mastered("D")
-        unlocked_badges = check_badge_unlocks(self.learner)
+        if (
+            self.state.bd_practice_session_wrong <= 0
+            and self.state.bd_practice_session_hints <= 0
+        ):
+            self.learner.bd_practice_completed = True
+            self.learner.save_profile()
+
         self.state.bd_practice_target = ""
         self.state.bd_practice_step = 2
         self.state.current_task_target = "B"
         self.state.current_task_prompt = "Find the letter B."
-        if "B and D Master" in unlocked_badges:
+        unlocked_badges = check_bd_master_badge(self.learner)
+        if unlocked_badges:
             self.voice.speak("Great job! You know B and D!")
-            self._handle_badges(["B and D Master"], return_screen="letter_island_game")
+            self._handle_badges(unlocked_badges, return_screen="letter_island_game")
         else:
             self._show_letter_correct_feedback("Great job! You know B and D!")
 
@@ -2198,7 +2214,18 @@ class GameEngine:
                 self.voice.speak(f"B has a belly. D has a drum. Find {target_letter}.")
                 return
             if action == "bd_hint":
-                self.voice.speak("B has a belly. D has a drum.")
+                self.state.current_hint_level += 1
+                self.state.bd_practice_session_hints += 1
+                self.learner.record_hint_usage(self.state.current_hint_level)
+                target_letter = self.state.bd_practice_target or "B"
+                hint = self.hint_engine.letter_hint(
+                    target_letter,
+                    level=self.state.current_hint_level,
+                    mistake_type=self.state.last_mistake_type or "bd_confusion",
+                    selected=self.state.last_selected_letter or "",
+                    profile=self.learner,
+                )
+                self._show_hint_popup(hint)
                 return
             if action in {"answer_B", "answer_D"}:
                 target_letter = self.state.bd_practice_target or "B"
@@ -2211,14 +2238,28 @@ class GameEngine:
                     stars_earned = calculate_stars(True, self.state.current_hint_level)
                     update_score(self.learner, stars_earned)
                     self._award_answer_points(stars_earned)
-                    self.learner.mark_letter_mastered(selected_letter)
+                    self.learner.record_letter_mastery_attempt(
+                        selected_letter,
+                        correct=True,
+                        first_try=self.state.bd_practice_session_wrong <= 0 and self.state.current_hint_level <= 0,
+                        hints_used=self.state.current_hint_level,
+                    )
                     self._play_feedback_sfx("correct", stars_earned=stars_earned)
                     self._advance_bd_practice()
                 else:
                     self.learner.update_wrong_streak()
                     self.learner.update_accuracy()
+                    self.state.bd_practice_session_wrong += 1
+                    self.state.last_selected_letter = selected_letter
                     self.state.last_mistake_type = "bd_confusion"
                     self.learner.record_weak_letter(target_letter)
+                    self.learner.record_letter_mastery_attempt(
+                        target_letter,
+                        correct=False,
+                        first_try=False,
+                        hints_used=self.state.current_hint_level,
+                        confused_with=selected_letter,
+                    )
                     self._show_letter_mistake_feedback(
                         get_feedback(False, mistake_type="bd_confusion")["message"],
                         return_screen="bd_practice",

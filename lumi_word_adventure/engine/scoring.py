@@ -5,6 +5,15 @@ from copy import deepcopy
 from typing import Any, Callable
 
 from engine.adaptive_ai import all_letters_mastered
+from engine.word_mastery import discover_installed_word_garden_words, is_word_mastered
+
+BD_MASTER_BADGE = "B and D Master"
+WORD_EXPLORER_BADGE = "Word Explorer"
+BRAVE_SPEAKER_BADGE = "Brave Speaker"
+GREAT_LEARNER_BADGE = "Great Learner"
+WORD_EXPLORER_REQUIRED_MASTERED = 5
+BRAVE_SPEAKER_VOICE_SUCCESSES = 3
+GREAT_LEARNER_STAR_THRESHOLD = 30
 
 # Letter Island curriculum milestones shown on 21_badge_unlock.png.
 LETTER_MILESTONE_BADGES: dict[str, str] = {
@@ -38,12 +47,43 @@ BADGE_ICON_FILES: dict[str, str] = {
 }
 
 
+def count_ai_mastered_words(profile: dict[str, Any] | Any) -> int:
+    """Count vocabulary words the learner has truly mastered (not one-off taps)."""
+    data = _profile_dict(profile)
+    pool = discover_installed_word_garden_words()
+    candidates = pool or tuple(str(item).strip().lower() for item in data.get("mastered_words", []) if str(item).strip())
+    return sum(1 for word in candidates if is_word_mastered(profile, word))
+
+
+def _voice_word_successes(profile: dict[str, Any]) -> int:
+    return int(profile.get("voice_word_successes", 0) or 0)
+
+
 BADGE_DEFINITIONS: dict[str, Callable[[dict[str, Any]], bool]] = {
-    "Word Explorer": lambda profile: len(profile.get("mastered_words", [])) >= 5,
-    "Brave Speaker": lambda profile: "voice_challenge" in profile.get("completed_worlds", []),
-    "B and D Master": lambda profile: {"B", "D"}.issubset(set(profile.get("mastered_letters", []))),
-    "Great Learner": lambda profile: int(profile.get("total_stars", 0)) >= 20,
+    WORD_EXPLORER_BADGE: lambda profile: count_ai_mastered_words(profile) >= WORD_EXPLORER_REQUIRED_MASTERED,
+    BRAVE_SPEAKER_BADGE: lambda profile: _voice_word_successes(profile) >= BRAVE_SPEAKER_VOICE_SUCCESSES,
+    GREAT_LEARNER_BADGE: lambda profile: int(profile.get("total_stars", 0) or 0) >= GREAT_LEARNER_STAR_THRESHOLD,
 }
+
+
+def check_bd_master_badge(profile: Any) -> list[str]:
+    """Award B/D mastery only after the dedicated practice flow is finished cleanly."""
+    profile_dict = _profile_dict(profile)
+    if BD_MASTER_BADGE in profile_dict.get("badges", []):
+        return []
+    if not bool(profile_dict.get("bd_practice_completed")):
+        return []
+
+    if hasattr(profile, "add_badge") and callable(profile.add_badge):
+        profile.add_badge(BD_MASTER_BADGE)
+    elif isinstance(profile, dict):
+        badges = list(profile.get("badges", []))
+        if BD_MASTER_BADGE not in badges:
+            badges.append(BD_MASTER_BADGE)
+            profile["badges"] = badges
+
+    _persist_profile(profile)
+    return [BD_MASTER_BADGE]
 
 
 def calculate_stars(is_correct: bool, hints_used: int) -> int:

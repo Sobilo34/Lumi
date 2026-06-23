@@ -49,6 +49,8 @@ class GameState:
     bd_practice_target: str = ""
     bd_practice_step: int = 0
     bd_confusion_attempts: int = 0
+    bd_practice_session_wrong: int = 0
+    bd_practice_session_hints: int = 0
     history: list[str] = field(default_factory=list)
     last_unlocked_badges: list[str] = field(default_factory=list)
     badge_return_screen: str = ""

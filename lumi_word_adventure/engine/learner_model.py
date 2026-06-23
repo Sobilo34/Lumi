@@ -59,6 +59,8 @@ class LearnerModel:
         "writing_word_index",
         "mastered_writing_letters",
         "mastered_writing_words",
+        "bd_practice_completed",
+        "voice_word_successes",
     )
 
     def __init__(
@@ -100,6 +102,8 @@ class LearnerModel:
         profile.setdefault("last_word_garden_target", "")
         profile.setdefault("total_points", 0)
         profile.setdefault("best_streak", 0)
+        profile.setdefault("bd_practice_completed", False)
+        profile.setdefault("voice_word_successes", 0)
         return profile
 
     def _load_or_create_profile(self) -> tuple[dict[str, Any], bool]:
