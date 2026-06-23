@@ -81,6 +81,8 @@ def draw_answer_popup_overlay(
     message: str = "",
     anchor_y_pct: float | None = None,
     compact: bool = False,
+    elapsed_ms: int = 0,
+    duration_ms: int = 1200,
 ) -> None:
     """Draw a centered, auto-dismissing feedback card over the current screen."""
     kind = str(kind or "").strip().lower()
@@ -110,6 +112,15 @@ def draw_answer_popup_overlay(
         dim = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
         dim.fill((0, 0, 0, 70))
         screen.blit(dim, (0, 0))
+
+    if correct:
+        from ui.celebration_sparkle_rain import draw_celebration_sparkle_rain
+
+        draw_celebration_sparkle_rain(
+            screen,
+            elapsed_ms=elapsed_ms,
+            duration_ms=duration_ms,
+        )
 
     draw_rounded_rect(screen, card, card_color, radius=20 if compact else 26, border=border_color, border_width=4)
 

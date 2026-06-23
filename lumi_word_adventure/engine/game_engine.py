@@ -2835,12 +2835,15 @@ class GameEngine:
             try:
                 screen_id = str(self.state.current_screen_id or "")
                 compact_popup = screen_id == "letter_island_game"
+                popup_elapsed = pygame.time.get_ticks() - int(self.state.answer_popup_shown_at_ms or 0)
                 draw_answer_popup_overlay(
                     self.screen,
                     kind=self.state.answer_popup_kind,
                     message=self.state.answer_popup_message,
                     anchor_y_pct=LETTER_ISLAND_POPUP_ANCHOR_Y_PCT if compact_popup else None,
                     compact=compact_popup,
+                    elapsed_ms=popup_elapsed,
+                    duration_ms=ANSWER_POPUP_DURATION_MS,
                 )
             except Exception:
                 pass
