@@ -1,24 +1,25 @@
-# Lumi's Word Adventure
+# Lumi's Word Adventure (app package)
 
-A Python 3.11+ and Pygame foundation for Lumi's Word Adventure.
+This folder contains the runnable game package.
 
-## Current scope
+**Full product README (portfolio / pitch / setup):** see the repository root  
+[`../README.md`](../README.md)
 
-This first build focuses on the project foundation only:
+## Quick run
 
-- 1280x720 Pygame window
-- screenshot-driven screen loading
-- screen/state scaffolding
-- local JSON content and learner profile files
-- minimal scoring, adaptive AI, feedback, and voice stubs
-
-Gameplay is intentionally not implemented yet.
-
-## Run
+From the repository root (recommended):
 
 ```bash
-cd lumi_word_adventure
+pip install -r lumi_word_adventure/requirements.txt
 python main.py
 ```
 
-If your environment is missing a graphical display, use a local desktop session to launch the window.
+Or from this directory:
+
+```bash
+python main.py
+```
+
+Requires Python 3.11+, a graphical display, and (for mic support on Linux) `portaudio19-dev`.
+
+**Demo video:** https://youtu.be/8Ndz0iaTTk0?si=RJfJDy-n00pdbJ15
