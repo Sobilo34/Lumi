@@ -28,5 +28,7 @@
   "writing_letter_index": 0,
   "writing_word_index": 0,
   "mastered_writing_letters": [],
-  "mastered_writing_words": []
+  "mastered_writing_words": [],
+  "bd_practice_completed": false,
+  "voice_word_successes": 0
 }

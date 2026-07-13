@@ -1,0 +1,20 @@
+{
+  "child_name": "Player 1",
+  "stars_earned": 6,
+  "accuracy_percent": 75,
+  "strong_skill": "Letter recognition",
+  "needs_practice": "Letter B (2), Word: Cat (2)",
+  "weak_letters": {
+    "B": 2,
+    "D": 1
+  },
+  "weak_words": {
+    "cat": 2
+  },
+  "recommended_next_activity": "B/D Practice",
+  "recommended_screen_id": "10_letter_bd_practice",
+  "generated_at": "2026-06-23T16:42:43+00:00",
+  "attempts": 8,
+  "correct_answers": 6,
+  "difficulty": 1
+}

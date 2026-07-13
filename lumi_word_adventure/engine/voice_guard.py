@@ -23,20 +23,7 @@ def safe_listen_once(timeout: int = 5) -> str | None:
     if not is_stt_ready():
         return None
     try:
-        from engine import audio_ducking
-
-        audio_ducking.duck("mic")
-    except Exception:
-        pass
-    try:
         return speech_to_text.listen_once(timeout=timeout)
     except Exception as error:
         print(f"[Lumi Voice] listen_once failed safely: {error}")
         return None
-    finally:
-        try:
-            from engine import audio_ducking
-
-            audio_ducking.unduck("mic")
-        except Exception:
-            pass

@@ -21,6 +21,33 @@ def _init_pygame() -> None:
         pygame.mixer.init()
 
 
+def test_background_music_stops_for_tts(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    music = tmp_path / "background.mp3"
+    music.write_bytes(b"not-real-mp3")
+    monkeypatch.setattr("engine.sound_manager.SOUNDS_DIR", tmp_path)
+    monkeypatch.setattr("engine.sound_manager.BACKGROUND_MUSIC_FILE", "background.mp3")
+
+    stopped: list[bool] = []
+    resumed: list[bool] = []
+
+    monkeypatch.setattr("pygame.mixer.music.load", lambda _path: None)
+    monkeypatch.setattr("pygame.mixer.music.get_busy", lambda: True)
+    monkeypatch.setattr("pygame.mixer.music.play", lambda loops=-1: resumed.append(True))
+    monkeypatch.setattr("pygame.mixer.music.stop", lambda: stopped.append(True))
+    monkeypatch.setattr("pygame.mixer.music.set_volume", lambda _value: None)
+    monkeypatch.setattr("pygame.mixer.music.pause", lambda: None)
+    monkeypatch.setattr("pygame.mixer.music.unpause", lambda: None)
+
+    manager = SoundManager()
+    manager.allow_background_playback()
+    manager.set_enabled(True)
+    stopped.clear()
+    manager.duck("tts")
+    assert stopped == [True]
+    manager.unduck("tts")
+    assert resumed == [True]
+
+
 def test_background_music_ducks_and_restores(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     music = tmp_path / "background.mp3"
     music.write_bytes(b"not-real-mp3")
@@ -37,14 +64,43 @@ def test_background_music_ducks_and_restores(monkeypatch: pytest.MonkeyPatch, tm
     monkeypatch.setattr("pygame.mixer.music.get_busy", lambda: True)
     monkeypatch.setattr("pygame.mixer.music.play", lambda loops=-1: None)
     monkeypatch.setattr("pygame.mixer.music.stop", lambda: None)
+    monkeypatch.setattr("pygame.mixer.music.pause", lambda: None)
+    monkeypatch.setattr("pygame.mixer.music.unpause", lambda: None)
 
     manager = SoundManager()
     manager.allow_background_playback()
     manager.set_enabled(True)
-    manager.duck("tts")
+    manager.duck("sfx")
     assert volumes[-1] == pytest.approx(BACKGROUND_MUSIC_DUCK_VOLUME)
-    manager.unduck("tts")
+    manager.unduck("sfx")
     assert volumes[-1] == pytest.approx(BACKGROUND_MUSIC_NORMAL_VOLUME)
+
+
+def test_background_music_stops_for_mic(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    music = tmp_path / "background.mp3"
+    music.write_bytes(b"not-real-mp3")
+    monkeypatch.setattr("engine.sound_manager.SOUNDS_DIR", tmp_path)
+    monkeypatch.setattr("engine.sound_manager.BACKGROUND_MUSIC_FILE", "background.mp3")
+
+    stopped: list[bool] = []
+    resumed: list[bool] = []
+
+    monkeypatch.setattr("pygame.mixer.music.load", lambda _path: None)
+    monkeypatch.setattr("pygame.mixer.music.get_busy", lambda: True)
+    monkeypatch.setattr("pygame.mixer.music.play", lambda loops=-1: resumed.append(True))
+    monkeypatch.setattr("pygame.mixer.music.stop", lambda: stopped.append(True))
+    monkeypatch.setattr("pygame.mixer.music.set_volume", lambda _value: None)
+    monkeypatch.setattr("pygame.mixer.music.pause", lambda: None)
+    monkeypatch.setattr("pygame.mixer.music.unpause", lambda: None)
+
+    manager = SoundManager()
+    manager.allow_background_playback()
+    manager.set_enabled(True)
+    stopped.clear()
+    manager.duck("mic")
+    assert stopped == [True]
+    manager.unduck("mic")
+    assert resumed == [True]
 
 
 def test_background_music_waits_until_playback_allowed(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:

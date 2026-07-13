@@ -370,6 +370,7 @@ def _draw_report_stat_row(
 def _draw_settings_row(
     surface: pygame.Surface,
     panel: pygame.Rect,
+    row_rect: pygame.Rect,
     title: str,
     subtitle: str,
     control_rect: pygame.Rect,
@@ -377,24 +378,21 @@ def _draw_settings_row(
     accent: tuple[int, int, int],
     control_value: str | None = None,
     toggle_on: bool | None = None,
-    show_divider: bool = True,
 ) -> None:
-    label_x = panel.x + 28
-    title_font = font(26, bold=True)
+    draw_rect_shadow(surface, row_rect, radius=16, offset=(0, 3), alpha=18)
+    draw_rounded_rect(surface, row_rect, (255, 255, 255), radius=16, border=accent, border_width=2)
+    title_font = font(24, bold=True)
+    subtitle_font = font(16, bold=False)
     title_surf = title_font.render(title, True, HUD_PINK_DARK)
-    surface.blit(title_surf, (label_x, control_rect.centery - title_surf.get_height() // 2))
-    if show_divider:
-        pygame.draw.line(
-            surface,
-            accent,
-            (panel.x + 22, control_rect.bottom + 10),
-            (panel.right - 22, control_rect.bottom + 10),
-            2,
-        )
+    subtitle_surf = subtitle_font.render(subtitle, True, PROMPT_BROWN)
+    text_x = row_rect.x + 20
+    title_y = row_rect.centery - (title_surf.get_height() + subtitle_surf.get_height() + 4) // 2
+    surface.blit(title_surf, (text_x, title_y))
+    surface.blit(subtitle_surf, (text_x, title_y + title_surf.get_height() + 4))
     if toggle_on is not None:
         _draw_toggle(surface, control_rect, toggle_on)
         state = "ON" if toggle_on else "OFF"
-        _text(surface, state, 20, control_rect.center, (255, 255, 255))
+        _text(surface, state, 18, control_rect.center, (255, 255, 255))
     elif control_value is not None:
         draw_menu_button(surface, control_rect, control_value, accent=accent)
 
@@ -444,14 +442,22 @@ def render_profile_selection(surface: pygame.Surface, view: SceneView) -> None:
         draw_speech_bubble(surface, view.feedback_message, x_pct=0.34, y_pct=0.76, w_pct=0.34)
 
 
+def _draw_disabled_menu_button(surface: pygame.Surface, rect: pygame.Rect, label: str) -> None:
+    draw_rounded_rect(surface, rect, (196, 198, 210), radius=18, border=(225, 228, 238), border_width=3)
+    text = font(22, bold=True).render(label, True, (130, 136, 152))
+    surface.blit(text, text.get_rect(center=rect.center))
+    soon = font(14, bold=True).render("Coming soon", True, (150, 156, 170))
+    surface.blit(soon, soon.get_rect(center=(rect.centerx, rect.bottom - 14)))
+
+
 def render_main_menu(surface: pygame.Surface, view: SceneView) -> None:
     paint_pink_sky(surface)
     draw_logo_banner(surface, y_pct=0.08)
     draw_lumi_mascot_large(surface, x_pct=0.26, y_pct=0.58, scale=1.3)
     draw_menu_button(surface, pct_rect(0.57, 0.19, 0.33, 0.17), "Play", accent=(255, 196, 91))
-    draw_menu_button(surface, pct_rect(0.57, 0.40, 0.33, 0.16), "Practice", accent=(168, 201, 244))
-    draw_menu_button(surface, pct_rect(0.57, 0.59, 0.33, 0.15), "Report", accent=(196, 174, 241))
-    draw_menu_button(surface, pct_rect(0.57, 0.76, 0.33, 0.15), "Settings", accent=(255, 166, 186))
+    _draw_disabled_menu_button(surface, pct_rect(0.57, 0.40, 0.33, 0.16), "Practice")
+    draw_menu_button(surface, pct_rect(0.57, 0.59 - (20 / 720), 0.33, 0.15), "Report", accent=(196, 174, 241))
+    draw_menu_button(surface, pct_rect(0.57, 0.76 - (60 / 720), 0.33, 0.15), "Settings", accent=(255, 166, 186))
     if view.feedback_message:
         draw_speech_bubble(surface, view.feedback_message, x_pct=0.10, y_pct=0.20, w_pct=0.34)
 
@@ -496,10 +502,7 @@ def render_world_map(surface: pygame.Surface, view: SceneView) -> None:
         outline=(255, 255, 255),
         outline_width=3,
     )
-    if view.progress_text:
-        status = pct_rect(0.30, 0.86, 0.40, 0.07)
-        draw_rounded_rect(surface, status, (255, 255, 255), radius=16, border=HUD_PINK, border_width=2)
-        _text(surface, view.progress_text, 24, status.center, TEXT_DARK)
+    # Bottom progress banner removed — world unlock hints are shown via transient toasts.
 
 
 def render_writing_castle_game(surface: pygame.Surface, view: SceneView) -> None:
@@ -701,24 +704,15 @@ def render_teacher_report(surface: pygame.Surface, view: SceneView) -> None:
     title = pct_rect(0.26, 0.06, 0.48, 0.11)
     draw_rect_shadow(surface, title, radius=20, offset=(0, 5), alpha=28)
     draw_rounded_rect(surface, title, (255, 255, 255), radius=20, border=HUD_PINK, border_width=3)
-    _draw_section_title(surface, "Teacher Report", title.center, size=42)
+    _draw_section_title(surface, "Your Report", title.center, size=42)
 
-    left = pct_rect(0.08, 0.20, 0.44, 0.62)
-    right = pct_rect(0.56, 0.20, 0.36, 0.62)
-    left_inner = draw_stitched_panel(surface, left, border_color=(174, 199, 247))
-    right_inner = draw_stitched_panel(surface, right, border_color=(198, 172, 241))
+    panel = pct_rect(0.22, 0.20, 0.56, 0.62)
+    panel_inner = draw_stitched_panel(surface, panel, border_color=(174, 199, 247))
     _draw_section_title(
         surface,
         "Your Progress",
-        (left_inner.centerx, left_inner.y + 28),
-        size=26,
-        color=PROMPT_BROWN,
-    )
-    _draw_section_title(
-        surface,
-        "Recommended Next",
-        (right_inner.centerx, right_inner.y + 28),
-        size=26,
+        (panel_inner.centerx, panel_inner.y + 34),
+        size=30,
         color=PROMPT_BROWN,
     )
 
@@ -726,93 +720,76 @@ def render_teacher_report(surface: pygame.Surface, view: SceneView) -> None:
     stats = (
         ("Stars earned", _report_value(report, "stars_earned", "0"), STAR_YELLOW),
         ("Accuracy", f"{_report_value(report, 'accuracy_percent', '0')}%", BUTTON_BLUE),
-        ("Strong skill", _report_value(report, "strong_skill", "In progress"), (125, 202, 134)),
+        ("Strong skill", _report_value(report, "strong_skill", "Practice in progress"), (125, 202, 134)),
         ("Needs practice", _report_value(report, "needs_practice", "None"), BUTTON_PURPLE),
     )
-    row_y = left_inner.y + 58
+    row_gap = 16
+    row_height = 64
+    total_rows_height = len(stats) * row_height + (len(stats) - 1) * row_gap
+    row_y = panel_inner.centery - total_rows_height // 2 + 18
     for label, value, accent in stats:
-        _draw_report_stat_row(surface, left_inner, row_y, label, value, accent=accent)
-        row_y += 68
-
-    rec_label = _report_value(report, "recommended_next_activity", "World Map")
-    rec_btn = pct_rect(0.60, 0.60, 0.28, 0.25)
-    draw_rect_shadow(surface, rec_btn, radius=20, offset=(0, 5), alpha=30)
-    draw_menu_button(surface, rec_btn, rec_label, accent=(255, 195, 111))
-    hint_rect = rec_btn.inflate(-24, -int(rec_btn.height * 0.42))
-    _text(surface, "Tap here to practice", 20, (rec_btn.centerx, hint_rect.bottom + 8), PROMPT_BROWN, bold=False)
-
-    refresh_btn = pct_rect(0.87, 0.77, 0.11, 0.12)
-    draw_menu_button(surface, refresh_btn, "Refresh", accent=(172, 196, 245))
+        _draw_report_stat_row(surface, panel_inner, row_y, label, value, accent=accent)
+        row_y += row_height + row_gap
 
 
 def render_settings(surface: pygame.Surface, view: SceneView) -> None:
     _paint_room_background(surface)
-    panel_outer = pct_rect(0.18, 0.12, 0.64, 0.78)
+    panel_outer = pct_rect(0.18, 0.10, 0.64, 0.80)
     draw_rect_shadow(surface, panel_outer, radius=24, offset=(0, 6), alpha=26)
     panel_inner = draw_stitched_panel(surface, panel_outer, border_color=(215, 183, 233))
-    _draw_section_title(surface, "Settings", (panel_inner.centerx, panel_inner.y + 42), size=48)
+    _draw_section_title(surface, "Settings", (panel_inner.centerx, panel_inner.y + 40), size=48)
     hint_font = font(20, bold=False)
     hint = hint_font.render("Tap a row to change it", True, PROMPT_BROWN)
-    surface.blit(hint, hint.get_rect(center=(panel_inner.centerx, panel_inner.y + 78)))
+    surface.blit(hint, hint.get_rect(center=(panel_inner.centerx, panel_inner.y + 82)))
 
-    music_rect = pct_rect(0.59, 0.19, 0.13, 0.09)
-    voice_rect = pct_rect(0.59, 0.34, 0.14, 0.08)
-    mic_rect = pct_rect(0.58, 0.395, 0.14, 0.07)
-    difficulty_rect = pct_rect(0.57, 0.505, 0.15, 0.075)
-    reset_rect = pct_rect(0.62, 0.585, 0.17, 0.11)
+    row_height = 72
+    row_gap = 14
+    row_width = panel_inner.width - 48
+    row_x = panel_inner.x + 24
+    first_row_y = panel_inner.y + 108
+    control_w = int(row_width * 0.28)
+    control_h = 46
 
-    _draw_settings_row(
-        surface,
-        panel_inner,
-        "Music",
-        "Play cheerful background music",
-        music_rect,
-        accent=(255, 166, 186),
-        toggle_on=bool(view.music_enabled),
+    rows = (
+        ("Music", "Play cheerful background music", (255, 166, 186), "toggle", bool(view.music_enabled)),
+        ("Voice", "Let Lumi speak hints and praise", (172, 196, 245), "toggle", bool(view.voice_enabled)),
+        ("Microphone", "Check that speech input works", (255, 195, 111), "button", "Test Mic"),
+        ("Difficulty", "Adjust challenge for your learner", (198, 172, 241), "button", str(view.difficulty_mode or "Medium")),
+        ("Reset Progress", "Start fresh but keep settings", (255, 146, 170), "button", "Reset"),
     )
-    _draw_settings_row(
-        surface,
-        panel_inner,
-        "Voice",
-        "Let Lumi speak hints and praise",
-        voice_rect,
-        accent=(172, 196, 245),
-        toggle_on=bool(view.voice_enabled),
-    )
-    _draw_settings_row(
-        surface,
-        panel_inner,
-        "Microphone",
-        "Check that speech input works",
-        mic_rect,
-        accent=(255, 195, 111),
-        control_value="Test Mic",
-    )
-    _draw_settings_row(
-        surface,
-        panel_inner,
-        "Difficulty",
-        "Adjust challenge for your learner",
-        difficulty_rect,
-        accent=(198, 172, 241),
-        control_value=str(view.difficulty_mode or "Medium"),
-    )
-    _draw_settings_row(
-        surface,
-        panel_inner,
-        "Reset Progress",
-        "Start fresh but keep settings",
-        reset_rect,
-        accent=(255, 146, 170),
-        control_value="Reset",
-        show_divider=False,
-    )
+
+    for index, (title, subtitle, accent, kind, control_state) in enumerate(rows):
+        row_y = first_row_y + index * (row_height + row_gap)
+        row_rect = pygame.Rect(row_x, row_y, row_width, row_height)
+        control_rect = pygame.Rect(row_rect.right - control_w - 12, row_rect.centery - control_h // 2, control_w, control_h)
+        if kind == "toggle":
+            _draw_settings_row(
+                surface,
+                panel_inner,
+                row_rect,
+                title,
+                subtitle,
+                control_rect,
+                accent=accent,
+                toggle_on=bool(control_state),
+            )
+        else:
+            _draw_settings_row(
+                surface,
+                panel_inner,
+                row_rect,
+                title,
+                subtitle,
+                control_rect,
+                accent=accent,
+                control_value=str(control_state),
+            )
 
     if view.settings_status:
-        status = pct_rect(0.28, 0.84, 0.44, 0.07)
+        status = pygame.Rect(panel_inner.x + 24, panel_inner.bottom - 56, panel_inner.width - 48, 42)
         draw_rect_shadow(surface, status, radius=12, offset=(0, 3), alpha=24)
         draw_rounded_rect(surface, status, (255, 255, 255), radius=12, border=HUD_PINK, border_width=2)
-        _text(surface, view.settings_status, 22, status.center, HUD_PINK_DARK)
+        _text(surface, view.settings_status, 20, status.center, HUD_PINK_DARK)
 
 
 def render_microphone_check(surface: pygame.Surface, view: SceneView) -> None:

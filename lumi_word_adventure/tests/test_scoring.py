@@ -3,10 +3,19 @@ from engine.scoring import (
     calculate_accuracy,
     calculate_stars,
     check_badge_unlocks,
+    check_bd_master_badge,
     check_letter_milestone_badges,
     update_score,
 )
 from engine.learner_model import LearnerModel
+from engine.word_mastery import WORD_MASTERY_THRESHOLD, empty_word_mastery_record
+
+
+def _mastered_word_record() -> dict:
+    record = empty_word_mastery_record()
+    record["mastery_score"] = WORD_MASTERY_THRESHOLD
+    record["consecutive_correct"] = 2
+    return record
 
 
 def test_correct_without_hint_gives_three_stars() -> None:
@@ -38,11 +47,16 @@ def test_calculate_accuracy_returns_percentage() -> None:
 
 
 def test_check_badge_unlocks_finds_expected_badges() -> None:
+    mastered_pool_words = ("sun", "fish", "apple", "bird", "cup")
     profile = {
-        "total_stars": 20,
+        "total_stars": 30,
         "mastered_letters": ["A", "B", "C", "D", "E", "F"],
-        "mastered_words": ["cat", "dog", "sun", "ball", "apple"],
-        "completed_worlds": ["voice_challenge"],
+        "mastered_words": list(mastered_pool_words),
+        "voice_word_successes": 3,
+        "word_mastery": {
+            word: _mastered_word_record()
+            for word in mastered_pool_words
+        },
         "badges": [],
     }
 
@@ -51,8 +65,24 @@ def test_check_badge_unlocks_finds_expected_badges() -> None:
     assert "Letter Hero" not in unlocked
     assert "Word Explorer" in unlocked
     assert "Brave Speaker" in unlocked
-    assert "B and D Master" in unlocked
+    assert "B and D Master" not in unlocked
     assert "Great Learner" in unlocked
+
+
+def test_bd_master_badge_only_after_practice_flow() -> None:
+    learner = LearnerModel(
+        profile_data={
+            "badges": [],
+            "mastered_letters": ["B", "D"],
+            "child_name": "Test",
+        }
+    )
+    assert "B and D Master" not in check_badge_unlocks(learner)
+
+    learner.bd_practice_completed = True
+    learner.save_profile()
+    assert check_bd_master_badge(learner) == ["B and D Master"]
+    assert check_bd_master_badge(learner) == []
 
 
 def test_letter_milestone_badges_unlock_at_j_t_and_z() -> None:

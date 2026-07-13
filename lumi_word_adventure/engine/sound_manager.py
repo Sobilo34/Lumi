@@ -1,4 +1,4 @@
-"""Background music and feedback SFX; music ducks under TTS, mic, and SFX."""
+"""Background music and feedback SFX; music pauses under TTS/mic, ducks under SFX."""
 from __future__ import annotations
 
 import threading
@@ -20,6 +20,10 @@ _SFX_FILES = {
     "badge": "badge.wav",
 }
 
+# TTS and mic capture both need the music stream fully paused on Windows so
+# SAPI / sounddevice can use the audio device without silent speech.
+_VOICE_PAUSE_REASONS = frozenset({"mic", "tts"})
+
 
 class SoundManager:
     def __init__(self) -> None:
@@ -29,6 +33,7 @@ class SoundManager:
         self._music_path: Path | None = None
         self._sfx: dict[str, pygame.mixer.Sound] = {}
         self._duck_counts: dict[str, int] = {}
+        self._music_paused = False
         self._ensure_default_sfx()
         self._try_load_default_music()
         self._load_sfx()
@@ -99,6 +104,7 @@ class SoundManager:
                 self._apply_volume()
             else:
                 pygame.mixer.music.stop()
+                self._music_paused = False
         except Exception as error:
             print(f"[Lumi Audio] Music playback error: {error}")
 
@@ -113,12 +119,18 @@ class SoundManager:
         self._enabled = bool(enabled)
         self._sync_playback()
 
+    def _voice_pause_active(self) -> bool:
+        return any(self._duck_counts.get(reason, 0) > 0 for reason in _VOICE_PAUSE_REASONS)
+
     def duck(self, reason: str) -> None:
         if not self._music_loaded or not self._enabled or not self._playback_allowed:
             return
         key = str(reason or "other").strip().lower() or "other"
         self._duck_counts[key] = self._duck_counts.get(key, 0) + 1
-        self._apply_volume()
+        if key in _VOICE_PAUSE_REASONS:
+            self._pause_music_for_voice()
+        else:
+            self._apply_volume()
 
     def unduck(self, reason: str) -> None:
         if not self._music_loaded:
@@ -129,10 +141,48 @@ class SoundManager:
             self._duck_counts.pop(key, None)
         else:
             self._duck_counts[key] = current - 1
-        self._apply_volume()
+        if key in _VOICE_PAUSE_REASONS:
+            self._maybe_resume_music_after_voice()
+        else:
+            self._apply_volume()
+
+    def _pause_music_for_voice(self) -> None:
+        if not self._music_loaded or not self._enabled or not self._playback_allowed:
+            return
+        if self._music_paused:
+            return
+        try:
+            if pygame.mixer.music.get_busy():
+                # Full stop (not pause) releases the WASAPI device on many Windows laptops.
+                pygame.mixer.music.stop()
+                self._music_paused = True
+        except Exception as error:
+            print(f"[Lumi Audio] Music stop for voice error: {error}")
+
+    def _maybe_resume_music_after_voice(self) -> None:
+        if self._voice_pause_active():
+            return
+        self._resume_music_after_voice()
+
+    def _resume_music_after_voice(self) -> None:
+        if not self._music_paused:
+            return
+        self._music_paused = False
+        if not self._music_loaded or not self._enabled or not self._playback_allowed:
+            return
+        try:
+            pygame.mixer.music.play(-1)
+            self._apply_volume()
+        except Exception as error:
+            print(f"[Lumi Audio] Music resume error: {error}")
+            try:
+                pygame.mixer.music.play(-1)
+                self._apply_volume()
+            except Exception as restart_error:
+                print(f"[Lumi Audio] Music restart error: {restart_error}")
 
     def _apply_volume(self) -> None:
-        if not self._music_loaded:
+        if not self._music_loaded or self._music_paused:
             return
         try:
             if not pygame.mixer.music.get_busy():
@@ -169,5 +219,6 @@ class SoundManager:
             return
         try:
             pygame.mixer.music.stop()
+            self._music_paused = False
         except Exception:
             pass

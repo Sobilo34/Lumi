@@ -23,14 +23,21 @@ _CAPTION_COLORS: dict[str, tuple[int, int, int]] = {
 }
 
 
-def control_key_for_hitbox(box: Hitbox, *, writing_mode: str = "letters") -> str | None:
+def control_key_for_hitbox(
+    box: Hitbox,
+    *,
+    writing_mode: str = "letters",
+    writing_try_again: bool = False,
+) -> str | None:
     action = (box.action or "").lower()
     name = (box.name or "").lower()
     target = (box.target or "").lower()
 
     if action == "verify_writing" or name == "verify":
         return "verify"
-    if action == "clear_writing" or name == "clear":
+    if action == "clear_writing" or name in {"clear", "try again"}:
+        if writing_try_again:
+            return "try_again"
         return "clear"
     if action == "toggle_writing_mode" or name == "switch mode":
         if str(writing_mode or "letters").strip().lower() == "words":
@@ -52,8 +59,10 @@ def control_key_for_hitbox(box: Hitbox, *, writing_mode: str = "letters") -> str
         return "repeat"
     if "hint" in action or "help" in action or name in {"hint", "help"}:
         return "hint"
-    if action in {"start_letter_listening", "start_listening"} or name in {"microphone", "mic", "speak"}:
+    if action in {"start_letter_listening", "start_listening"} or name in {"microphone", "mic", "listen"}:
         return "mic"
+    if action in {"next_letter_voice", "next_word_voice"} or name == "speak":
+        return "speaker"
     if action in {"voice_or_speak_mode", "voice_mode", "replay_main_menu_audio"} or name == "speaker":
         return "speaker"
     if "skip" in action or name == "skip":
@@ -72,8 +81,12 @@ def caption_for_control(box: Hitbox, key: str) -> str | None:
     if key == "hint":
         return "Get a Hint"
     if key == "mic":
-        return "Speak"
+        return "Listen"
     if key == "speaker":
+        if action in {"next_letter_voice"}:
+            return "New Letter"
+        if action in {"next_word_voice"}:
+            return "Speak"
         if action in {"voice_mode", "voice_or_speak_mode"}:
             return "Speak"
         return "Listen"
@@ -134,6 +147,7 @@ def draw_control_buttons(
     controls: ControlAssets | None = None,
     *,
     writing_mode: str = "letters",
+    writing_try_again: bool = False,
 ) -> None:
     assets = controls or ControlAssets()
     if not assets.available():
@@ -142,7 +156,11 @@ def draw_control_buttons(
         action = box.action or ""
         if any(action.startswith(prefix) for prefix in _SKIP_ACTION_PREFIXES):
             continue
-        key = control_key_for_hitbox(box, writing_mode=writing_mode)
+        key = control_key_for_hitbox(
+            box,
+            writing_mode=writing_mode,
+            writing_try_again=writing_try_again,
+        )
         if key is None:
             continue
         rect = box.rect

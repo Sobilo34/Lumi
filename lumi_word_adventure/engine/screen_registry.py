@@ -23,20 +23,20 @@ def _footer_hitboxes(
 def _voice_footer_hitboxes(
     *,
     repeat_action: str,
-    speak_action: str,
+    listen_action: str,
     hint_action: str,
-    skip_action: str,
+    next_speak_action: str,
 ) -> tuple[HitboxDefinition, ...]:
     return _footer_hitboxes(
-        names=("Repeat", "Speak", "Hint", "Skip"),
-        actions=(repeat_action, speak_action, hint_action, skip_action),
+        names=("Repeat", "Listen", "Hint", "Speak"),
+        actions=(repeat_action, listen_action, hint_action, next_speak_action),
     )
 
 
 def _writing_footer_hitboxes() -> tuple[HitboxDefinition, ...]:
-    slots = writing_footer_slots()
-    names = ("Verify", "Clear", "Switch mode")
-    actions = ("verify_writing", "clear_writing", "toggle_writing_mode")
+    slots = writing_footer_slots(4)
+    names = ("Verify", "Clear", "Skip", "Switch mode")
+    actions = ("verify_writing", "clear_writing", "skip_writing", "toggle_writing_mode")
     return tuple(
         HitboxDefinition(name, x_pct, y_pct, w_pct, h_pct, action=action)
         for name, (x_pct, y_pct, w_pct, h_pct), action in zip(names, slots, actions)
@@ -86,9 +86,8 @@ class ScreenRegistry:
                 "04_main_menu.png",
                 (
                     HitboxDefinition("Play", 0.48, 0.20, 0.46, 0.14, target="world_map"),
-                    HitboxDefinition("Practice", 0.48, 289 / 720, 0.46, 0.14, target="practice_weak_skills"),
-                    HitboxDefinition("Report", 0.48, 464 / 720, 0.46, 0.14, target="teacher_report"),
-                    HitboxDefinition("Settings", 0.48, 640 / 720, 0.46, 0.14, target="settings"),
+                    HitboxDefinition("Report", 0.48, 444 / 720, 0.46, 0.14, target="teacher_report"),
+                    HitboxDefinition("Settings", 0.48, 580 / 720, 0.46, 0.14, target="settings"),
                     HitboxDefinition("Speaker", 0.02, 0.03, 0.09, 0.11, action="replay_main_menu_audio"),
                     HitboxDefinition("Profile", 0.89, 0.03, 0.09, 0.11, action="show_profile"),
                 ),
@@ -155,9 +154,9 @@ class ScreenRegistry:
                     HitboxDefinition("Settings", 0.92, 0.02, 0.06, 0.1, target="settings"),
                     *_voice_footer_hitboxes(
                         repeat_action="repeat_letter",
-                        speak_action="start_letter_listening",
+                        listen_action="start_letter_listening",
                         hint_action="letter_voice_help",
-                        skip_action="skip_letter_voice",
+                        next_speak_action="next_letter_voice",
                     ),
                 ),
             ),
@@ -194,9 +193,9 @@ class ScreenRegistry:
                     HitboxDefinition("Home", 0.91, 0.02, 0.07, 0.1, target="world_map"),
                     *_voice_footer_hitboxes(
                         repeat_action="repeat_word",
-                        speak_action="start_listening",
+                        listen_action="start_listening",
                         hint_action="voice_help",
-                        skip_action="skip_voice",
+                        next_speak_action="next_word_voice",
                     ),
                 ),
             ),
@@ -238,30 +237,19 @@ class ScreenRegistry:
                 "teacher_report",
                 "24_teacher_report.png",
                 (
-                    HitboxDefinition("Back", 0.02, 0.03, 0.07, 0.10, action="back"),
-                    HitboxDefinition("Home", 0.11, 0.03, 0.07, 0.09, action="home"),
-                    HitboxDefinition(
-                        "Recommended practice",
-                        0.60,
-                        0.60,
-                        0.28,
-                        0.25,
-                        action="practice_recommendation",
-                    ),
-                    HitboxDefinition("Refresh", 0.87, 0.77, 0.11, 0.12, action="report_refresh"),
+                    HitboxDefinition("Home", 0.01, 0.02, 0.06, 0.10, action="home"),
                 ),
             ),
             ScreenDefinition(
                 "settings",
                 "25_settings.png",
                 (
-                    HitboxDefinition("Back", 0.02, 0.03, 0.06, 0.09, target="main_menu"),
-                    HitboxDefinition("Home", 0.91, 0.03, 0.07, 0.09, target="main_menu"),
-                    HitboxDefinition("Music", 0.59, 0.19, 0.13, 0.09, action="toggle_music"),
-                    HitboxDefinition("Voice", 0.59, 0.34, 0.14, 0.08, action="toggle_voice"),
-                    HitboxDefinition("Test Mic", 0.58, 0.395, 0.14, 0.07, target="microphone_check"),
-                    HitboxDefinition("Difficulty", 0.57, 0.505, 0.15, 0.075, action="change_difficulty"),
-                    HitboxDefinition("Reset", 0.62, 0.585, 0.17, 0.11, action="reset_progress"),
+                    HitboxDefinition("Home", 0.01, 0.02, 0.06, 0.10, action="home"),
+                    HitboxDefinition("Music", 0.62, 0.24, 0.14, 0.08, action="toggle_music"),
+                    HitboxDefinition("Voice", 0.62, 0.35, 0.14, 0.08, action="toggle_voice"),
+                    HitboxDefinition("Test Mic", 0.60, 0.46, 0.16, 0.08, target="microphone_check"),
+                    HitboxDefinition("Difficulty", 0.60, 0.57, 0.16, 0.08, action="change_difficulty"),
+                    HitboxDefinition("Reset", 0.60, 0.68, 0.16, 0.09, action="reset_progress"),
                     # Developer testing buttons (temporary, visible in settings)
                     HitboxDefinition("Dev Export Hitboxes", 0.12, 0.82, 0.34, 0.06, action="export_hitboxes"),
                     HitboxDefinition("Dev Smoke -", 0.52, 0.82, 0.12, 0.06, action="decrease_smoke"),

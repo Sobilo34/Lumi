@@ -256,44 +256,59 @@ def listen_once(timeout: int = 7) -> Optional[str]:
     if not is_available():
         return None
 
-    if _vosk_ready():
-        text = _listen_vosk_sounddevice(timeout)
-        if text:
-            print(f"[Lumi Voice] Vosk heard: {text!r}")
-            return text
-        text = _listen_vosk_pyaudio(timeout)
-        if text:
-            print(f"[Lumi Voice] Vosk heard: {text!r}")
-            return text
+    try:
+        from engine import audio_ducking
 
-    if _speech_recognition_ready() and sr is not None:
-        try:
-            recognizer = sr.Recognizer()
-            recognizer.dynamic_energy_threshold = True
-            recognizer.energy_threshold = max(200, recognizer.energy_threshold)
-            with sr.Microphone() as source:
-                recognizer.adjust_for_ambient_noise(source, duration=0.35)
-                audio = recognizer.listen(source, timeout=timeout, phrase_time_limit=timeout)
+        audio_ducking.duck("mic")
+    except Exception:
+        pass
+
+    try:
+        if _vosk_ready():
+            text = _listen_vosk_sounddevice(timeout)
+            if text:
+                print(f"[Lumi Voice] Vosk heard: {text!r}")
+                return text
+            text = _listen_vosk_pyaudio(timeout)
+            if text:
+                print(f"[Lumi Voice] Vosk heard: {text!r}")
+                return text
+
+        if _speech_recognition_ready() and sr is not None:
             try:
-                recognize_google = getattr(recognizer, "recognize_google", None)
-                if recognize_google is None:
+                recognizer = sr.Recognizer()
+                recognizer.dynamic_energy_threshold = True
+                recognizer.energy_threshold = max(200, recognizer.energy_threshold)
+                with sr.Microphone() as source:
+                    recognizer.adjust_for_ambient_noise(source, duration=0.35)
+                    audio = recognizer.listen(source, timeout=timeout, phrase_time_limit=timeout)
+                try:
+                    recognize_google = getattr(recognizer, "recognize_google", None)
+                    if recognize_google is None:
+                        return None
+                    text = recognize_google(audio)
+                    cleaned = text.strip() or None
+                    if cleaned:
+                        print(f"[Lumi Voice] SpeechRecognition heard: {cleaned!r}")
+                    return cleaned
+                except sr.UnknownValueError:
+                    print("[Lumi Voice] SpeechRecognition heard nothing clear.")
                     return None
-                text = recognize_google(audio)
-                cleaned = text.strip() or None
-                if cleaned:
-                    print(f"[Lumi Voice] SpeechRecognition heard: {cleaned!r}")
-                return cleaned
-            except sr.UnknownValueError:
-                print("[Lumi Voice] SpeechRecognition heard nothing clear.")
+                except sr.RequestError as error:
+                    print(f"[Lumi Voice] SpeechRecognition request failed safely: {error}")
+                    return None
+            except Exception as error:
+                print(f"[Lumi Voice] SpeechRecognition listen failed safely: {error}")
                 return None
-            except sr.RequestError as error:
-                print(f"[Lumi Voice] SpeechRecognition request failed safely: {error}")
-                return None
-        except Exception as error:
-            print(f"[Lumi Voice] SpeechRecognition listen failed safely: {error}")
-            return None
 
-    return None
+        return None
+    finally:
+        try:
+            from engine import audio_ducking
+
+            audio_ducking.unduck("mic")
+        except Exception:
+            pass
 
 
 class SpeechToText:

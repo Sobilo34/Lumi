@@ -21,8 +21,10 @@ CONTROL_NAMES = frozenset(
         "mic",
         "verify",
         "clear",
+        "try_again",
         "switch_to_letters",
         "switch_to_word",
+        "exit",
     }
 )
 

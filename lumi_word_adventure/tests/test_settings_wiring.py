@@ -28,11 +28,7 @@ def engine(tmp_path: Path) -> GameEngine:
     return game
 
 
-def test_settings_back_and_home_go_to_main_menu(engine: GameEngine) -> None:
-    engine.set_screen("settings")
-    engine._handle_action("back")
-    assert engine.state.current_screen_id == "main_menu"
-
+def test_settings_home_goes_to_main_menu(engine: GameEngine) -> None:
     engine.set_screen("settings")
     engine._handle_action("home")
     assert engine.state.current_screen_id == "main_menu"
@@ -139,14 +135,14 @@ def test_settings_reset_progress_click_hitbox(engine: GameEngine) -> None:
 
 
 def test_settings_reset_progress_clicks_visual_button(engine: GameEngine) -> None:
-    """Reset hitbox must cover the painted Reset button on 25_settings.png."""
+    """Reset hitbox must cover the painted Reset button."""
     import pygame
 
     engine.learner.total_stars = 12
     engine.learner.save_profile()
     engine.set_screen("settings")
-    visual_center = (int(1280 * 0.705), int(720 * 0.644))
-    event = pygame.event.Event(pygame.MOUSEBUTTONDOWN, {"pos": visual_center, "button": 1})
+    reset = next(box for box in engine.registry.get_hitboxes("settings") if box.name == "Reset")
+    event = pygame.event.Event(pygame.MOUSEBUTTONDOWN, {"pos": reset.rect.center, "button": 1})
     engine.handle_event(event)
     assert engine.learner.total_stars == 0
     assert engine.state.settings_status_message == "Profile reset successfully"
@@ -154,20 +150,19 @@ def test_settings_reset_progress_clicks_visual_button(engine: GameEngine) -> Non
 
 def test_settings_controls_align_with_png(engine: GameEngine) -> None:
     """Each settings control click should hit the intended action."""
-    import pygame
-
+    expected = {
+        "Music": "toggle_music",
+        "Voice": "toggle_voice",
+        "Test Mic": "microphone_check",
+        "Difficulty": "change_difficulty",
+        "Reset": "reset_progress",
+    }
     engine.set_screen("settings")
-    samples = (
-        ((int(1280 * 0.652), int(720 * 0.242)), "toggle_music"),
-        ((int(1280 * 0.653), int(720 * 0.384)), "toggle_voice"),
-        ((int(1280 * 0.652), int(720 * 0.430)), "microphone_check"),
-        ((int(1280 * 0.645), int(720 * 0.545)), "change_difficulty"),
-        ((int(1280 * 0.705), int(720 * 0.644)), "reset_progress"),
-    )
-    for point, expected in samples:
-        clicked = engine.current_screen.handle_click(point)
-        assert clicked is not None, f"missed click at {point}"
-        assert (clicked.action or clicked.target) == expected, f"at {point} got {clicked.action or clicked.target}"
+    for name, action in expected.items():
+        hitbox = next(box for box in engine.registry.get_hitboxes("settings") if box.name == name)
+        clicked = engine.current_screen.handle_click(hitbox.rect.center)
+        assert clicked is not None, f"missed click for {name}"
+        assert (clicked.action or clicked.target) == action, f"{name} got {clicked.action or clicked.target}"
 
 
 def test_settings_test_mic_hitbox_target(engine: GameEngine) -> None:

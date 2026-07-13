@@ -132,3 +132,25 @@ def test_letter_voice_close_shows_try_again_popup(
     assert engine.state.current_screen_id == "letter_voice_challenge"
     assert engine.state.answer_popup_kind == "wrong"
     assert engine.state.answer_popup_next_screen == "letter_voice_challenge"
+
+
+def test_next_word_voice_stays_on_speak_page(
+    engine: GameEngine,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr("engine.game_engine.is_stt_ready", lambda: True)
+    engine.set_screen("voice_challenge")
+    engine._handle_action("next_word_voice")
+    assert engine.state.current_screen_id == "voice_challenge"
+    assert engine.state.current_task_target
+
+
+def test_next_letter_voice_stays_on_speak_page(
+    engine: GameEngine,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr("engine.game_engine.is_stt_ready", lambda: True)
+    engine.set_screen("letter_voice_challenge")
+    engine._handle_action("next_letter_voice")
+    assert engine.state.current_screen_id == "letter_voice_challenge"
+    assert engine.state.current_task_target

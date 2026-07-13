@@ -49,6 +49,8 @@ class GameState:
     bd_practice_target: str = ""
     bd_practice_step: int = 0
     bd_confusion_attempts: int = 0
+    bd_practice_session_wrong: int = 0
+    bd_practice_session_hints: int = 0
     history: list[str] = field(default_factory=list)
     last_unlocked_badges: list[str] = field(default_factory=list)
     badge_return_screen: str = ""
@@ -92,6 +94,7 @@ class GameState:
     writing_result_text: str = ""
     writing_hint_text: str = ""
     writing_processing: bool = False
+    writing_try_again_pending: bool = False
     app_loading: bool = False
     app_loading_message: str = ""
     app_loading_started_at: int = 0

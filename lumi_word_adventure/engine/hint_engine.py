@@ -231,7 +231,44 @@ class HintEngine:
         target_word = str(target or "").strip().lower()
         if not target_word:
             return "Touch the picture."
-        return f"Touch the {target_word.capitalize()}."
+        selected_word = str(selected or "").strip().lower()
+        mistake = str(mistake_type or "").strip().lower()
+        weak = _profile_weak_count(profile, "word", target_word)
+        lvl = self._effective_level(level, weak)
+
+        entry = self._words().get(target_word, {})
+        prompt = str(entry.get("prompt", "")).strip()
+        starting_letter = str(entry.get("starting_letter", target_word[0] if target_word else "")).upper()
+        sound = LETTER_SOUND.get(starting_letter, "")
+        confusable = {
+            str(item).strip().lower()
+            for item in (entry.get("confusable_with") or [])
+            if str(item).strip()
+        }
+
+        if selected_word and selected_word != target_word:
+            selected_cap = selected_word.capitalize()
+            target_cap = target_word.capitalize()
+            if mistake == "same_category_vocabulary_confusion":
+                return f"Not the {selected_cap}. Find the {target_cap} picture."
+            if selected_word in confusable:
+                return f"That is {selected_cap}. Look for {target_cap}."
+            return f"Not {selected_cap}. Touch the {target_cap}."
+
+        if lvl <= 1:
+            if prompt:
+                return prompt
+            return f"Touch the {target_word.capitalize()}."
+        if lvl == 2:
+            if sound:
+                return (
+                    f"{target_word.capitalize()} starts with {starting_letter} — "
+                    f"{sound}. Touch {target_word.capitalize()}."
+                )
+            return f"Look for the {target_word.capitalize()} picture."
+        if prompt:
+            return f"You're so close! {prompt}"
+        return f"You're so close! Touch the {target_word.capitalize()} now."
 
     # ---- letter speaking ---------------------------------------------------
     def letter_speaking_hint(

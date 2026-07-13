@@ -32,6 +32,8 @@ CONTROL_SOURCES: dict[str, str] = {
     "clear": "image-64d0d1ec-94f8-418b-b375-9238aa7df7d7.png",
     "switch_to_letters": "image-bc958503-1f63-4b1f-882e-1a06ae28b8e6.png",
     "switch_to_word": "image-ef83155a-8d79-4673-a588-3c28c23f0056.png",
+    "try_again": "image-7ab013f6-c972-4327-aa44-d8ccc6360933.png",
+    "exit": "image-993b78a4-4b53-4a23-a4c6-36865510432b.png",
 }
 
 

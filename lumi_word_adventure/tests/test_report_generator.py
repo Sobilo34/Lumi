@@ -33,7 +33,7 @@ def test_report_helpers_identify_skills_and_recommendation() -> None:
     profile = _rich_profile()
 
     assert get_strong_skill(profile) == "Letter recognition"
-    assert get_weak_area(profile) == "Letters B and D"
+    assert get_weak_area(profile) == "Letter B (3), Word: Cat (4)"
     assert get_recommendation(profile) == {
         "activity": "B/D Practice",
         "screen_id": SCREEN_BD_PRACTICE,
@@ -69,7 +69,7 @@ def test_generate_report_writes_session_json(tmp_path: Path) -> None:
     assert report["stars_earned"] == 12
     assert report["accuracy_percent"] == 80
     assert report["strong_skill"] == "Letter recognition"
-    assert report["needs_practice"] == "Letters B and D"
+    assert report["needs_practice"] == "Letter B (3), Word: Cat (4)"
     assert report["weak_letters"] == {"B": 3, "D": 2}
     assert report["weak_words"] == {"cat": 4}
     assert report["recommended_next_activity"] == "B/D Practice"
@@ -113,7 +113,7 @@ def test_b4_demo_profile_report_fields(tmp_path: Path) -> None:
     assert report["correct_answers"] == 6
     assert report["accuracy_percent"] == 75
     assert report["strong_skill"] == "Letter recognition"
-    assert report["needs_practice"] == "Letters B and D"
+    assert report["needs_practice"] == "Letter B (2), Word: Cat (2)"
     assert report["recommended_next_activity"] == "B/D Practice"
     assert report["recommended_screen_id"] == SCREEN_BD_PRACTICE
     assert tmp_path.joinpath("b4_report.json").exists()

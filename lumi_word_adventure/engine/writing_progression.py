@@ -105,6 +105,28 @@ def advance_writing_curriculum(profile: Any) -> None:
         profile["mastered_writing_words"] = sorted(mastered)
 
 
+def skip_writing_curriculum(profile: Any) -> None:
+    """Advance to the next letter or word without marking the current item mastered."""
+    data = _profile_dict(profile)
+    mode = writing_mode_for_profile(profile)
+    if mode == "letters":
+        letter_index = int(data.get("writing_letter_index", 0) or 0)
+        next_index = letter_index + 1
+        if hasattr(profile, "writing_letter_index"):
+            profile.writing_letter_index = next_index
+        elif isinstance(profile, dict):
+            profile["writing_letter_index"] = next_index
+        return
+
+    words = writing_word_pool()
+    word_index = int(data.get("writing_word_index", 0) or 0)
+    next_index = word_index + 1 if words else word_index
+    if hasattr(profile, "writing_word_index"):
+        profile.writing_word_index = next_index
+    elif isinstance(profile, dict):
+        profile["writing_word_index"] = next_index
+
+
 def writing_castle_complete(profile: Any) -> bool:
     from engine.world_progression import _completed_worlds
 

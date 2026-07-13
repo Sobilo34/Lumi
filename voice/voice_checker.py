@@ -136,10 +136,40 @@ def _check_spoken_letter(spoken_text: Optional[str], target_letter: str) -> str:
     return "incorrect"
 
 
-def check_spoken_answer(spoken_text: Optional[str], target_word: Optional[str]) -> str:
-    target = str(target_word or "").strip()
-    if _is_single_letter_target(target):
-        return _check_spoken_letter(spoken_text, target)
+def _check_spoken_word(spoken_text: Optional[str], target_word: str) -> str:
+    target = str(target_word or "").strip().lower()
+    if not target:
+        return "incorrect"
+
+    normalized = normalize_answer(spoken_text or "")
+    if not normalized:
+        return "incorrect"
+
+    if normalized == target:
+        return "correct"
+
+    tokens = normalized.split()
+    if target in tokens:
+        return "correct"
+
+    if tokens and all(token == target for token in tokens):
+        return "correct"
+
+    if len(tokens) >= 2 and tokens[0] in {"its", "it", "is", "that's", "thats", "the", "a", "an"}:
+        tail = tokens[-1]
+        if tail == target:
+            return "correct"
+        tail_score = _similarity(target, tail)
+        if tail_score >= 80.0:
+            return "correct"
+        if tail_score >= 60.0:
+            return "close"
+
+    best_token_score = max((_similarity(target, token) for token in tokens), default=0.0)
+    if best_token_score >= 80.0:
+        return "correct"
+    if best_token_score >= 60.0:
+        return "close"
 
     score = _similarity(spoken_text or "", target)
     if score >= 80.0:
@@ -147,6 +177,14 @@ def check_spoken_answer(spoken_text: Optional[str], target_word: Optional[str]) 
     if score >= 60.0:
         return "close"
     return "incorrect"
+
+
+def check_spoken_answer(spoken_text: Optional[str], target_word: Optional[str]) -> str:
+    target = str(target_word or "").strip()
+    if _is_single_letter_target(target):
+        return _check_spoken_letter(spoken_text, target)
+
+    return _check_spoken_word(spoken_text, target)
 
 
 def check_answer(expected: str, actual: str, threshold: int = 85) -> bool:

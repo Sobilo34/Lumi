@@ -22,6 +22,14 @@ from engine.world_progression import (
     sync_world_completion,
     word_garden_unlocked,
 )
+from engine.word_mastery import WORD_MASTERY_THRESHOLD, empty_word_mastery_record
+
+
+def _mastered_word_mastery(words: list[str]) -> dict:
+    record = empty_word_mastery_record()
+    record["mastery_score"] = WORD_MASTERY_THRESHOLD
+    record["consecutive_correct"] = 2
+    return {word: dict(record) for word in words}
 
 
 @pytest.fixture()
@@ -133,6 +141,7 @@ def test_all_letters_mastered_unlocks_completion_badge(engine: GameEngine) -> No
 def test_mastering_all_word_garden_words_completes_world(engine: GameEngine) -> None:
     engine.learner.completed_worlds = [WORLD_LETTER_ISLAND]
     engine.learner.mastered_words = ["sun", "apple", "fish", "bird"]
+    engine.learner.word_mastery = _mastered_word_mastery(["sun", "apple", "fish", "bird"])
     engine.learner.save_profile()
 
     assert maybe_complete_word_garden(engine.learner)
@@ -150,6 +159,7 @@ def test_sync_backfills_completed_worlds_from_progress(engine: GameEngine) -> No
     engine.learner.mastered_letters = list(ALPHABET)
     engine.learner.current_letter_index = len(ALPHABET) - 1
     engine.learner.mastered_words = ["sun", "apple", "fish", "bird"]
+    engine.learner.word_mastery = _mastered_word_mastery(["sun", "apple", "fish", "bird"])
     engine.learner.completed_worlds = []
     engine.learner.save_profile()
 

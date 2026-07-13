@@ -1,0 +1,6 @@
+{
+  "music_enabled": true,
+  "voice_enabled": true,
+  "difficulty_mode": "Medium",
+  "debug_hitboxes": false
+}
